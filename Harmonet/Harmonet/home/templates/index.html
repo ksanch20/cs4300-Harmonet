@@ -1,12 +1,12 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="{% static 'styles.css' %}" />
-  <title>Welcome to Harmonet</title>
+  <title>Harmonet</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
+
 <body>
   <nav class="navbar">
     <div class="logo">Harmonet</div>
@@ -24,7 +24,7 @@ friends, track listening time, get AI recommendations, and more!</p>
       <button onclick="location.href='SignupPage.html'">Get Started</button>
     </div>
     <div class="hero-image">
-      <img src="Music-Note.jpg" alt="Banking illustration" />
+      <img src="{% static 'home/Music-Note.jpg' %}" alt="Banking illustration" />
     </div>
   </header>
 
