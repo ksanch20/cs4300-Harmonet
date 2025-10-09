@@ -1,0 +1,32 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - Harmonet</title>
+  <link rel="stylesheet" href="{% static 'user/style.css' %}">
+</head>
+<body>
+  <div class="login-container">
+    <h2>Sign Up</h2>
+
+    <form method="POST">
+      {% csrf_token %}
+      {{ form.username.label_tag }}<br>
+      {{ form.username }}<br>
+      {{ form.email.label_tag }}<br>
+      {{ form.email }}<br>
+      {{ form.password1.label_tag }}<br>
+      {{ form.password1 }}<br>
+      {{ form.password2.label_tag }}<br>
+      {{ form.password2 }}<br>
+      <button type="submit">Register</button>
+    </form>
+
+    <p style="text-align:center; margin-top:15px;">
+      Already have an account? <a href="{% url 'login' %}">Login</a>
+    </p>
+  </div>
+</body>
+</html>

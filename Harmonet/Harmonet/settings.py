@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'home'
+    'home',
+    'user',
 ]
 
 MIDDLEWARE = [
@@ -132,3 +133,4 @@ import os
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'home', 'static'),
 ]
+
