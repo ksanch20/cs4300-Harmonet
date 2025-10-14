@@ -35,6 +35,17 @@ class UserAuthTests(TestCase):
         # Check that the page contains the expected error message
         self.assertContains(response, "A user with that username already exists.")
 
+    def test_signup_email_unique(self):
+        # Try to register using the same email as existing user
+        response = self.client.post(reverse('register'), {
+            'username': 'newuser2',
+            'email': 'test@example.com',  # already used by self.user
+            'password1': 'NewPass123',
+            'password2': 'NewPass123'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "A user with that email already exists.")
+
 
     def test_signup_password_mismatch(self):
         response = self.client.post(reverse('register'), {
@@ -107,3 +118,4 @@ class UserAuthTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This password is too common")
+
