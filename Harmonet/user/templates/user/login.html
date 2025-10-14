@@ -11,12 +11,24 @@
   <div class="login-container">
     <h2>Login</h2>
 
+
     <form method="POST">
       {% csrf_token %}
       {{ form.username.label_tag }}<br>
       {{ form.username }}<br>
       {{ form.password.label_tag }}<br>
       {{ form.password }}<br>
+
+  
+    <!-- Display Django messages -->
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <p class="{{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+    
       <button type="submit">Login</button>
     </form>
 

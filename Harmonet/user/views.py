@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import UserRegisterForm
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
 
 #################### index ####################################### 
@@ -33,6 +34,8 @@ def user_login(request):
         if user is not None:
             login(request, user)
             return redirect('dashboard')
+        else:
+            messages.error(request, "Invalid username or password")
             
     form = AuthenticationForm()
     return render(request, 'user/login.html', {'form': form, 'title':'log in'})
