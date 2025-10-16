@@ -1,0 +1,101 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - Harmonet</title>
+  <link rel="stylesheet" href="{% static 'user/style.css' %}">
+  <style>
+    .messages p {
+      color: #fff;
+      background-color: #d9534f; /* red for errors */
+      padding: 8px;
+      border-radius: 5px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .messages p.success {
+      background-color: #5cb85c; /* green for success */
+    }
+    .errorlist {
+      color: #d9534f;
+      margin: 5px 0 10px 0;
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .errorlist li {
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Sign Up</h2>
+
+
+    <!-- Display non-field form errors (like password mismatch) -->
+    {% if form.non_field_errors %}
+      <ul class="errorlist">
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <!-- Username -->
+      {{ form.username.label_tag }}<br>
+      {{ form.username }}<br>
+      {% if form.username.errors %}
+        <ul class="errorlist">
+          {% for error in form.username.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <!-- Email -->
+      {{ form.email.label_tag }}<br>
+      {{ form.email }}<br>
+      {% if form.email.errors %}
+        <ul class="errorlist">
+          {% for error in form.email.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <!-- Password 1 -->
+      {{ form.password1.label_tag }}<br>
+      {{ form.password1 }}<br>
+      {% if form.password1.errors %}
+        <ul class="errorlist">
+          {% for error in form.password1.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <!-- Password 2 -->
+      {{ form.password2.label_tag }}<br>
+      {{ form.password2 }}<br>
+      {% if form.password2.errors %}
+        <ul class="errorlist">
+          {% for error in form.password2.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <button type="submit">Register</button>
+    </form>
+
+    <p style="text-align:center; margin-top:15px;">
+      Already have an account? <a href="{% url 'login' %}">Login</a>
+    </p>
+  </div>
+</body>
+</html>
