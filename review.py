@@ -1,5 +1,5 @@
 import os
-from github import Github
+from github import Github, Auth
 from openai import OpenAI
 
 def initialize():
@@ -25,7 +25,8 @@ def initialize():
             raise ValueError("PR_NUMBER is not set")
 
         # Initialize GitHub instance
-        g = Github(github_token)
+        auth = Auth.Token(github_token)
+        g = Github(auth=auth)
 
         return client, g, repo_name, pr_id
     except Exception as e:
