@@ -5,14 +5,17 @@ on:
   workflow_dispatch: 
   
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
-  issues: write
-  actions: read
 
 jobs:
   ai_review:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: read
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
