@@ -1,0 +1,30 @@
+name: AI Code Review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: 
+  
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai_review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: read
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - run: pip install PyGithub openai
+      - run: python review.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
