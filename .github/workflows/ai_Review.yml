@@ -3,10 +3,19 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch: 
+  
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   ai_review:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: read
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
