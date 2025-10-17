@@ -1,12 +1,20 @@
+# Virtual environment
+env_Harmonet/
+venv/
+.venv/
+
+# Python cache files
 __pycache__/
 *.py[cod]
-*$py.class
-env_Harmonet/
-*.env
+
+# SQLite database
 db.sqlite3
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE / editor folders
 .vscode/
 .idea/
-*.log
-.pyc
-.coverage
-system/
