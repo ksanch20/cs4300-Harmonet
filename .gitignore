@@ -1,0 +1,34 @@
+# Virtual environments
+env_Harmonet/
+venv/
+.venv/
+system/         
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite database
+db.sqlite3
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+
+# Logs
+*.log
+
+# IDE / editor folders
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS-specific files
+.DS_Store        # macOS
+Thumbs.db        # Windows
+
+# Python environment / pip files
+pip-selfcheck.json
