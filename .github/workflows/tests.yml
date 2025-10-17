@@ -40,6 +40,6 @@ jobs:
       run: |
         cd Harmonet
         coverage run --source=Harmonet manage.py test
-        coverage report
+        coverage report -m
         coverage xml
 
