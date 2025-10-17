@@ -14,31 +14,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # 1️⃣ Checkout code
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # 2️⃣ Set up Python
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: 3.11
 
+    # 3️⃣ Install dependencies (from Harmonet folder)
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r Harmonet/requirements.txt
+        pip install coverage  # ensure coverage is installed
 
+    # 4️⃣ Set DJANGO_SETTINGS_MODULE environment variable
     - name: Set DJANGO_SETTINGS_MODULE
       run: echo "DJANGO_SETTINGS_MODULE=Harmonet.settings" >> $GITHUB_ENV
 
+    # 5️⃣ Run tests with coverage
     - name: Run tests with coverage
       run: |
-        export DJANGO_SETTINGS_MODULE=Harmonet.settings
-        coverage run --source=Harmonet Harmonet/manage.py test
+        cd Harmonet
+        coverage run --source=Harmonet manage.py test
         coverage report
         coverage xml
 
+    # 6️⃣ Upload coverage to Codecov
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
-        files: coverage.xml
+        files: Harmonet/coverage.xml
         fail_ci_if_error: true
+        # Optional: if you have a token, uncomment the next line
+        # token: ${{ secrets.CODECOV_TOKEN }}
