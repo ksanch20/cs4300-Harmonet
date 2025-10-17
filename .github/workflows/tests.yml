@@ -43,11 +43,3 @@ jobs:
         coverage report
         coverage xml
 
-    #Upload coverage to Codecov
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        files: Harmonet/coverage.xml
-        fail_ci_if_error: true
-        # Optional: if you have a token, uncomment the next line
-        # token: ${{ secrets.CODECOV_TOKEN }}
