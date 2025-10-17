@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*$py.class
+env_Harmonet/
+*.env
+db.sqlite3
+.vscode/
+.idea/
+*.log
+
