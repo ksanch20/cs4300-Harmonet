@@ -1,3 +1,120 @@
-<h1>Dashboard</h1>
-<p>Welcome, {{ user.username }}!</p>
-<a href="{% url 'logout' %}">Logout</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | Harmonet</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'dashboard_style.css' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="logo">Harmonet</div>
+    <div class="auth-buttons">
+      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+    </div>
+  </nav>
+
+  <main class="dashboard-container">
+    <div class="dashboard-box">
+
+      <div class="dashboard-header">
+        <h1>Welcome to Your Harmonet Dashboard!</h1>
+        <p class="dashboard-subtitle">All Your Music Needs in One Area</p>
+      </div>
+
+      <div class="dashboard-wrapper">
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>👤 Profile</h3>
+            <p>Manage your account settings and preferences</p>
+            <a href="{% url 'profile' %}">Go to Profile →</a>
+          </div>
+
+          <div class="card">
+            <h3>📊 Analytics</h3>
+            <p>View your performance and insights</p>
+            <a href="{% url 'analytics' %}">View Analytics →</a>
+          </div>
+
+          <div class="card">
+            <h3>🤖 AI-Recommendation</h3>
+            <p>check your recommendation via AI</p>
+            <a href="{% url 'AI_Recommendation' %}">Open Messages →</a>
+          </div>
+
+          <div class="card">
+            <h3>⚙️ Settings</h3>
+            <p>Configure system and app settings</p>
+            <a href="#">Update Settings →</a>
+          </div>
+
+          <div class="card">
+            <h3>🎵 Music Tracking</h3>
+            <p>Insight into you listening preferences</p>
+            <a href="#">View Analytics →</a>
+          </div>
+
+          <div class="card">
+            <h3>📅 Music Year-In-Review</h3>
+            <p>Summary of Top Artist, Albums, and genres </p>
+            <a href="#">View Analytics →</a>
+          </div>
+
+        </div>
+      </div>
+
+
+      <hr class="section-divider" />
+
+      <section class="most-listened-section">
+        <h2>Listen to Your Top 5 Favorite Artist?</h2>
+        <div class="scroll-wrapper">
+          <button class="scroll-btn left-btn" aria-label="Scroll Left">&#8249;</button>
+          <div class="artist-scroll">
+            <div class="artist-card">
+              <div class="artist-image">
+                <img src="images/artist1.jpg" alt="Artist 1" />
+              </div>
+              <p>Artist 1</p>
+            </div>
+            <div class="artist-card">
+              <div class="artist-image">
+                <img src="images/artist2.jpg" alt="Artist 2" />
+              </div>
+              <p>Artist 2</p>
+            </div>
+            <div class="artist-card">
+              <div class="artist-image">
+                <img src="images/artist3.jpg" alt="Artist 3" />
+              </div>
+              <p>Artist 3</p>
+            </div>
+            <div class="artist-card">
+              <div class="artist-image">
+                <img src="images/artist4.jpg" alt="Artist 4" />
+              </div>
+              <p>Artist 4</p>
+            </div>
+            <div class="artist-card">
+              <div class="artist-image">
+                <img src="images/artist5.jpg" alt="Artist 5" />
+              </div>
+              <p>Artist 5</p>
+            </div>
+          </div>
+          <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2025 Harmonet. All rights reserved.</p>
+  </footer>
+
+
+
+</body>
+</html>

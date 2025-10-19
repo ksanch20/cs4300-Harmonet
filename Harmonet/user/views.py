@@ -49,3 +49,15 @@ def dashboard(request):
 def user_logout(request):
     auth_logout(request)
     return redirect('index')
+
+
+
+
+def profile(request):
+    return render(request, 'user/profile.html', {'title': 'profile'})
+
+def analytics(request):
+    return render(request, 'user/analytics.html', {'title': 'analytics'})
+
+def AI_Recommendation(request):
+    return render(request, 'user/AI_Recommendation.html', {'title': 'AI_Recommendation'})

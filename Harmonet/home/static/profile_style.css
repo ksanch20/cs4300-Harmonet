@@ -1,0 +1,186 @@
+/* Reset + Base Layout */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  background-color: #f7f9fc; /* Light background for whole site */
+  color: #111827;
+}
+
+/* Container layout */
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f7f9fc;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background-color: #5ca1d3; /* Blue accent */
+  padding-top: 2rem;
+}
+
+.sidebar a {
+  display: block;
+  padding: 14px 24px;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.sidebar a:hover {
+  background-color: #1a3fc5;
+}
+
+.content {
+  flex: 1;
+  padding: 4rem 5rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  margin: 3rem 0 3rem 3rem; /* top & bottom 3rem, left 3rem, no right margin */
+  max-width: 900px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+/* Headings */
+h2 {
+  font-size: 2.5rem;        /* Larger header */
+  color: #5ca1d3;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.content p {
+  color: #374151;
+  margin-bottom: 1.5rem;
+  font-size: 1.125rem;      /* Larger, cleaner paragraph text (~18px) */
+  line-height: 1.7;
+}
+
+/* Form group styling */
+.form-group {
+  margin-bottom: 2rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #f1f5f9;
+  color: #111827;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border 0.2s, background 0.2s;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #5ca1d3;
+  background-color: #e0f2fe;
+}
+
+.back-link {
+  font-weight: 800;
+  font-size: 1.4rem;
+  padding: 20px 24px 20px 24px; /* default padding */
+  display: block;
+  color: white;
+  margin-bottom: 2rem;
+  text-decoration: none;
+  border-left: 4px solid white;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(90deg, #4a90e2, #357ABD);
+  transition: 
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    padding-left 0.2s ease; /* animate padding-left */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.back-link:hover,
+.back-link:focus {
+  color: #dbe9ff;
+  border-color: #c0d8ff;
+  box-shadow: 0 4px 12px rgba(53, 122, 189, 0.6);
+  padding-left: 30px; /* add space on the left instead of translate */
+  outline: none;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #5ca1d3;
+  margin-top: 0.25rem;
+}
+
+/* Profile info display styling */
+.profile-info {
+  background-color: #f1f5f9; /* Light gray similar to your input backgrounds */
+  border: 1px solid #cbd5e1; /* Match input border */
+  border-radius: 12px;
+  padding: 2rem 3rem;
+  box-shadow: 0 4px 12px rgba(53, 122, 189, 0.1); /* subtle blue shadow */
+  max-width: 700px;
+  margin-top: 2rem;
+}
+
+.profile-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e2e8f0; /* subtle dividing line */
+  font-size: 1.125rem;      /* matching paragraph text */
+  color: #374151;           /* matches paragraph text */
+}
+
+.profile-item:last-child {
+  border-bottom: none; /* remove border on last item */
+}
+
+.profile-item strong {
+  color: #111827; /* dark for label */
+  font-weight: 700;
+}
+
+
+.delete-account-container {
+  margin-top: 3rem;
+  text-align: left; /* keep button aligned to the left */
+}
+
+.delete-account-btn {
+  background-color: #2f5a74; /* red-600 */
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.delete-account-btn:hover,
+.delete-account-btn:focus {
+  background-color: #b91c1c; /* darker red */
+  outline: none;
+  box-shadow: 0 6px 18px rgba(185, 28, 28, 0.5);
+}

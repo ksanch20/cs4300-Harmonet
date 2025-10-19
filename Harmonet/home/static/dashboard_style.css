@@ -1,0 +1,240 @@
+/* Reset + Base Layout */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f7f9fc;
+    color: #000000;
+  }
+  
+
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #5ca1d3; /* your original blue */
+    color: white;
+  }
+  
+  .navbar .logo {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  
+  .auth-buttons a {
+    color: white;
+    text-decoration: none;
+    background-color: #1e4ed8;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+  }
+  
+  .auth-buttons a:hover {
+    background-color: #1a3fc5;
+  }
+  
+
+  .dashboard-container {
+    display: flex;
+    justify-content: center;
+    padding: 3rem 1rem;
+    flex: 1; 
+  }
+  
+
+  .dashboard-box {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+    max-width: 1000px;
+    width: 100%;
+  }
+  
+
+  .dashboard-header h1 {
+    font-size: 1.75rem;
+    color: #5ca1d3;
+    margin-bottom: 0.25rem;
+  }
+  
+  .dashboard-subtitle {
+    color: black;
+    margin-bottom: 3rem;
+  }
+  
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+  
+
+  .dashboard-wrapper {
+    background-color: #5ca1d3;
+    padding: 2.5rem;
+    border-radius: 12px;
+    margin-top: 1rem;
+  }
+  
+
+  .card {
+    background-color: white;
+    color: #5ca1d3;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+  }
+  
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  }
+  
+  .card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    color: #111827;
+  }
+  
+  .card p {
+    margin-bottom: 1rem;
+    color: #5ca1d3;
+  }
+  
+  .card a {
+    text-decoration: none;
+    color: #5ca1d3;
+    font-weight: 500;
+  }
+  
+  .card a:hover {
+    text-decoration: underline;
+  }
+  
+
+ .section-divider {
+    border: none;
+    border-top: 2px solid #5ca1d3;
+    margin: 2rem 0 1.5rem;
+  }
+
+
+  .most-listened-section {
+    padding-bottom: 2rem;
+  }
+
+  .most-listened-section h2 {
+    font-size: 1.5rem;
+    color: #5ca1d3;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+
+  .scroll-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+
+  .artist-scroll {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    flex: 1;
+  }
+
+
+  .artist-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+
+  .artist-card {
+    min-width: 160px;
+    flex: 0 0 auto;
+    background-color: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+    text-align: center;
+    color: #111827;
+    scroll-snap-align: start;
+    transition: transform 0.3s ease;
+  }
+
+  .artist-card:hover {
+    transform: scale(1.05);
+    background-color: #f0f4ff;
+  }
+
+
+  .artist-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 0.5rem;
+    border: 2px solid #5ca1d3;
+  }
+
+  .artist-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+
+  .scroll-btn {
+    background-color: #5ca1d3;
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    margin: 0 0.5rem;
+    transition: background-color 0.3s;
+  }
+
+  .scroll-btn:hover {
+    background-color: #5ca1d3;
+  }
+
+
+  .footer {
+    background: #1e2a38;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+  }
+  
