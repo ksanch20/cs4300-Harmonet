@@ -51,9 +51,9 @@
           </div>
 
           <div class="card">
-            <h3>🎵 Music Tracking</h3>
-            <p>Insight into you listening preferences</p>
-            <a href="#">View Analytics →</a>
+            <h3>🎧 Connect Spotify</h3>
+            <p>Link your Spotify to view your listening stats</p>
+            <a href="{% url 'spotify_login' %}">Connect Spotify →</a>
           </div>
 
           <div class="card">
@@ -105,6 +105,18 @@
             </div>
           </div>
           <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Top Artists</h2>
+        <div class="artist-grid">
+          {% for artist in artists %}
+            <div class="artist-card">
+              <img src="{{ artist.images.0.url }}" alt="{{ artist.name }}" width="100">
+              <p>{{ artist.name }}</p>
+            </div>
+          {% endfor %}
         </div>
       </section>
     </div>

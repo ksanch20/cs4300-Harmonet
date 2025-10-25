@@ -25,10 +25,16 @@ SECRET_KEY = 'django-insecure-#z%-s1%bi6fkcnbl1x4r-0jsenlqt-4x$jyrp^4x_%2-!8hjxu
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Spotify variables and client ID
+SPOTIPY_CLIENT_ID = "8163880d49cf40f1af378ca5eb81cb1b"
+SPOTIPY_CLIENT_SECRET = "57450a22e7814187ad445492e5ca2140"
+SPOTIPY_REDIRECT_URI = "https://mysite-80mb.onrender.com/"
+
 ALLOWED_HOSTS = [
     'app-cs4300sanchez-19.devedu.io',
     'localhost',
     'editor-cs4300sanchez-19.devedu.io',
+    'editor-peterdeveduenviro-19.devedu.io',
     '*', 
 ]
 # '*' is a catch all for hosts, good to remove when done testing.
@@ -137,3 +143,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'home', 'static'),
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://app-peterdeveduenviro-19.devedu.io",
+]

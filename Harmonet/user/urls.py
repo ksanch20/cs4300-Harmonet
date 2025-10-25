@@ -11,4 +11,8 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('analytics/', views.analytics, name='analytics'),
     path('AI_Recommendation/', views.AI_Recommendation, name='AI_Recommendation'),
+    ####Spotify patterns####
+    path('spotify/login/', views.spotify_login, name='spotify_login'),
+    path('spotify/callback/', views.spotify_callback, name='spotify_callback'),
+    path('spotify/dashboard/', views.spotify_dashboard, name='spotify_dashboard'),
 ]

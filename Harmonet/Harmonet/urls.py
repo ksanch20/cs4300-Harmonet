@@ -26,7 +26,7 @@ urlpatterns = [
     path('', index, name='index'),
 
     # include all user-related URLs under /user/
-    path('user/', include('user.urls')), 
+    path('user/', include('user.urls')),
 
 
 
