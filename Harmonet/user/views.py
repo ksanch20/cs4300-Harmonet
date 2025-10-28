@@ -86,3 +86,12 @@ def password_change(request):
         'form': form,
         'title': 'Change Password'
     })
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        user = request.user
+        auth_logout(request) #Log user out
+        user.delete() #Delete user account
+        return redirect('index') #Redirect user to home page
+    return redirect('profile') 
