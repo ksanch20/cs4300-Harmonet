@@ -6,3 +6,4 @@ dj-database-url==3.0.1
 gunicorn==23.0.0
 uvicorn==0.37.0
 whitenoise==6.11.0
+spotipy==2.23.0
