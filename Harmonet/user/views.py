@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout as auth_logout
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from .forms import UserRegisterForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -61,3 +61,37 @@ def analytics(request):
 
 def AI_Recommendation(request):
     return render(request, 'user/AI_Recommendation.html', {'title': 'AI_Recommendation'})
+
+
+
+# Add this function to your views.py
+@login_required
+def password_change(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Important: Update the session to prevent logout
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, user)
+            
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('password_change')  # Redirect to same page to show message
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PasswordChangeForm(request.user)
+    
+    return render(request, 'user/password_change.html', {
+        'form': form,
+        'title': 'Change Password'
+    })
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        user = request.user
+        auth_logout(request) #Log user out
+        user.delete() #Delete user account
+        return redirect('index') #Redirect user to home page
+    return redirect('profile') 

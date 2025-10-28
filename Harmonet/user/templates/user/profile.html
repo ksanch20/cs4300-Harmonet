@@ -14,6 +14,7 @@
       <a href="#">Featured Showcase</a>
       <a href="#">Privacy Settings</a>
       <a href="#">Linked Accounts</a>
+      <a href="{% url 'password_change' %}">Change Password</a>
     </div>
 
     <div class="content">
@@ -39,16 +40,16 @@
 
 
       <div class="delete-account-container">
-        <button class="delete-account-btn" type="button" onclick="confirmDelete()">Delete Account</button>
+        <form method="post" action="{% url 'delete_account' %}" id="deleteForm">
+          {% csrf_token %}
+          <button class="delete-account-btn" type="button" onclick="confirmDelete()">Delete Account</button>
+        </form>
       </div>
-    </div>
-  </div>
 
   <script>
     function confirmDelete() {
       if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-        // Trigger deletion logic here
-        alert("Account deletion process initiated.");
+        document.getElementById('deleteForm').submit();
       }
     }
   </script>
