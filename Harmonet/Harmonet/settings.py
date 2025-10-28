@@ -87,7 +87,7 @@ DATABASES = {
         # Replace this value with your local database's connection string.
         default='postgresql://mysite:FAmxpWVgMQe40jnf7Nm5b1BmE5Rpa7oA@dpg-d3qnb3fdiees73agdfvg-a/mysite_80dd',
         conn_max_age=600
-    )
+    )}
 
 
 # Password validation
