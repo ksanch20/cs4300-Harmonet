@@ -26,6 +26,11 @@ database_url = os.environ.get('DATABASE_URL')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Spotify variables and client ID
+SPOTIPY_CLIENT_ID = "8163880d49cf40f1af378ca5eb81cb1b"
+SPOTIPY_CLIENT_SECRET = "57450a22e7814187ad445492e5ca2140"
+SPOTIPY_REDIRECT_URI = "https://mysite-80mb.onrender.com/"
+
 ALLOWED_HOSTS = [
     'app-cs4300sanchez-19.devedu.io',
     'localhost',
