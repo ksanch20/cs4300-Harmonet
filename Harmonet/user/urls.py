@@ -14,6 +14,11 @@ urlpatterns = [
     path('password-change/', views.password_change, name='password_change'),
     path('delete-account/', views.delete_account, name='delete_account'),
 
+    ####Spotify patterns####
+    path('spotify/login/', views.spotify_login, name='spotify_login'),
+    path('spotify/callback/', views.spotify_callback, name='spotify_callback'),
+    path('spotify/dashboard/', views.spotify_dashboard, name='spotify_dashboard'),
+
     #Password reset URLS
     path('password-reset/', auth_views.PasswordResetView.as_view(template_name='user/password_reset.html'), name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='user/password_reset_done.html'), name='password_reset_done'),
