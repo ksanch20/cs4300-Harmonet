@@ -82,12 +82,7 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # Replace the SQLite DATABASES configuration with PostgreSQL:
-DATABASES = {
-    'default': dj_database_url.config(
-        # Replace this value with your local database's connection string.
-        default=os.environ.get(''),
-        conn_max_age=600
-    )}
+DATABASES = {'default': dj_database_url.parse('postgresql://mysite:FAmxpWVgMQe40jnf7Nm5b1BmE5Rpa7oA@dpg-d3qnb3fdiees73agdfvg-a.oregon-postgres.render.com/mysite_80dd')}
 
 
 # Password validation
