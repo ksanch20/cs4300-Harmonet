@@ -4,6 +4,9 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from .forms import UserRegisterForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+from django.conf import settings
 
 
 #################### index ####################################### 
@@ -87,6 +90,48 @@ def password_change(request):
         'title': 'Change Password'
     })
 
+#########################Spotify OAuth######################
+
+scope = "user-top-read user-read-recently-played"
+
+@login_required
+def spotify_login(request):
+    sp_oauth = SpotifyOAuth(
+        client_id=settings.SPOTIPY_CLIENT_ID,
+        client_secret=settings.SPOTIPY_CLIENT_SECRET,
+        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
+        scope=scope
+    )
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
+
+@login_required
+def spotify_callback(request):
+    sp_oauth = SpotifyOAuth(
+        client_id=settings.SPOTIPY_CLIENT_ID,
+        client_secret=settings.SPOTIPY_CLIENT_SECRET,
+        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
+        scope=scope
+    )
+    code = request.GET.get('code')
+    token_info = sp_oauth.get_access_token(code)
+    request.session['spotify_token'] = token_info
+    return redirect('spotify_dashboard')
+
+@login_required
+def spotify_dashboard(request):
+    token_info = request.session.get('spotify_token', None)
+    if not token_info:
+        return redirect('spotify_login')
+
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+    top_artists = sp.current_user_top_artists(limit=5)['items']
+    top_tracks = sp.current_user_top_tracks(limit=5)['items']
+
+    return render(request, 'dashboard.html', {
+        'artists': top_artists,
+        'tracks': top_tracks,
+    })
 @login_required
 def delete_account(request):
     if request.method == "POST":
