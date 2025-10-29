@@ -1,5 +1,7 @@
 import os
 from github import Github, Auth
+import openai
+import time
 from openai import OpenAI
 
 def initialize():
@@ -42,44 +44,44 @@ def get_repo_and_pull_request(g, repo_name, pr_id):
         raise ValueError(f"Failed to fetch repo or PR: {e}")
 
 
-def fetch_files_from_pr(pr, max_chars=4000):
-    try:
-        files = pr.get_files()
-        diff = ""
-        for file in files:
-            if any(file.filename.endswith(ext) for ext in [".lock", ".min.js", ".json"]):
-                continue
-
-            patch = file.patch or ""
-            diff += f"### File: {file.filename}\n{patch[:max_chars]}\n\n"
-
-        if not diff:
-            raise ValueError("No diff data found in PR (possibly all files ignored).")
-
-        return diff
-    except Exception as e:
-        raise ValueError(f"Failed to fetch files from PR: {e}")
+def fetch_file_diffs(pr, max_chars=4000):
+    files = pr.get_files()
+    diffs = []
+    for file in files:
+        if any(file.filename.endswith(ext) for ext in [".lock", ".min.js", ".json"]):
+            continue
+        patch = file.patch or ""
+        if patch:
+            diffs.append((file.filename, patch[:max_chars]))
+    return diffs
 
 
-def request_code_review(diff, client):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",  # or "gpt-4o-mini" for cheaper reviews
-            messages=[
-                {"role": "system", "content": "You are an expert senior software engineer performing a code review."},
-                {"role": "user", "content": (
-                    "Please review the following code diff for potential issues, bugs, or improvements. "
-                    "Start with a score out of 10 for code quality, then list up to 3–4 clear, actionable suggestions. "
-                    "Reference specific lines or patterns where appropriate.\n\n"
-                    f"{diff}"
-                )}
-            ],
-            temperature=0.2,
-            max_completion_tokens=2048
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        raise ValueError(f"Failed to get code review from OpenAI: {e}")
+def request_code_review_for_file(filename, patch, client, retries=5):
+    prompt = (
+        f"Please review the following code diff for `{filename}`. "
+        "Start with a score out of 10 for code quality, then list up to 3–4 clear, actionable suggestions. "
+        "Reference specific lines or patterns where appropriate.\n\n"
+        f"{patch}"
+    )
+
+    for attempt in range(retries):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are an expert senior software engineer performing a code review."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2,
+                max_completion_tokens=2048
+            )
+            return f"### Review for `{filename}`\n{response.choices[0].message.content.strip()}\n"
+        except openai.error.RateLimitError:
+            wait = 2 ** attempt
+            print(f"Rate limit hit. Retrying in {wait}s...")
+            time.sleep(wait)
+        except Exception as e:
+            return f"### Review for `{filename}`\nError: {e}\n"
 
 
 def post_review_comments(pr, review_comments):
@@ -94,9 +96,14 @@ def main():
     try:
         client, g, repo_name, pr_id = initialize()
         repo, pr = get_repo_and_pull_request(g, repo_name, pr_id)
-        diff = fetch_files_from_pr(pr)
-        review_comments = request_code_review(diff, client)
-        post_review_comments(pr, review_comments)
+        file_diffs = fetch_file_diffs(pr)
+
+        all_reviews = ""
+        for filename, patch in file_diffs:
+            review = request_code_review_for_file(filename, patch, client)
+            all_reviews += review + "\n---\n"
+
+        post_review_comments(pr, all_reviews)
     except Exception as e:
         print(f"Error: {e}")
 
