@@ -1,9 +1,8 @@
 name: AI Code Review
 on:
-  push:
-    branches:
-      - ai-review-test
-  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
 
   
 permissions:
