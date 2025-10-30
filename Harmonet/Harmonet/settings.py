@@ -89,6 +89,14 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 
 DATABASES = {'default': dj_database_url.parse('postgresql://mysite:FAmxpWVgMQe40jnf7Nm5b1BmE5Rpa7oA@dpg-d3qnb3fdiees73agdfvg-a.oregon-postgres.render.com/mysite_80dd')}
 
+# Override for tests - use SQLite in-memory
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
