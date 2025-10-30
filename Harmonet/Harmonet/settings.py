@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import os
+import os, sys
 import dj_database_url
 from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -139,11 +139,15 @@ STATICFILES_DIRS = [
 ]
 
 
-# Email settings for Gmail SMTP
+# Email settings for SendGrid
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'harmonet25@gmail.com'
-EMAIL_HOST_PASSWORD = config('EMAIL_PASSWORD')
-DEFAULT_FROM_EMAIL = 'harmonet25@gmail.com'
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Harmonet <noreply.harmonet@gmail.com')
+PASSWORD_RESET_TIMEOUT = 259200
+
+if 'test' in sys.argv:
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
