@@ -1,0 +1,155 @@
+<!-- templates/user/music_preferences.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Music Preferences | Harmonet</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'dashboard_style.css' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Navigation bar with back button -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="{% url 'dashboard' %}" style="display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none;">
+        <span style="font-size: 24px;">←</span>
+        <span>Back to Dashboard</span>
+      </a>
+    </div>
+    <div class="auth-buttons">
+      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+    </div>
+  </nav>
+
+  <main class="dashboard-container">
+    <div class="dashboard-box">
+      
+      <!-- Page header -->
+      <div class="dashboard-header">
+        <h1>🎵 Your Music Preferences</h1>
+        <p class="dashboard-subtitle">Tell us about the music you love across all platforms</p>
+      </div>
+
+      <div class="dashboard-wrapper">
+        <div class="card" style="max-width: 700px; margin: 0 auto;">
+          
+          <!-- Info box explaining why we're asking -->
+          <div style="background-color: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #0284c7;">
+            <p style="margin: 0; color: #0c4a6e;">
+              <strong>💡 Why we ask:</strong> Help us understand your complete music taste! 
+              This includes artists from <strong>SoundCloud, Apple Music, YouTube, live shows, vinyl, 
+              or anywhere else</strong> you discover music. We'll combine this with your connected 
+              platforms to give you personalized recommendations.
+            </p>
+          </div>
+
+          <!-- Success message display (shown after saving) -->
+          <!-- Django's messages framework stores these in the session -->
+          {% if messages %}
+            {% for message in messages %}
+              <div style="background-color: #d1fae5; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #065f46; border: 1px solid #6ee7b7;">
+                <strong>✅</strong> {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <!-- The actual form -->
+          <!-- method="post" means data is sent securely when submitted -->
+          <form method="post" style="display: flex; flex-direction: column; gap: 25px;">
+            
+            <!-- CSRF token - required by Django for security -->
+            <!-- Prevents cross-site request forgery attacks -->
+            {% csrf_token %}
+            
+            <!-- Artists input field -->
+            <div>
+              <label for="artists" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 16px;">
+                Favorite Artists
+              </label>
+              <!-- value="{{ preferences.favorite_artists }}" pre-fills the form with saved data -->
+              <!-- If no data saved, shows empty (first time user visits) -->
+              <input 
+                type="text" 
+                id="artists" 
+                name="artists"
+                value="{{ preferences.favorite_artists }}"
+                placeholder="e.g., Taylor Swift, The Weeknd, Drake, Billie Eilish"
+                style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; box-sizing: border-box;"
+              >
+              <!-- Helper text below the input -->
+              <small style="color: #6b7280; font-size: 14px; display: block; margin-top: 5px;">
+                Separate multiple artists with commas (from any platform)
+              </small>
+            </div>
+            
+            <!-- Genres input field -->
+            <div>
+              <label for="genres" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 16px;">
+                Favorite Genres
+              </label>
+              <input 
+                type="text" 
+                id="genres" 
+                name="genres"
+                value="{{ preferences.favorite_genres }}"
+                placeholder="e.g., Pop, Hip-Hop, Rock, R&B, Country"
+                style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; box-sizing: border-box;"
+              >
+              <small style="color: #6b7280; font-size: 14px; display: block; margin-top: 5px;">
+                Separate multiple genres with commas
+              </small>
+            </div>
+            
+            <!-- Tracks input field (optional) -->
+            <div>
+              <label for="tracks" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 16px;">
+                Favorite Tracks <span style="color: #9ca3af; font-weight: 400;">(Optional)</span>
+              </label>
+              <!-- textarea for multiple lines of text -->
+              <textarea 
+                id="tracks" 
+                name="tracks" 
+                rows="4"
+                placeholder="e.g., Taylor Swift - Anti-Hero, The Weeknd - Blinding Lights, Billie Eilish - Bad Guy"
+                style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; box-sizing: border-box; resize: vertical;"
+              >{{ preferences.favorite_tracks }}</textarea>
+              <small style="color: #6b7280; font-size: 14px; display: block; margin-top: 5px;">
+                One per line or separated by commas
+              </small>
+            </div>
+            
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 10px;">
+              <!-- Save button - submits the form -->
+              <button 
+                type="submit" 
+                style="flex: 1; padding: 14px 24px; background-color: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: background-color 0.2s;"
+                onmouseover="this.style.backgroundColor='#4f46e5'"
+                onmouseout="this.style.backgroundColor='#6366f1'"
+              >
+                Save Preferences
+              </button>
+              
+              <!-- Cancel button - goes back to dashboard without saving -->
+              <a 
+                href="{% url 'dashboard' %}" 
+                style="flex: 1; padding: 14px 24px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; text-align: center; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s;"
+                onmouseover="this.style.backgroundColor='#d1d5db'"
+                onmouseout="this.style.backgroundColor='#e5e7eb'"
+              >
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2025 Harmonet. All rights reserved.</p>
+  </footer>
+</body>
+</html>
