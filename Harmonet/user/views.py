@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+
+
 from django.conf import settings
 
 
@@ -53,8 +55,27 @@ def user_logout(request):
     auth_logout(request)
     return redirect('index')
 
+@login_required
+def account_link(request):
+    token_info = request.session.get('spotify_token')
+    spotify_data = None
 
-
+    if token_info:
+        sp = spotipy.Spotify(auth=token_info['access_token'])
+        try:
+            spotify_user = sp.current_user()
+            spotify_data = {
+                'display_name': spotify_user.get('display_name'),
+                'email': spotify_user.get('email'),
+                'id': spotify_user.get('id'),
+            }
+        except Exception as e:
+            spotify_data = {'error': str(e)}
+    
+    return render(request, 'user/account_link.html', {
+        'title': 'Account Link',
+        'spotify_data': spotify_data,
+    })
 
 def profile(request):
     return render(request, 'user/profile.html', {'title': 'profile'})
@@ -92,7 +113,30 @@ def password_change(request):
 
 #########################Spotify OAuth######################
 
+# Spotify scopes
 scope = "user-top-read user-read-recently-played"
+
+# -----------------------------
+# Step 1: Spotify login
+# -----------------------------
+@login_required
+def spotify_login(request):
+    """
+    Start the Spotify OAuth flow. Requires user to be logged in to your site.
+    """
+    sp_oauth = SpotifyOAuth(
+        client_id=settings.SPOTIPY_CLIENT_ID,
+        client_secret=settings.SPOTIPY_CLIENT_SECRET,
+        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
+        scope=scope,
+        cache_path=None  # Optional: we store token in session, not cache file
+    )
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
+
+# -----------------------------
+# Step 2: Spotify callback
+# -----------------------------
 
 @login_required
 def spotify_login(request):
@@ -100,10 +144,10 @@ def spotify_login(request):
         client_id=settings.SPOTIPY_CLIENT_ID,
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
         redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope
+        scope=scope,
+        cache_path=None
     )
-    auth_url = sp_oauth.get_authorize_url()
-    return redirect(auth_url)
+    return redirect(sp_oauth.get_authorize_url())
 
 @login_required
 def spotify_callback(request):
@@ -111,15 +155,24 @@ def spotify_callback(request):
         client_id=settings.SPOTIPY_CLIENT_ID,
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
         redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope
+        scope=scope,
+        cache_path=None
     )
     code = request.GET.get('code')
-    token_info = sp_oauth.get_access_token(code)
-    request.session['spotify_token'] = token_info
-    return redirect('spotify_dashboard')
+    if code:
+        token_info = sp_oauth.get_access_token(code)
+        request.session['spotify_token'] = token_info
+    return redirect('account_link')  # After linking, go back here
 
+
+# -----------------------------
+# Step 3: Spotify Dashboard (optional)
+# -----------------------------
 @login_required
 def spotify_dashboard(request):
+    """
+    Example page showing top Spotify artists and tracks.
+    """
     token_info = request.session.get('spotify_token', None)
     if not token_info:
         return redirect('spotify_login')
@@ -132,6 +185,11 @@ def spotify_dashboard(request):
         'artists': top_artists,
         'tracks': top_tracks,
     })
+
+
+
+
+    
 @login_required
 def delete_account(request):
     if request.method == "POST":
