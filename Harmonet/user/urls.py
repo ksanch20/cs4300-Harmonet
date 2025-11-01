@@ -7,7 +7,10 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),  # login page
     path('logout/', views.user_logout, name='logout'),   # logout
     path('register/', views.register, name='register'),# register page
-    path('dashboard/', views.dashboard, name='dashboard'),  # dashboard
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('account_link/', views.account_link, name='account_link'),  # unique name
+
+
     path('profile/', views.profile, name='profile'),
     path('analytics/', views.analytics, name='analytics'),
     path('AI_Recommendation/', views.AI_Recommendation, name='AI_Recommendation'), #Change password
@@ -17,7 +20,7 @@ urlpatterns = [
     ####Spotify patterns####
     path('spotify/login/', views.spotify_login, name='spotify_login'),
     path('spotify/callback/', views.spotify_callback, name='spotify_callback'),
-    path('spotify/dashboard/', views.spotify_dashboard, name='spotify_dashboard'),
+    path('account/link/', views.account_link, name='account_link'),
 
     #Password reset URLS
     path('password-reset/', auth_views.PasswordResetView.as_view(template_name='user/password_reset.html'), name='password_reset'),
