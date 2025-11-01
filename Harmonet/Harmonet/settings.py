@@ -159,3 +159,9 @@ PASSWORD_RESET_TIMEOUT = 259200
 
 if 'test' in sys.argv:
     EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+
+
+
+LOGIN_URL = '/login/'                  # Where to redirect if user not logged in
+LOGIN_REDIRECT_URL = '/account_link/' # Where to redirect after login
+LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
