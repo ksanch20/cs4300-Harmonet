@@ -238,3 +238,125 @@
     padding: 1rem;
   }
   
+/* Music Preferences Page Styles */
+.content-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.info-box {
+  background-color: #e0f2fe;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border-left: 4px solid #0284c7;
+}
+
+.info-box p {
+  margin: 0;
+  color: #0c4a6e;
+}
+
+.success-message {
+  background-color: #d1fae5;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.preferences-form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.form-group {
+  /* Removed flex properties - let it be block level */
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif; /* Match body font */
+}
+
+.form-textarea {
+  resize: vertical;
+  font-family: 'Inter', sans-serif; /* Important for consistency */
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-helper-text {
+  color: #6b7280;
+  font-size: 14px;
+  display: block;
+  margin-top: 5px;
+}
+
+.optional-label {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #4f46e5;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  background-color: #e5e7eb;
+  color: #374151;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db;
+}
