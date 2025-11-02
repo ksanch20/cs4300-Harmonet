@@ -9,6 +9,7 @@ from spotipy.oauth2 import SpotifyOAuth
 
 
 from django.conf import settings
+from .models import MusicPreferences
 
 
 #################### index ####################################### 
@@ -218,3 +219,35 @@ def delete_account(request):
         user.delete() #Delete user account
         return redirect('index') #Redirect user to home page
     return redirect('profile') 
+
+#View for users to add/edit their general music preferences
+@login_required
+def music_preferences(request):
+    #Get existing preferences or create new blank ones for this user
+    preferences, created = MusicPreferences.objects.get_or_create(user=request.user)
+    
+    #Check if this is a form submission (user clicked "Save")
+    if request.method == 'POST':
+        # Extract form data from POST request
+        # .get() returns the value or empty string if field wasn't filled
+        preferences.favorite_artists = request.POST.get('artists', '')
+        preferences.favorite_genres = request.POST.get('genres', '')
+        preferences.favorite_tracks = request.POST.get('tracks', '')
+        
+        # Save to database
+        # This also automatically updates the 'updated_at' timestamp
+        preferences.save()
+        
+        # Create a success message that will be shown on the next page
+        messages.success(request, 'Your music preferences have been saved!')
+        
+        # Redirect user back to dashboard
+        # This prevents form resubmission if user refreshes the page
+        return redirect('music_preferences')
+    
+    # If not POST show the form
+    # Pass preferences object to template so form can be pre-filled
+    return render(request, 'user/music_preferences.html', {
+        'preferences': preferences,
+        'title': 'Music Preferences'
+    })
