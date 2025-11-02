@@ -27,8 +27,8 @@ database_url = os.environ.get('DATABASE_URL')
 DEBUG = True
 
 # Spotify variables and client ID
-SPOTIPY_CLIENT_ID = "8163880d49cf40f1af378ca5eb81cb1b"
-SPOTIPY_CLIENT_SECRET = "57450a22e7814187ad445492e5ca2140"
+SPOTIPY_CLIENT_ID = "9b551f0dbef84c38b0e3dd1790d8752e"
+SPOTIPY_CLIENT_SECRET = "fc4e30448e214be285df5707a19237d5"
 SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/account/link/"
 
 ALLOWED_HOSTS = [
