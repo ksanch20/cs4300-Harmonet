@@ -109,6 +109,38 @@
           <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
         </div>
       </section>
+
+      <hr class="section-divider" />
+      
+      <section class="most-listened-section">
+        <h2>Your Favorite SoundCloud Artists 🎶</h2>
+
+        <form method="POST">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn-add-artist">Add Artist</button>
+        </form>
+
+        <div class="scroll-wrapper">
+          <button class="scroll-btn left-btn" aria-label="Scroll Left">&#8249;</button>
+          <div class="artist-scroll">
+            {% for artist in artists %}
+            <div class="artist-card">
+              {% if artist.profile_url %}
+                <a href="{{ artist.profile_url }}" target="_blank">
+                 <p>{{ artist.name }}</p>
+               </a>
+             {% else %}
+               <p>{{ artist.name }}</p>
+              {% endif %}
+            </div>
+            {% empty %}
+            <p>No SoundCloud artists added yet.</p>
+            {% endfor %}
+          </div>
+         <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
+       </div>
+      </section>
       <p>
         test test test
       </p>
