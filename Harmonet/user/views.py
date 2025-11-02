@@ -186,8 +186,28 @@ def spotify_dashboard(request):
         'tracks': top_tracks,
     })
 
+#########################SoundCloud Form################################################
+@login_required
+def dashboard(request):
+    user = request.user
+    artists = SoundCloudArtist.objects.filter(user=user)
 
+    if request.method == 'POST':
+        form = SoundCloudArtistForm(request.POST)
+        if form.is_valid():
+            artist = form.save(commit=False)
+            artist.user = user
+            artist.save()
+            return redirect('dashboard')  # reload dashboard
+    else:
+        form = SoundCloudArtistForm()
 
+    context = {
+        'form': form,
+        'artists': artists,
+    }
+
+    return render(request, 'user/dashboard.html', context)
 
     
 @login_required
