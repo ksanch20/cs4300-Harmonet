@@ -13,3 +13,8 @@ class UserRegisterForm(UserCreationForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("A user with that email already exists.")
         return email
+
+class SoundCloudArtistForm(forms.ModelForm):
+    class Meta:
+        model = SoundCloudArtist
+        fields = ['name', 'profile_url']
