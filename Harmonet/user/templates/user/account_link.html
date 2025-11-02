@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title> Account Link | Harmonet</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'account_link.css' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="logo">Harmonet</div>
+    <div class="auth-buttons">
+      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+    </div>
+  </nav>
+
+
+  <div class="user-Container">
+    <h2> Welcome: {{ request.user.username }}</h2>
+    <h2> Please Link your Spotify and Youtube Music </h2>
+
+  </div>
+  <div class="cards-container">
+
+
+    <div class="account-card spotify-card">
+        <div class="card-content">
+
+            <div class="card-logo">
+                <img src="spotify-logo.png" alt="Spotify Logo">
+            </div>
+
+            <div class="card-info">
+                <h3>🎧 Connect Spotify</h3>
+                <p>Link your Spotify to view your listening stats</p>
+            </div>
+
+            <div class="card-action">
+                <a href="{% url 'spotify_login' %}" class="btn spotify-btn">Connect →</a>
+            </div>
+        </div>
+    </div>
+
+
+<div class="account-card youtube-card">
+  <div class="card-content">
+
+      <div class="card-logo">
+          <img src="youtube-logo.png" alt="YouTube Logo">
+      </div>
+
+      <div class="card-info">
+          <h3>▶ Connect YouTube</h3>
+          <p>Link your YouTube to view your watched videos and playlists</p>
+      </div>
+
+      <div class="card-action">
+          <a href="#" class="btn youtube-btn">Connect →</a>
+      </div>
+  </div>
+</div>
+
+
+<div class="auth-buttons">
+  <a href="{% url 'dashboard' %}" class="btn-logout">dashboard</a>
+</div>
+
+
+
+<h2>Spotify Account Link Status</h2>
+
+{% if spotify_data %}
+    {% if spotify_data.error %}
+        <p>Error fetching Spotify data: {{ spotify_data.error }}</p>
+    {% else %}
+        <p>Spotify display name: {{ spotify_data.display_name }}</p>
+        <p>Spotify email: {{ spotify_data.email }}</p>
+        <p>Spotify user id: {{ spotify_data.id }}</p>
+        <p>Your Spotify account is successfully linked!</p>
+    {% endif %}
+{% else %}
+    <p>You have not linked your Spotify account yet.</p>
+{% endif %}
+
+
+
+  <footer class="footer">
+    <p>&copy; 2025 Harmonet. All rights reserved.</p>
+  </footer>
+</body>
+
+</html>

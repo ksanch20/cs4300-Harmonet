@@ -1,0 +1,183 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f7f9fc;
+    color: #000000;
+}
+
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #5ca1d3;
+    color: white;
+}
+
+.navbar .logo {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.auth-buttons a {
+    color: white;
+    text-decoration: none;
+    background-color: #1e4ed8;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.auth-buttons a:hover {
+    background-color: #1a3fc5;
+}
+
+
+
+.user-Container{
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center;
+    padding: 2rem;
+}
+.cards-container {
+    display: flex;
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    gap: 2rem;
+    min-height: calc(100vh - 80px - 60px);
+    padding: 2rem;
+}
+
+
+.account-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    justify-content: space-between; /* logo + info + button spread */
+    align-items: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08); /* subtle shadow */
+}
+
+
+.card-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex: 1;
+}
+
+.card-logo img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+/* Info section */
+.card-info {
+    flex: 1;
+}
+
+.card-info h3 {
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: 0.3rem;
+    color: #1e2a38;
+}
+
+.card-info p {
+    font-weight: 400;
+    color: #4b5563;
+    font-size: 0.9rem;
+    margin-right: 75px;
+}
+
+.card-action {
+    display: flex;
+    align-items: center;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    color: white;
+    transition: background-color 0.2s;
+    
+}
+
+
+.spotify-btn {
+    background-color: #5ca1d3;
+}
+
+.spotify-btn:hover {
+    background-color: #28a745;
+}
+
+
+.youtube-btn {
+    background-color: #5ca1d3;
+}
+
+.youtube-btn:hover {
+    background-color: #ff0000; 
+}
+
+.footer {
+    background: #1e2a38;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    margin-top: auto;
+}
+
+@media (max-width: 600px) {
+    .account-card {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 1rem;
+    }
+
+    .card-action {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .card-logo img {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+
+
+.footer {
+    background: #1e2a38;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+  }
+  
