@@ -165,3 +165,5 @@ if 'test' in sys.argv:
 LOGIN_URL = '/login/'                  # Where to redirect if user not logged in
 LOGIN_REDIRECT_URL = '/account_link/' # Where to redirect after login
 LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
+
+OPENAI_API_KEY=config('OPENAI_API_KEY', default='')

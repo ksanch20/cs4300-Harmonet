@@ -31,4 +31,5 @@ urlpatterns = [
     #Music preferences
     path('music-preferences/', views.music_preferences, name='music_preferences'),
 
+    path('ai-recommendations/', views.ai_recommendations, name='ai_recommendations'),
 ]
