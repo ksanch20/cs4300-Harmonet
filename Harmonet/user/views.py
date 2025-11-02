@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
-from .forms import UserRegisterForm
+from .forms import UserRegisterForm, SoundCloudArtistForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import spotipy
@@ -9,7 +9,8 @@ from spotipy.oauth2 import SpotifyOAuth
 
 
 from django.conf import settings
-from .models import MusicPreferences
+from .models import MusicPreferences, SoundCloudArtist
+
 
 
 #################### index ####################################### 
