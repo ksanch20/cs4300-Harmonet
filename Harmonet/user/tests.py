@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.urls import reverse
+from user.models import MusicPreferences
 
 #Used ChatGPT to help write tests
 
@@ -301,3 +302,204 @@ class UserAuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Current Password')
         self.assertContains(response, 'New Password')
+
+
+
+# ========================================
+# MUSIC PREFERENCES 
+# ========================================
+
+class MusicPreferencesEssentialTests(TestCase):
+
+    def setUp(self):
+        """Create test user."""
+        self.user = User.objects.create_user(
+            username='musicuser',
+            email='music@example.com',
+            password='testpass123'
+        )
+        self.url = reverse('music_preferences')
+    
+    # ------ MODEL TESTS  ------
+    
+    def test_model_get_artists_list_works(self):
+        """Test the main list conversion methods work."""
+        prefs = MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Taylor Swift, Billie Eilish',
+            favorite_genres='Pop, Indie'
+        )
+        
+        # Test artists list
+        artists = prefs.get_artists_list()
+        self.assertEqual(len(artists), 2)
+        self.assertIn('Taylor Swift', artists)
+        
+        # Test genres list
+        genres = prefs.get_genres_list()
+        self.assertEqual(len(genres), 2)
+        self.assertIn('Pop', genres)
+    
+    def test_model_handles_empty_data(self):
+        """Test model handles empty fields correctly."""
+        prefs = MusicPreferences.objects.create(user=self.user, favorite_artists='')
+        self.assertEqual(prefs.get_artists_list(), [])
+    
+    def test_model_one_to_one_relationship(self):
+        """Test each user can only have one MusicPreferences."""
+        prefs1 = MusicPreferences.objects.create(user=self.user)
+        prefs2, created = MusicPreferences.objects.get_or_create(user=self.user)
+        
+        self.assertFalse(created)  # Should not create new one
+        self.assertEqual(prefs1.id, prefs2.id)  # Same object
+    
+    # ------ VIEW TESTS  ------
+    
+    def test_view_creates_preferences_automatically(self):
+        """Test preferences are auto-created on first visit."""
+        self.client.login(username='musicuser', password='testpass123')
+        
+        # No preferences yet
+        self.assertFalse(MusicPreferences.objects.filter(user=self.user).exists())
+        
+        # Visit page
+        self.client.get(self.url)
+        
+        # Now preferences exist
+        self.assertTrue(MusicPreferences.objects.filter(user=self.user).exists())
+    
+    def test_view_saves_preferences(self):
+        """Test POST request saves preferences."""
+        self.client.login(username='musicuser', password='testpass123')
+        
+        response = self.client.post(self.url, {
+            'artists': 'Taylor Swift',
+            'genres': 'Pop',
+            'tracks': 'Anti-Hero'
+        })
+        
+        # Should redirect
+        self.assertEqual(response.status_code, 302)
+        
+        # Data should be saved
+        prefs = MusicPreferences.objects.get(user=self.user)
+        self.assertEqual(prefs.favorite_artists, 'Taylor Swift')
+        self.assertEqual(prefs.favorite_genres, 'Pop')
+    
+    def test_view_updates_existing_preferences(self):
+        """Test updating preferences doesn't create duplicates."""
+        self.client.login(username='musicuser', password='testpass123')
+        
+        # First save
+        self.client.post(self.url, {'artists': 'Old Artist', 'genres': '', 'tracks': ''})
+        
+        # Second save
+        self.client.post(self.url, {'artists': 'New Artist', 'genres': '', 'tracks': ''})
+        
+        # Only one preference object should exist
+        self.assertEqual(MusicPreferences.objects.filter(user=self.user).count(), 1)
+        
+        # Should have new value
+        prefs = MusicPreferences.objects.get(user=self.user)
+        self.assertEqual(prefs.favorite_artists, 'New Artist')
+    
+    def test_view_shows_success_message(self):
+        """Test success message is displayed after saving."""
+        self.client.login(username='musicuser', password='testpass123')
+        
+        response = self.client.post(self.url, {
+            'artists': 'Test',
+            'genres': '',
+            'tracks': ''
+        }, follow=True)
+        
+        messages = list(response.context['messages'])
+        self.assertEqual(len(messages), 1)
+        self.assertIn('saved', str(messages[0]).lower())
+
+
+# ========================================
+# AI RECOMMENDATIONS 
+# ========================================
+
+class AIRecommendationsEssentialTests(TestCase):
+    
+    def setUp(self):
+        """Create test user."""
+        self.user = User.objects.create_user(
+            username='aiuser',
+            email='ai@example.com',
+            password='testpass123'
+        )
+        self.url = reverse('ai_recommendations')
+    
+    
+    def test_view_accessible_when_logged_in(self):
+        """Test logged-in users can access page."""
+        self.client.login(username='aiuser', password='testpass123')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_user_without_preferences_gets_error(self):
+        """Test user without preferences gets error message."""
+        self.client.login(username='aiuser', password='testpass123')
+        
+        # POST without having preferences
+        response = self.client.post(self.url)
+        
+        # Should show error
+        self.assertIsNotNone(response.context.get('error_message'))
+    
+    def test_gather_music_data_function(self):
+        """Test the data gathering function works."""
+        from user.ai_service import gather_user_music_data
+        
+        # User with no preferences
+        data = gather_user_music_data(self.user)
+        self.assertFalse(data['has_data'])
+        
+        # User with preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Taylor Swift'
+        )
+        data = gather_user_music_data(self.user)
+        self.assertTrue(data['has_data'])
+        self.assertIn('Taylor Swift', data['manual_artists'])
+
+
+# ========================================
+# INTEGRATION TEST 
+# ========================================
+
+class AIRecommendationIntegrationTest(TestCase):
+    """Test the main user flow works end-to-end."""
+    
+    def test_complete_user_journey(self):
+        """Test: signup → add preferences → access AI page."""
+        
+        # 1. Signup
+        response = self.client.post(reverse('register'), {
+            'username': 'newuser',
+            'email': 'new@example.com',
+            'password1': 'TestPass123',
+            'password2': 'TestPass123'
+        })
+        self.assertEqual(response.status_code, 302)  # Redirects after signup
+        
+        # 2. Add music preferences
+        response = self.client.post(reverse('music_preferences'), {
+            'artists': 'Taylor Swift',
+            'genres': 'Pop',
+            'tracks': ''
+        })
+        self.assertEqual(response.status_code, 302)  # Redirects after save
+        
+        # 3. Verify preferences saved
+        user = User.objects.get(username='newuser')
+        prefs = MusicPreferences.objects.get(user=user)
+        self.assertEqual(prefs.favorite_artists, 'Taylor Swift')
+        
+        # 4. Can access AI recommendations page
+        response = self.client.get(reverse('ai_recommendations'))
+        self.assertEqual(response.status_code, 200)

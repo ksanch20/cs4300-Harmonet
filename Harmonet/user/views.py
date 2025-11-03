@@ -6,8 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-
-
+from .ai_service import get_music_recommendations
 from django.conf import settings
 from .models import MusicPreferences, SoundCloudArtist
 
@@ -251,4 +250,30 @@ def music_preferences(request):
     return render(request, 'user/music_preferences.html', {
         'preferences': preferences,
         'title': 'Music Preferences'
+    })
+
+
+
+@login_required
+def ai_recommendations(request):
+    """
+    Display AI-generated music recommendations for the user.
+    """
+    
+    recommendations = None
+    error_message = None
+    
+    # Check if user clicked "Generate Recommendations" button
+    if request.method == 'POST':
+        result = get_music_recommendations(request.user)
+        
+        if result['success']:
+            recommendations = result['recommendations']
+        else:
+            error_message = result['message']
+    
+    return render(request, 'user/ai_recommendations.html', {
+        'recommendations': recommendations,
+        'error_message': error_message,
+        'title': 'AI Recommendations'
     })
