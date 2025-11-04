@@ -188,7 +188,7 @@ def spotify_dashboard(request):
     top_artists = sp.current_user_top_artists(limit=5)['items']
     top_tracks = sp.current_user_top_tracks(limit=5)['items']
 
-    return render(request, 'dashboard.html', {
+    return render(request, 'user/dashboard.html', {
         'artists': top_artists,
         'tracks': top_tracks,
     })
