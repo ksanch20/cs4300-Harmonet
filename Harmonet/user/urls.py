@@ -9,6 +9,8 @@ urlpatterns = [
     path('register/', views.register, name='register'),# register page
     path('dashboard/', views.dashboard, name='dashboard'),
     path('account_link/', views.account_link, name='account_link'),  # unique name
+    path('user_artist/', views.user_artist, name='user_artist'),
+
 
 
     path('profile/', views.profile, name='profile'),

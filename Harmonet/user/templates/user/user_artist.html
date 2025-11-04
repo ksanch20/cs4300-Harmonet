@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | Harmonet</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'user_artist.css' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="logo">Harmonet</div>
+      
+    <div class="auth-buttons">
+      <a href="{% url 'dashboard' %}" class="btn-dashboard">Dashboard</a>
+      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+    </div>
+  </nav>
+
+  <main class="dashboard-container">
+    <div class="dashboard-box">
+      <hr class="section-divider" />
+  
+      <section class="artist-section">
+        <h2>Your Favorite Artists 🎶</h2>
+        <p>Add your favorite artists below and access them easily.</p>
+  
+        <form method="POST" class="artist-form">
+          {% csrf_token %}
+          
+          <div class="form-group">
+            {{ form.name.label_tag }}
+            {{ form.name }}
+          </div>
+  
+          <div class="form-group">
+            {{ form.profile_url.label_tag }}
+            {{ form.profile_url }}
+          </div>
+  
+          <div class="form-group">
+            {{ form.genre.label_tag }}
+            <div class="select-wrapper">
+              {{ form.genre }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            {{ form.average_time_listened.label_tag }}
+            <div class="select-wrapper">
+              {{ form.average_time_listened }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            {{ form.rating.label_tag }}
+            <div class="select-wrapper">
+              {{ form.rating }}
+            </div>
+          </div>
+  
+          <button type="submit" class="btn-add-artist">+ Add Artist</button>
+        </form>
+  
+        <hr class="divider">
+  
+        <section class="artist-list-section">
+          {% if artists %}
+            {% for artist in artists %}
+              <div class="artist-card">
+                
+                <div class="artist-info">
+                  <div class="artist-avatar">{{ artist.name|slice:":1" }}</div>
+  
+                  <div>
+                    {% if artist.profile_url %}
+                      <a href="{{ artist.profile_url }}" target="_blank" class="artist-link">{{ artist.name }}</a>
+                    {% else %}
+                      <span class="artist-name">{{ artist.name }}</span>
+                    {% endif %}
+  
+                    <p class="artist-genre">🎵 Genre: {{ artist.genre|default:"Not specified" }}</p>
+                    <p class="artist-time">⏱️ Avg. Time Listened: {{ artist.average_time_listened|default:"N/A" }} minutes</p>
+                    <p class="artist-rating">⭐ Rating: {{ artist.rating|default:"N/A" }}</p>
+                  </div>
+                </div>
+  
+                <form method="POST" style="margin-left: 1rem;">
+                  {% csrf_token %}
+                  <input type="hidden" name="delete_artist_id" value="{{ artist.id }}">
+                  <button type="submit" class="btn-remove-artist">Remove</button>
+                </form>
+              </div>
+            {% endfor %}
+  
+            <div class="pagination">
+              {% if artists.has_previous %}
+                <a href="?page={{ artists.previous_page_number }}" class="page-btn">Previous</a>
+              {% endif %}
+              <span class="current-page">Page {{ artists.number }} of {{ artists.paginator.num_pages }}</span>
+              {% if artists.has_next %}
+                <a href="?page={{ artists.next_page_number }}" class="page-btn">Next</a>
+              {% endif %}
+            </div>
+  
+          {% else %}
+            <p class="no-artists-msg">No SoundCloud artists added yet. Add one above!</p>
+          {% endif %}
+        </section>
+      </section>
+  
+      <hr class="section-divider" />
+    </div>
+  </main>
+  
+  <footer class="footer">
+    <p>&copy; 2025 Harmonet. All rights reserved.</p>
+  </footer>
+  
+</body>
+</html>
