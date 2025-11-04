@@ -146,17 +146,6 @@ def spotify_login(request):
 # -----------------------------
 
 @login_required
-def spotify_login(request):
-    sp_oauth = SpotifyOAuth(
-        client_id=settings.SPOTIPY_CLIENT_ID,
-        client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope,
-        cache_path=None
-    )
-    return redirect(sp_oauth.get_authorize_url())
-
-@login_required
 def spotify_callback(request):
     sp_oauth = SpotifyOAuth(
         client_id=settings.SPOTIPY_CLIENT_ID,
