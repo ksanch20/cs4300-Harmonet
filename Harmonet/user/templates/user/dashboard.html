@@ -72,42 +72,34 @@
 
       <section class="most-listened-section">
         <h2>Listen to Your Top 5 Favorite Artist?</h2>
-        <div class="scroll-wrapper">
-          <button class="scroll-btn left-btn" aria-label="Scroll Left">&#8249;</button>
-          <div class="artist-scroll">
-            <div class="artist-card">
-              <div class="artist-image">
-                <img src="images/artist1.jpg" alt="Artist 1" />
+        
+        {% if spotify_connected and top_artists %}
+          <!-- Show Spotify Artists -->
+          <div class="scroll-wrapper">
+            <button class="scroll-btn left-btn" aria-label="Scroll Left">&#8249;</button>
+            <div class="artist-scroll">
+              {% for artist in top_artists %}
+              <div class="artist-card">
+                <div class="artist-image">
+                  {% if artist.image_url %}
+                    <img src="{{ artist.image_url }}" alt="{{ artist.name }}" />
+                  {% else %}
+                    <img src="{% static 'images/default-artist.jpg' %}" alt="{{ artist.name }}" />
+                  {% endif %}
+                </div>
+                <p>{{ artist.name }}</p>
               </div>
-              <p>Artist 1</p>
+              {% endfor %}
             </div>
-            <div class="artist-card">
-              <div class="artist-image">
-                <img src="images/artist2.jpg" alt="Artist 2" />
-              </div>
-              <p>Artist 2</p>
-            </div>
-            <div class="artist-card">
-              <div class="artist-image">
-                <img src="images/artist3.jpg" alt="Artist 3" />
-              </div>
-              <p>Artist 3</p>
-            </div>
-            <div class="artist-card">
-              <div class="artist-image">
-                <img src="images/artist4.jpg" alt="Artist 4" />
-              </div>
-              <p>Artist 4</p>
-            </div>
-            <div class="artist-card">
-              <div class="artist-image">
-                <img src="images/artist5.jpg" alt="Artist 5" />
-              </div>
-              <p>Artist 5</p>
-            </div>
+            <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
           </div>
-          <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
-        </div>
+        {% else %}
+          <!-- Show placeholder or connect message -->
+          <div style="text-align: center; padding: 2rem; background: white; border-radius: 12px; margin-top: 1.5rem;">
+            <p style="color: #666; margin-bottom: 1rem;">Connect your Spotify account to see your top artists!</p>
+            <a href="{% url 'account_link' %}" style="display: inline-block; padding: 12px 24px; background: #1DB954; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Connect Spotify</a>
+          </div>
+        {% endif %}
       </section>
 
     <hr class="section-divider" />

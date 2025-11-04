@@ -64,7 +64,21 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'user/dashboard.html', {'title': 'Dashboard'})
+    """Dashboard showing user's Spotify top artists and tracks from database"""
+    
+    # Get user's top artists and tracks from database
+    top_artists = SpotifyTopArtist.objects.filter(user=request.user)[:5]
+    top_tracks = SpotifyTopTrack.objects.filter(user=request.user)[:5]
+    
+    # Check if user has Spotify connected
+    spotify_connected = is_spotify_connected(request.user)
+    
+    return render(request, 'user/dashboard.html', {
+        'title': 'Dashboard',
+        'top_artists': top_artists,
+        'top_tracks': top_tracks,
+        'spotify_connected': spotify_connected,
+    })
 
 # ---------------- Logout -----------------
 def user_logout(request):
@@ -73,23 +87,21 @@ def user_logout(request):
 
 @login_required
 def account_link(request):
-    token_info = request.session.get('spotify_token')
+    """Account linking page - shows connection status"""
+    spotify_connected = is_spotify_connected(request.user)
+    
     spotify_data = None
-
-    if token_info:
-        sp = spotipy.Spotify(auth=token_info['access_token'])
-        try:
-            spotify_user = sp.current_user()
-            spotify_data = {
-                'display_name': spotify_user.get('display_name'),
-                'email': spotify_user.get('email'),
-                'id': spotify_user.get('id'),
-            }
-        except Exception as e:
-            spotify_data = {'error': str(e)}
+    if spotify_connected:
+        spotify_account = request.user.spotify_account
+        spotify_data = {
+            'display_name': spotify_account.display_name,
+            'email': spotify_account.email,
+            'spotify_id': spotify_account.spotify_id,
+        }
     
     return render(request, 'user/account_link.html', {
         'title': 'Account Link',
+        'spotify_connected': spotify_connected,
         'spotify_data': spotify_data,
     })
 
