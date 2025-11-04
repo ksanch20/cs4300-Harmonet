@@ -68,14 +68,14 @@ class SoundCloudArtistForm(forms.ModelForm):
         fields = ['name', 'profile_url', 'genre', 'average_time_listened', 'rating']
         labels = {
             'name': 'Artist Name',
-            'profile_url': 'SoundCloud Profile URL',
+            'profile_url': 'SProfile URL',
             'genre': 'Genre',
             'average_time_listened': 'Average Time Listened (minutes)',
             'rating': 'Rating (1-5)',
         }
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'e.g., Fred again..', 'class': 'form-control'}),
-            'profile_url': forms.URLInput(attrs={'placeholder': 'https://soundcloud.com/artist', 'class': 'form-control'}),
+            'profile_url': forms.URLInput(attrs={'placeholder': 'https://artistURL', 'class': 'form-control'}),
         }
 
     def clean_average_time_listened(self):
