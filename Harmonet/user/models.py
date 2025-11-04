@@ -39,10 +39,32 @@ class MusicPreferences(models.Model):
     class Meta:
         verbose_name_plural = "Music Preferences"
         
+        
 class SoundCloudArtist(models.Model):
+
+    GENRE_CHOICES = [
+        ('Rap', 'Rap'),
+        ('Pop', 'Pop'),
+        ('Rock', 'Rock'),
+        ('Hip-Hop', 'Hip-Hop'),
+        ('Electronic', 'Electronic'),
+        ('Other', 'Other'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='soundcloud_artists')
     name = models.CharField(max_length=255)
     profile_url = models.URLField(blank=True, null=True)
+    genre = models.CharField(max_length=100, blank=True, null=True, choices=GENRE_CHOICES)
+    average_time_listened = models.FloatField(blank=True, null=True, help_text="Average listening time in minutes")
+    
+
+    rating = models.IntegerField(
+        blank=True,
+        null=True,
+        choices=[(i, str(i)) for i in range(1, 6)],
+        help_text="Rate this artist from 1 to 5"
+    )
+
     added_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
