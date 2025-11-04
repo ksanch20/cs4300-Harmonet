@@ -141,20 +141,27 @@ def spotify_login(request):
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-# -----------------------------
-# Step 2: Spotify callback
-# -----------------------------
 
-@login_required
-def spotify_login(request):
+def get_token(request):
+    token_info = request.session.get('spotify_token')
+    if not token_info:
+        return None
+
     sp_oauth = SpotifyOAuth(
         client_id=settings.SPOTIPY_CLIENT_ID,
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope,
-        cache_path=None
+        redirect_uri=settings.SPOTIPY_REDIRECT_URI
     )
-    return redirect(sp_oauth.get_authorize_url())
+
+    if sp_oauth.is_token_expired(token_info):
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        request.session['spotify_token'] = token_info
+    return token_info
+
+
+# -----------------------------
+# Step 2: Spotify callback
+# -----------------------------
 
 @login_required
 def spotify_callback(request):
@@ -180,7 +187,7 @@ def spotify_dashboard(request):
     """
     Example page showing top Spotify artists and tracks.
     """
-    token_info = request.session.get('spotify_token', None)
+    token_info = get_token(request)
     if not token_info:
         return redirect('spotify_login')
 
@@ -188,7 +195,7 @@ def spotify_dashboard(request):
     top_artists = sp.current_user_top_artists(limit=5)['items']
     top_tracks = sp.current_user_top_tracks(limit=5)['items']
 
-    return render(request, 'dashboard.html', {
+    return render(request, 'user/dashboard.html', {
         'artists': top_artists,
         'tracks': top_tracks,
     })
