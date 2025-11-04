@@ -29,12 +29,22 @@ from django.db.models import Q
 
 from django.contrib.auth.models import User
 from django.conf import settings
-from .models import MusicPreferences, SoundCloudArtist
+from .models import MusicPreferences, SoundCloudArtist, SpotifyTopArtist, SpotifyTopTrack
 
 
 from django.core.paginator import Paginator
 from .models import SoundCloudArtist
 from .forms import SoundCloudArtistForm
+
+
+from .spotify_service import (
+    get_spotify_oauth, 
+    save_spotify_connection, 
+    fetch_and_save_top_artists,
+    fetch_and_save_top_tracks,
+    is_spotify_connected,
+    disconnect_spotify
+)
 
 
 #################### index ####################################### 
@@ -156,30 +166,11 @@ def password_change(request):
 def spotify_login(request):
     """Start the Spotify OAuth flow"""
     sp_oauth = get_spotify_oauth()
+    """Start the Spotify OAuth flow"""
+    sp_oauth = get_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-
-def get_token(request):
-    token_info = request.session.get('spotify_token')
-    if not token_info:
-        return None
-
-    sp_oauth = SpotifyOAuth(
-        client_id=settings.SPOTIPY_CLIENT_ID,
-        client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI
-    )
-
-    if sp_oauth.is_token_expired(token_info):
-        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-        request.session['spotify_token'] = token_info
-    return token_info
-
-
-# -----------------------------
-# Step 2: Spotify callback
-# -----------------------------
 
 @login_required
 def spotify_callback(request):
@@ -188,7 +179,13 @@ def spotify_callback(request):
     Save connection and fetch user's top artists/tracks
     """
     sp_oauth = get_spotify_oauth()
+    """
+    Handle Spotify OAuth callback
+    Save connection and fetch user's top artists/tracks
+    """
+    sp_oauth = get_spotify_oauth()
     code = request.GET.get('code')
+    
     
     if code:
         try:
@@ -216,13 +213,6 @@ def spotify_disconnect(request):
         disconnect_spotify(request.user)
         messages.success(request, 'Spotify account disconnected successfully.')
     return redirect('account_link')
-def spotify_dashboard(request):
-    """
-    Example page showing top Spotify artists and tracks.
-    """
-    token_info = get_token(request)
-    if not token_info:
-        return redirect('spotify_login')
 
 
 @login_required
@@ -241,10 +231,6 @@ def spotify_refresh_data(request):
             messages.error(request, 'Please connect your Spotify account first.')
     
     return redirect('dashboard')
-    return render(request, 'user/dashboard.html', {
-        'artists': top_artists,
-        'tracks': top_tracks,
-    })
 
 #########################SoundCloud Form################################################
 
