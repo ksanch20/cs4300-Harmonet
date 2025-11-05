@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Friends</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'profile_style.css' %}" />
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
+    </div>
+<!-- dashboard.html -->
+<div class="content">
+    <!-- Search Section -->
+    <section class="search-section">
+        <h3>Find Friends</h3>
+        <form method="get" action="{% url 'friends_dashboard' %}">
+            <input 
+                type="text" 
+                name="search" 
+                placeholder="Search by username or email..." 
+                value="{{ search_query }}"
+                autofocus
+            >
+            <button type="submit">Search</button>
+            {% if search_query %}
+                <a href="{% url 'friends_dashboard' %}">Clear</a>
+            {% endif %}
+        </form>
+        
+        {% if search_query %}
+            <div class="search-results">
+                <p>Search Results for "{{ search_query }}"</p>
+                {% if search_results %}
+                    {% for user in search_results %}
+                        <div class="search-result-item">
+                            <a href="{% url 'profile' %}">{{ user.username }}</a>
+                            {% if user.email %}
+                                <span class="email">{{ user.email }}</span>
+                            {% endif %}
+                            <form method="post" action="{% url 'send_friend_request' user.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit">Add Friend</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No users found matching "{{ search_query }}"</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
+
+    <!-- Pending Requests Section -->
+    <section>
+        <h3>Friend Requests ({{ pending_received.count }})</h3>
+        {% if pending_received %}
+            {% for request in pending_received %}
+                <div class="request-item">
+                    <span>{{ request.from_user.username }}</span>
+                    <form method="post" action="{% url 'accept_friend_request' request.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'decline_friend_request' request.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit">Decline</button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No pending friend requests</p>
+        {% endif %}
+    </section>
+
+    <!-- Friends List Section -->
+    <section>
+        <h3>My Friends ({{ friends.count }})</h3>
+        {% if friends %}
+            {% for friend in friends %}
+                <div class="friend-item">
+                    <a href="{% url 'profile' %}">{{ friend.username }}</a>
+                    <form method="post" action="{% url 'remove_friend' friend.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit">Remove</button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>You don't have any friends yet. Search above to add some!</p>
+        {% endif %}
+    </section>
+
+    <!-- Sent Requests Section -->
+    <section>
+        <h3>Pending Sent Requests ({{ pending_sent.count }})</h3>
+        {% if pending_sent %}
+            {% for request in pending_sent %}
+                <div>{{ request.to_user.username }} - Waiting for response</div>
+            {% endfor %}
+        {% else %}
+            <p>No pending sent requests</p>
+        {% endif %}
+    </section>
+</div>
+</body>
