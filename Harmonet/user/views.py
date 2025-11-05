@@ -24,6 +24,12 @@ from .spotify_service import (
     is_spotify_connected,
     disconnect_spotify
 )
+from django.db import models
+from django.db.models import Q
+
+from django.contrib.auth.models import User
+from django.conf import settings
+from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager
 
 
 
@@ -306,3 +312,107 @@ def ai_recommendations(request):
         'error_message': error_message,
         'title': 'AI Recommendations'
     })
+###############################FRIEND REQUESTS#########################
+# views.py
+
+
+@login_required
+def friends_dashboard(request):
+    friends = FriendRequest.objects.friends(request.user)
+    pending_received = FriendRequest.objects.pending_requests(request.user)
+    pending_sent = FriendRequest.objects.filter(
+        from_user=request.user, 
+        status='pending'
+    )
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    search_results = []
+    
+    if search_query:
+        # Get all friend request user IDs (both directions, all statuses)
+        friend_request_users = FriendRequest.objects.filter(
+            Q(from_user=request.user) | Q(to_user=request.user)
+        ).values_list('from_user_id', 'to_user_id')
+        
+        # Flatten the list to get all user IDs involved in requests
+        related_user_ids = set()
+        for from_id, to_id in friend_request_users:
+            related_user_ids.add(from_id)
+            related_user_ids.add(to_id)
+        
+        # Search users by username or email, exclude self and existing connections
+        search_results = User.objects.filter(
+            Q(username__icontains=search_query) | 
+            Q(email__icontains=search_query)
+        ).exclude(
+            id=request.user.id  # Exclude self
+        ).exclude(
+            id__in=related_user_ids  # Exclude anyone with existing request/friendship
+        )[:10]  # Limit to 10 results
+    
+    context = {
+        'friends': friends,
+        'pending_received': pending_received,
+        'pending_sent': pending_sent,
+        'search_query': search_query,
+        'search_results': search_results,
+    }
+    return render(request, 'user/friends_dashboard.html', context)
+
+@login_required
+def send_friend_request(request, user_id):
+    to_user = get_object_or_404(User, id=user_id)
+    
+    if to_user == request.user:
+        messages.error(request, "You cannot send a friend request to yourself.")
+        return redirect('profile')
+    # Check if request already exists
+    existing = FriendRequest.objects.filter(
+        models.Q(from_user=request.user, to_user=to_user) |
+        models.Q(from_user=to_user, to_user=request.user)
+    ).first()
+    
+    if existing:
+        if existing.status == 'accepted':
+            messages.info(request, "You are already friends.")
+        elif existing.status == 'pending':
+            messages.info(request, "Friend request already pending.")
+        else:
+            messages.info(request, "A friend request already exists.")
+    else:
+        FriendRequest.objects.create(from_user=request.user, to_user=to_user)
+        messages.success(request, f"Friend request sent to {to_user.username}.")
+    
+    return render(request, 'user/friends_dashboard.html', context)
+
+@login_required
+def accept_friend_request(request, request_id):
+    friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
+    friend_request.status = 'accepted'
+    friend_request.save()
+    messages.success(request, f"You are now friends with {friend_request.from_user.username}.")
+    return render(request, 'user/friends_dashboard.html', context)
+
+@login_required
+def decline_friend_request(request, request_id):
+    friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
+    friend_request.status = 'declined'
+    friend_request.save()
+    messages.info(request, "Friend request declined.")
+    return redirect('friends_dashboard')
+
+@login_required
+def remove_friend(request, user_id):
+    friend = get_object_or_404(User, id=user_id)
+    
+    FriendRequest.objects.filter(
+        models.Q(from_user=request.user, to_user=friend) |
+        models.Q(from_user=friend, to_user=request.user),
+        status='accepted'
+    ).delete()
+    
+    messages.success(request, f"Removed {friend.username} from friends.")
+    return redirect('friends_dashboard')
+
+
