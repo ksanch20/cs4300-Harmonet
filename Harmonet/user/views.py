@@ -326,8 +326,7 @@ def send_friend_request(request, user_id):
     else:
         FriendRequest.objects.create(from_user=request.user, to_user=to_user)
         messages.success(request, f"Friend request sent to {to_user.username}.")
-    
-    return render(request, 'user/friends_dashboard.html', context)
+    return redirect('friends_dashboard')
 
 @login_required
 def accept_friend_request(request, request_id):
@@ -335,7 +334,7 @@ def accept_friend_request(request, request_id):
     friend_request.status = 'accepted'
     friend_request.save()
     messages.success(request, f"You are now friends with {friend_request.from_user.username}.")
-   return render(request, 'user/friends_dashboard.html', context))
+    return redirect('friends_dashboard')
 
 @login_required
 def decline_friend_request(request, request_id):
