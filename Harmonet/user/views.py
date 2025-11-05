@@ -6,13 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from django.db import models
-from django.db.models import Q
-
-from django.contrib.auth.models import User
+from .ai_service import get_music_recommendations
 from django.conf import settings
-from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager
+from .models import MusicPreferences, SoundCloudArtist
 
+
+from django.core.paginator import Paginator
+from .models import SoundCloudArtist
+from .forms import SoundCloudArtistForm
 
 
 #################### index ####################################### 
@@ -90,7 +91,8 @@ def analytics(request):
 def AI_Recommendation(request):
     return render(request, 'user/AI_Recommendation.html', {'title': 'AI_Recommendation'})
 
-
+def user_artist(request):
+    return render(request, 'user/user_artist.html', {'title': 'user_artist'})
 
 # Add this function to your views.py
 @login_required
@@ -138,20 +140,27 @@ def spotify_login(request):
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-# -----------------------------
-# Step 2: Spotify callback
-# -----------------------------
 
-@login_required
-def spotify_login(request):
+def get_token(request):
+    token_info = request.session.get('spotify_token')
+    if not token_info:
+        return None
+
     sp_oauth = SpotifyOAuth(
         client_id=settings.SPOTIPY_CLIENT_ID,
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope,
-        cache_path=None
+        redirect_uri=settings.SPOTIPY_REDIRECT_URI
     )
-    return redirect(sp_oauth.get_authorize_url())
+
+    if sp_oauth.is_token_expired(token_info):
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        request.session['spotify_token'] = token_info
+    return token_info
+
+
+# -----------------------------
+# Step 2: Spotify callback
+# -----------------------------
 
 @login_required
 def spotify_callback(request):
@@ -177,7 +186,7 @@ def spotify_dashboard(request):
     """
     Example page showing top Spotify artists and tracks.
     """
-    token_info = request.session.get('spotify_token', None)
+    token_info = get_token(request)
     if not token_info:
         return redirect('spotify_login')
 
@@ -185,24 +194,36 @@ def spotify_dashboard(request):
     top_artists = sp.current_user_top_artists(limit=5)['items']
     top_tracks = sp.current_user_top_tracks(limit=5)['items']
 
-    return render(request, 'dashboard.html', {
+    return render(request, 'user/dashboard.html', {
         'artists': top_artists,
         'tracks': top_tracks,
     })
 
 #########################SoundCloud Form################################################
+
 @login_required
-def dashboard(request):
+def user_artist(request):
     user = request.user
-    artists = SoundCloudArtist.objects.filter(user=user)
+    artists_list = SoundCloudArtist.objects.filter(user=user).order_by('-added_on')
+
+    paginator = Paginator(artists_list, 5)
+    page_number = request.GET.get('page')
+    artists = paginator.get_page(page_number)
 
     if request.method == 'POST':
+        if 'delete_artist_id' in request.POST:
+            artist_id = request.POST.get('delete_artist_id')
+            artist = get_object_or_404(SoundCloudArtist, id=artist_id, user=user)
+            artist.delete()
+            return redirect('user_artist')
+
+
         form = SoundCloudArtistForm(request.POST)
         if form.is_valid():
             artist = form.save(commit=False)
             artist.user = user
             artist.save()
-            return redirect('dashboard')  # reload dashboard
+            return redirect('user_artist')
     else:
         form = SoundCloudArtistForm()
 
@@ -211,9 +232,9 @@ def dashboard(request):
         'artists': artists,
     }
 
-    return render(request, 'user/dashboard.html', context)
+    return render(request, 'user/user_artist.html', context)
 
-    
+
 @login_required
 def delete_account(request):
     if request.method == "POST":
@@ -255,106 +276,28 @@ def music_preferences(request):
         'title': 'Music Preferences'
     })
 
-###############################FRIEND REQUESTS#########################
-# views.py
 
 
 @login_required
-def friends_dashboard(request):
-    friends = FriendRequest.objects.friends(request.user)
-    pending_received = FriendRequest.objects.pending_requests(request.user)
-    pending_sent = FriendRequest.objects.filter(
-        from_user=request.user, 
-        status='pending'
-    )
+def ai_recommendations(request):
+    """
+    Display AI-generated music recommendations for the user.
+    """
     
-    # Search functionality
-    search_query = request.GET.get('search', '')
-    search_results = []
+    recommendations = None
+    error_message = None
     
-    if search_query:
-        # Get all friend request user IDs (both directions, all statuses)
-        friend_request_users = FriendRequest.objects.filter(
-            Q(from_user=request.user) | Q(to_user=request.user)
-        ).values_list('from_user_id', 'to_user_id')
+    # Check if user clicked "Generate Recommendations" button
+    if request.method == 'POST':
+        result = get_music_recommendations(request.user)
         
-        # Flatten the list to get all user IDs involved in requests
-        related_user_ids = set()
-        for from_id, to_id in friend_request_users:
-            related_user_ids.add(from_id)
-            related_user_ids.add(to_id)
-        
-        # Search users by username or email, exclude self and existing connections
-        search_results = User.objects.filter(
-            Q(username__icontains=search_query) | 
-            Q(email__icontains=search_query)
-        ).exclude(
-            id=request.user.id  # Exclude self
-        ).exclude(
-            id__in=related_user_ids  # Exclude anyone with existing request/friendship
-        )[:10]  # Limit to 10 results
-    
-    context = {
-        'friends': friends,
-        'pending_received': pending_received,
-        'pending_sent': pending_sent,
-        'search_query': search_query,
-        'search_results': search_results,
-    }
-    return render(request, 'user/friends_dashboard.html', context)
-
-@login_required
-def send_friend_request(request, user_id):
-    to_user = get_object_or_404(User, id=user_id)
-    
-    if to_user == request.user:
-        messages.error(request, "You cannot send a friend request to yourself.")
-        return redirect('profile')
-    # Check if request already exists
-    existing = FriendRequest.objects.filter(
-        models.Q(from_user=request.user, to_user=to_user) |
-        models.Q(from_user=to_user, to_user=request.user)
-    ).first()
-    
-    if existing:
-        if existing.status == 'accepted':
-            messages.info(request, "You are already friends.")
-        elif existing.status == 'pending':
-            messages.info(request, "Friend request already pending.")
+        if result['success']:
+            recommendations = result['recommendations']
         else:
-            messages.info(request, "A friend request already exists.")
-    else:
-        FriendRequest.objects.create(from_user=request.user, to_user=to_user)
-        messages.success(request, f"Friend request sent to {to_user.username}.")
-    return redirect('friends_dashboard')
-
-@login_required
-def accept_friend_request(request, request_id):
-    friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
-    friend_request.status = 'accepted'
-    friend_request.save()
-    messages.success(request, f"You are now friends with {friend_request.from_user.username}.")
-    return redirect('friends_dashboard')
-
-@login_required
-def decline_friend_request(request, request_id):
-    friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
-    friend_request.status = 'declined'
-    friend_request.save()
-    messages.info(request, "Friend request declined.")
-    return redirect('friends_dashboard')
-
-@login_required
-def remove_friend(request, user_id):
-    friend = get_object_or_404(User, id=user_id)
+            error_message = result['message']
     
-    FriendRequest.objects.filter(
-        models.Q(from_user=request.user, to_user=friend) |
-        models.Q(from_user=friend, to_user=request.user),
-        status='accepted'
-    ).delete()
-    
-    messages.success(request, f"Removed {friend.username} from friends.")
-    return redirect('friends_dashboard')
-
-
+    return render(request, 'user/ai_recommendations.html', {
+        'recommendations': recommendations,
+        'error_message': error_message,
+        'title': 'AI Recommendations'
+    })
