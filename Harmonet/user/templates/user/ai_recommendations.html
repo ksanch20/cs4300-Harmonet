@@ -1,3 +1,5 @@
+<!-- templates/user/ai_recommendations.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +8,51 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'dashboard_style.css' %}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Loading spinner styles */
+    .loading-container {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .loading-container.active {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid #f3f4f6;
+      border-top: 4px solid #6366f1;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      color: #6366f1;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .loading-subtext {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    /* Hide generate button when loading */
+    #generate-form.hidden {
+      display: none;
+    }
+  </style>
 </head>
 
 <body>
@@ -53,7 +100,7 @@
 
           <!-- Generate button -->
           {% if not recommendations %}
-            <form method="post" style="text-align: center; padding: 40px 20px;">
+            <form method="post" id="generate-form" style="text-align: center; padding: 40px 20px;">
               {% csrf_token %}
               <p style="font-size: 18px; margin-bottom: 30px; color: #4b5563;">
                 Ready to discover new music tailored just for you?
@@ -66,6 +113,13 @@
                 🎵 Generate Recommendations
               </button>
             </form>
+
+            <!-- Loading spinner (hidden by default) -->
+            <div class="loading-container" id="loading-container">
+              <div class="spinner"></div>
+              <div class="loading-text">🎵 Analyzing your music taste...</div>
+              <div class="loading-subtext">This may take 5-10 seconds</div>
+            </div>
           {% endif %}
 
           <!-- Recommendations display -->
@@ -75,7 +129,7 @@
             </div>
 
             <!-- Generate again button -->
-            <form method="post" style="margin-top: 25px; text-align: center;">
+            <form method="post" id="regenerate-form" style="margin-top: 25px; text-align: center;">
               {% csrf_token %}
               <button type="submit" class="btn-primary">
                 🔄 Generate New Recommendations
@@ -91,5 +145,38 @@
   <footer class="footer">
     <p>&copy; 2025 Harmonet. All rights reserved.</p>
   </footer>
+
+  <script>
+    // Show loading spinner when form is submitted
+    document.getElementById('generate-form')?.addEventListener('submit', function() {
+      document.getElementById('generate-form').classList.add('hidden');
+      document.getElementById('loading-container').classList.add('active');
+    });
+
+    // Also handle regenerate form if it exists
+    document.getElementById('regenerate-form')?.addEventListener('submit', function(e) {
+      // Show loading overlay
+      const loadingOverlay = document.createElement('div');
+      loadingOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      `;
+      loadingOverlay.innerHTML = `
+        <div class="spinner"></div>
+        <div class="loading-text">🎵 Generating new recommendations...</div>
+        <div class="loading-subtext">This may take 5-10 seconds</div>
+      `;
+      document.body.appendChild(loadingOverlay);
+    });
+  </script>
 </body>
 </html>
