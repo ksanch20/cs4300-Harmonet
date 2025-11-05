@@ -1,58 +1,66 @@
 from django.db import models
 from django.contrib.auth.models import User
-
-class friendsList(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user")
-    
-    friends = ManytoManyField(settings.AUTH_USER_MODEL, blank=True, related_name="friends")
-    
-    def __str__(self):
-        return f"{self.user.username}'s friends list"
-    def add_friend(self, account):
-        if not account in self.friends.all():
-            self.friends.add(account)
-            self.save()
-    def remove_friend(self, account):
-        
-        if account in self.friends.all():
-            self.friends.remove(account)
-    def unfriend(self, removee):
-        
-        remover_friends_list = self
-        
-        remover_friends_list.remove_friend(removee)
-        
-        friendsList = friendsList.objects.get(user=remove)
-        friends_list.remove_friend(self.user)
-        
-    def is_mutual_friend(self, friend):
-        if friend in self.friends.all():
-            return true
-        return false
-class friendRequests(models.Model):
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sender")
-    reciever = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="receiver")
-    
-    is_active = models.BooleanField(blank=true, null=false, default=true)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __self__(self):
-        return self.sender.username
-    
-    def accept(self):
-        receiver_friend_list = friendsList.object.get(user=self.reciever)
-        if reciever_friend_list:
-            reciever_friend_list.add_friend(self.sender)
-            sender_friend_list = friendsList.object.get(user=self.sender)
-            if sender_friend_list:
-                sender_friend_list.add_friend(self.reciever)
-                self.is_active = False
-                self.save()
-    def decline(self):
-        self.is_active = False
-        self.save()
+from django.utils import timezone
 
 #Stores additional music preferences that users manually input
+
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+class FriendRequestManager(models.Manager):
+    def friends(self, user):
+        """Get all friends of a user"""
+        friend_ids = self.filter(
+            models.Q(from_user=user, status='accepted') |
+            models.Q(to_user=user, status='accepted')
+        ).values_list('from_user_id', 'to_user_id')
+        
+        # Flatten and get unique user IDs excluding the user themselves
+        ids = set()
+        for from_id, to_id in friend_ids:
+            ids.add(from_id if from_id != user.id else to_id)
+        
+        return User.objects.filter(id__in=ids)
+    
+    def pending_requests(self, user):
+        """Get pending friend requests received by user"""
+        return self.filter(to_user=user, status='pending')
+    
+    def are_friends(self, user1, user2):
+        """Check if two users are friends"""
+        return self.filter(
+            models.Q(from_user=user1, to_user=user2, status='accepted') |
+            models.Q(from_user=user2, to_user=user1, status='accepted')
+        ).exists()
+
+
+class FriendRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('declined', 'Declined'),
+    ]
+    
+    from_user = models.ForeignKey(User, related_name='friend_requests_sent', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(User, related_name='friend_requests_received', on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Add the custom manager HERE, inside the model class
+    objects = FriendRequestManager()
+    
+    class Meta:
+        unique_together = ('from_user', 'to_user')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.from_user.username} -> {self.to_user.username} ({self.status})"
+
+
+
+        
 class MusicPreferences(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='music_preferences')
     favorite_artists = models.TextField(blank=True, help_text="Comma-separated list of favorite artists")
@@ -97,3 +105,4 @@ class SoundCloudArtist(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.user.username})"
+
