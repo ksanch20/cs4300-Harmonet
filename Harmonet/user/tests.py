@@ -503,3 +503,98 @@ class AIRecommendationIntegrationTest(TestCase):
         # 4. Can access AI recommendations page
         response = self.client.get(reverse('ai_recommendations'))
         self.assertEqual(response.status_code, 200)
+
+# ========================================
+# AI SERVICE UNIT TESTS
+# ========================================
+
+from unittest.mock import Mock, patch
+from user.ai_service import (
+    get_music_recommendations,
+    gather_user_music_data,
+    build_recommendation_prompt
+)
+
+class AIServiceUnitTests(TestCase):
+
+    def setUp(self):
+        self.mock_user = Mock()
+
+    # -------------------------------
+    # get_music_recommendations()
+    # -------------------------------
+
+    def test_get_music_recommendations_no_data(self):
+        with patch('user.ai_service.gather_user_music_data', return_value={'has_data': False}):
+            result = get_music_recommendations(self.mock_user)
+            self.assertFalse(result['success'])
+            self.assertIn('Please connect Spotify', result['message'])
+
+    def test_get_music_recommendations_success(self):
+        mock_data = {
+            'has_data': True,
+            'manual_artists': ['Muse'],
+            'manual_genres': ['Rock'],
+            'manual_tracks': ['Uprising']
+        }
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content='Recommended artists...'))]
+
+        with patch('user.ai_service.gather_user_music_data', return_value=mock_data), \
+             patch('user.ai_service.client.chat.completions.create', return_value=mock_response):
+            result = get_music_recommendations(self.mock_user)
+            self.assertTrue(result['success'])
+            self.assertIn('Recommended artists', result['recommendations'])
+
+    def test_get_music_recommendations_openai_error(self):
+        mock_data = {
+            'has_data': True,
+            'manual_artists': [],
+            'manual_genres': [],
+            'manual_tracks': [],
+            'spotify_artists': []
+        }
+
+        with patch('user.ai_service.gather_user_music_data', return_value=mock_data), \
+        patch('user.ai_service.client.chat.completions.create', side_effect=Exception("API error")):
+            result = get_music_recommendations(self.mock_user)
+            self.assertFalse(result['success'])
+            self.assertIn('Error generating recommendations', result['message'])
+
+
+    # -------------------------------
+    # gather_user_music_data()
+    # -------------------------------
+
+    def test_gather_user_music_data_with_preferences(self):
+        mock_prefs = Mock()
+        mock_prefs.get_artists_list.return_value = ['Muse']
+        mock_prefs.get_genres_list.return_value = ['Rock']
+        mock_prefs.get_tracks_list.return_value = ['Uprising']
+        self.mock_user.music_preferences = mock_prefs
+
+        data = gather_user_music_data(self.mock_user)
+        self.assertTrue(data['has_data'])
+        self.assertEqual(data['manual_artists'], ['Muse'])
+
+    def test_gather_user_music_data_no_preferences(self):
+        del self.mock_user.music_preferences  # Simulate missing attribute
+        data = gather_user_music_data(self.mock_user)
+        self.assertFalse(data['has_data'])
+
+    # -------------------------------
+    # build_recommendation_prompt()
+    # -------------------------------
+
+    def test_build_recommendation_prompt_output(self):
+        music_data = {
+            'manual_artists': ['Radiohead'],
+            'manual_genres': ['Alternative'],
+            'manual_tracks': ['Karma Police', 'No Surprises'],
+            'spotify_artists': ['Muse']
+        }
+        prompt = build_recommendation_prompt(music_data)
+        self.assertIn('**Favorite Artists:**', prompt)
+        self.assertIn('Radiohead', prompt)
+        self.assertIn('Muse', prompt)
+        self.assertIn('Karma Police', prompt)
