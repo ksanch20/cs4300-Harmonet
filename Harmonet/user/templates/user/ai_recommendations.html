@@ -65,14 +65,98 @@
       color: #4b5563;
     }
 
-    /* Recommendations display */
+    /* Recommendations display - Beautiful formatting */
     .recommendations-box {
-      background-color: #f9fafb;
-      padding: 25px;
+      background-color: #ffffff;
+      padding: 30px;
       border-radius: 12px;
       margin-top: 20px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    /* Artist headers */
+    .recommendations-box h3 {
+      color: #1e2a38;
+      font-size: 20px;
+      font-weight: 700;
+      margin: 30px 0 15px 0;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #5ca1d3;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .recommendations-box h3:first-child {
+      margin-top: 0;
+    }
+
+    /* Paragraphs */
+    .recommendations-box p {
+      margin: 12px 0;
+      color: #374151;
       line-height: 1.8;
       font-size: 15px;
+    }
+
+    /* Bold text highlighting */
+    .recommendations-box strong {
+      color: #5ca1d3;
+      font-weight: 600;
+    }
+
+    /* Bullet lists */
+    .recommendations-box ul {
+      margin: 15px 0;
+      padding-left: 0;
+      list-style-type: none;
+    }
+
+    .recommendations-box li {
+      margin: 10px 0;
+      padding: 10px 15px 10px 40px;
+      position: relative;
+      color: #374151;
+      background-color: #f9fafb;
+      border-radius: 6px;
+      line-height: 1.6;
+      font-size: 15px;
+      border-left: 3px solid #e5e7eb;
+      transition: all 0.2s;
+    }
+
+    .recommendations-box li:hover {
+      background-color: #f3f4f6;
+      border-left-color: #5ca1d3;
+    }
+
+
+
+    /* Horizontal rules (separators between artists) */
+    .recommendations-box hr {
+      border: none;
+      border-top: 2px solid #e5e7eb;
+      margin: 30px 0;
+    }
+
+    /* Nested lists (for songs) */
+    .recommendations-box ul ul {
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    .recommendations-box ul ul li {
+      background-color: #ffffff;
+      border-left: 3px solid #5ca1d3;
+      font-size: 14px;
+      padding: 8px 12px 8px 35px;
+    }
+
+    .recommendations-box ul ul li:before {
+      content: "♪";
+      color: #5ca1d3;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -142,7 +226,7 @@
           <!-- Recommendations display -->
           {% if recommendations %}
             <div class="recommendations-box">
-              {{ recommendations|linebreaks }}
+              {{ recommendations }}
             </div>
 
             <!-- Generate again button -->
