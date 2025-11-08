@@ -126,3 +126,17 @@
     padding: 1rem;
     margin-top: 2rem;
   }
+
+  .auth-buttons a {
+    color: white;
+    text-decoration: none;
+    background-color: #1e4ed8;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+  }
+  
+  .auth-buttons a:hover {
+    background-color: #1a3fc5;
+  }
