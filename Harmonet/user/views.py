@@ -15,6 +15,9 @@ from django.core.paginator import Paginator
 from .models import SoundCloudArtist
 from .forms import SoundCloudArtistForm
 
+import re
+from django.utils.safestring import mark_safe
+
 
 #################### index ####################################### 
 def index(request):
@@ -278,6 +281,51 @@ def music_preferences(request):
 
 
 
+def format_ai_recommendations(raw_text):
+
+    # Replace ### headers (artist names)
+    text = re.sub(r'###\s*\*\*(\d+)\.\s*(.+?)\*\*', r'<h3>\1. \2</h3>', raw_text)
+    
+    # Replace **bold text** with styled spans  
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    
+    # Process line by line to handle lists properly
+    lines = text.split('\n')
+    formatted_lines = []
+    in_list = False
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # Handle bullet points
+        if stripped.startswith('- '):
+            if not in_list:
+                formatted_lines.append('<ul>')
+                in_list = True
+            item = stripped[2:]  # Remove '- '
+            formatted_lines.append(f'<li>{item}</li>')
+        else:
+            # Close list if we were in one
+            if in_list:
+                formatted_lines.append('</ul>')
+                in_list = False
+            
+            # Handle horizontal rules
+            if stripped == '---':
+                formatted_lines.append('<hr>')
+            # Handle regular paragraphs (skip empty lines)
+            elif stripped:
+                formatted_lines.append(f'<p>{line}</p>')
+            else:
+                formatted_lines.append('')
+    
+    # Close list if still open
+    if in_list:
+        formatted_lines.append('</ul>')
+    
+    return mark_safe('\n'.join(formatted_lines))
+
+
 @login_required
 def ai_recommendations(request):
     """
@@ -292,7 +340,8 @@ def ai_recommendations(request):
         result = get_music_recommendations(request.user)
         
         if result['success']:
-            recommendations = result['recommendations']
+            # Format the recommendations with HTML
+            recommendations = format_ai_recommendations(result['recommendations'])
         else:
             error_message = result['message']
     

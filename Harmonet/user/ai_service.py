@@ -34,14 +34,30 @@ def get_music_recommendations(user):
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a music recommendation expert. Provide personalized, thoughtful recommendations with clear explanations. Format your response in a clean, readable way with headers and bullet points."
+                    "content": """You are a music recommendation expert. Provide personalized, thoughtful recommendations.
+
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+
+### **1. Artist Name**
+- **Genre/Style:** [Genre]
+- **Why you'd like them:** [2-3 sentences explaining the connection to their taste]
+- **Songs to start with:**
+  - "Song Title 1"
+  - "Song Title 2"
+
+---
+
+### **2. Artist Name**
+[same format]
+
+Use this exact format for all 5 recommendations. Use ### for headers, ** for bold, and - for bullet points."""
                 },
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            max_tokens=1000,
+            max_tokens=1200,
             temperature=0.7  
         )
         
@@ -101,10 +117,7 @@ def gather_user_music_data(user):
 
 
 def build_recommendation_prompt(music_data):
-    """
-    Build a detailed prompt for OpenAI based on user's music data.
-    Asks for both artist AND song recommendations.
-    """
+
     
     prompt_parts = []
     
@@ -128,13 +141,7 @@ def build_recommendation_prompt(music_data):
         prompt_parts.append(f"\n**Favorite Tracks:**")
         prompt_parts.append(", ".join(music_data['manual_tracks'][:5]))
     
-    # Instructions with songs included
-    prompt_parts.append("\n\n**For each recommendation, provide:**")
-    prompt_parts.append("1. **Artist Name** (bold)")
-    prompt_parts.append("2. **Genre/Style** in one line")
-    prompt_parts.append("3. **Why they'd like them** (2-3 sentences explaining the connection)")
-    prompt_parts.append("4. **Songs to start with** - List 2-3 specific song titles")
-    prompt_parts.append("\nMake it engaging and well-formatted with clear sections!")
+    # Instructions
+    prompt_parts.append("\n\nProvide 5 artist recommendations following the exact format specified in the system message.")
     
     return "\n".join(prompt_parts)
-
