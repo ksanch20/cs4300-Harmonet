@@ -5,97 +5,234 @@
 <head>
   <meta charset="UTF-8">
   <title>Register - Harmonet</title>
-  <link rel="stylesheet" href="{% static 'user/style.css' %}">
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
   <style>
-    .messages p {
-      color: #fff;
-      background-color: #d9534f; /* red for errors */
-      padding: 8px;
-      border-radius: 5px;
+    .register-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 200px);
+      padding: 2rem;
+    }
+
+    .register-container {
+      background: white;
+      padding: 3rem;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .register-container h2 {
+      font-size: 2rem;
+      color: #1e2a38;
+      margin-bottom: 0.5rem;
       text-align: center;
-      margin-bottom: 10px;
     }
-    .messages p.success {
-      background-color: #5cb85c; /* green for success */
+
+    .register-container .subtitle {
+      text-align: center;
+      color: #555;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
     }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #1e2a38;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #5ca1d3;
+    }
+
     .errorlist {
-      color: #d9534f;
-      margin: 5px 0 10px 0;
+      color: #e74c3c;
+      margin: 0.5rem 0 0 0;
       list-style-type: none;
       padding-left: 0;
+      font-size: 0.85rem;
     }
+
     .errorlist li {
-      font-size: 0.9em;
+      margin-top: 0.25rem;
+    }
+
+    .form-group.error input {
+      border-color: #e74c3c;
+    }
+
+    .non-field-errors {
+      background-color: #fadbd8;
+      color: #e74c3c;
+      padding: 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #e74c3c;
+    }
+
+    .non-field-errors ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .register-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: #5ca1d3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+
+    .register-btn:hover {
+      opacity: 0.9;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    .login-link a {
+      color: #5ca1d3;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    .password-hint {
+      font-size: 0.8rem;
+      color: #777;
+      margin-top: 0.25rem;
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <h2>Sign Up</h2>
+  <!-- Navbar matching homepage -->
+  <nav class="navbar">
+    <a href="{% url 'index' %}" style="text-decoration: none; color: inherit;">
+      <div class="logo">Harmonet</div>
+    </a>
+    <div class="auth-buttons">
+      <button onclick="location.href='{% url 'login' %}'">Login</button>
+      <button class="signup" onclick="location.href='{% url 'register' %}'">Sign Up</button>
+    </div>
+  </nav>
 
+  <!-- Register Section -->
+  <section class="register-section">
+    <div class="register-container">
+      <h2>Create Account</h2>
+      <p class="subtitle">Join Harmonet and start tracking your music journey</p>
 
-    <!-- Display non-field form errors (like password mismatch) -->
-    {% if form.non_field_errors %}
-      <ul class="errorlist">
-        {% for error in form.non_field_errors %}
-          <li>{{ error }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-
-    <form method="POST">
-      {% csrf_token %}
-
-      <!-- Username -->
-      {{ form.username.label_tag }}<br>
-      {{ form.username }}<br>
-      {% if form.username.errors %}
-        <ul class="errorlist">
-          {% for error in form.username.errors %}
-            <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
+      <!-- Display non-field form errors -->
+      {% if form.non_field_errors %}
+        <div class="non-field-errors">
+          <ul>
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
       {% endif %}
 
-      <!-- Email -->
-      {{ form.email.label_tag }}<br>
-      {{ form.email }}<br>
-      {% if form.email.errors %}
-        <ul class="errorlist">
-          {% for error in form.email.errors %}
-            <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
+      <form method="POST">
+        {% csrf_token %}
 
-      <!-- Password 1 -->
-      {{ form.password1.label_tag }}<br>
-      {{ form.password1 }}<br>
-      {% if form.password1.errors %}
-        <ul class="errorlist">
-          {% for error in form.password1.errors %}
-            <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
+        <!-- Username -->
+        <div class="form-group {% if form.username.errors %}error{% endif %}">
+          <label for="id_username">Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <ul class="errorlist">
+              {% for error in form.username.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
 
-      <!-- Password 2 -->
-      {{ form.password2.label_tag }}<br>
-      {{ form.password2 }}<br>
-      {% if form.password2.errors %}
-        <ul class="errorlist">
-          {% for error in form.password2.errors %}
-            <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
+        <!-- Email -->
+        <div class="form-group {% if form.email.errors %}error{% endif %}">
+          <label for="id_email">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <ul class="errorlist">
+              {% for error in form.email.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
 
-      <button type="submit">Register</button>
-    </form>
+        <!-- Password 1 -->
+        <div class="form-group {% if form.password1.errors %}error{% endif %}">
+          <label for="id_password1">Password</label>
+          {{ form.password1 }}
+          <p class="password-hint">Must be at least 8 characters</p>
+          {% if form.password1.errors %}
+            <ul class="errorlist">
+              {% for error in form.password1.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
 
-    <p style="text-align:center; margin-top:15px;">
-      Already have an account? <a href="{% url 'login' %}">Login</a>
-    </p>
-  </div>
+        <!-- Password 2 -->
+        <div class="form-group {% if form.password2.errors %}error{% endif %}">
+          <label for="id_password2">Confirm Password</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}
+            <ul class="errorlist">
+              {% for error in form.password2.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="register-btn">Create Account</button>
+      </form>
+
+      <p class="login-link">
+        Already have an account? <a href="{% url 'login' %}">Login here</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer matching homepage -->
+  <footer class="footer">
+    <p>&copy; 2025 Harmonet. All rights reserved.</p>
+  </footer>
 </body>
 </html>
