@@ -20,10 +20,10 @@ urlpatterns = [
 
     ####Spotify patterns####
     path('account-link/', views.account_link, name='account_link'),
-    path('user/spotify/login/', views.spotify_login, name='spotify_login'),
-    path('user/spotify/callback/', views.spotify_callback, name='spotify_callback'),
-    path('user/spotify/disconnect/', views.spotify_disconnect, name='spotify_disconnect'),
-    path('user/spotify/refresh/', views.spotify_refresh_data, name='spotify_refresh'),
+    path('spotify/login/', views.spotify_login, name='spotify_login'),
+    path('spotify/callback/', views.spotify_callback, name='spotify_callback'),
+    path('spotify/disconnect/', views.spotify_disconnect, name='spotify_disconnect'),
+    path('spotify/refresh/', views.spotify_refresh_data, name='spotify_refresh'),
 
     #Password reset URLS
     path('password-reset/', auth_views.PasswordResetView.as_view(template_name='user/password_reset.html'), name='password_reset'),
