@@ -148,13 +148,11 @@ STATICFILES_DIRS = [
 
 
 # Email settings for SendGrid
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'apikey'
-EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Harmonet <noreply.harmonet@gmail.com')
+EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+SENDGRID_API_KEY = config('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply.harmonet@gmail.com')
+SENDGRID_SANDBOX_MODE = False
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 PASSWORD_RESET_TIMEOUT = 259200
 
 if 'test' in sys.argv:
@@ -165,3 +163,5 @@ if 'test' in sys.argv:
 LOGIN_URL = '/login/'                  # Where to redirect if user not logged in
 LOGIN_REDIRECT_URL = '/account_link/' # Where to redirect after login
 LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
+
+OPENAI_API_KEY=config('OPENAI_API_KEY', default='')

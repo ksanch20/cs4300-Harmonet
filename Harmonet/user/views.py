@@ -10,9 +10,17 @@ from django.db import models
 from django.db.models import Q
 
 from django.contrib.auth.models import User
+from .ai_service import get_music_recommendations
 from django.conf import settings
 from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager
 
+
+from django.core.paginator import Paginator
+from .models import SoundCloudArtist
+from .forms import SoundCloudArtistForm
+
+import re
+from django.utils.safestring import mark_safe
 
 
 #################### index ####################################### 
@@ -90,7 +98,8 @@ def analytics(request):
 def AI_Recommendation(request):
     return render(request, 'user/AI_Recommendation.html', {'title': 'AI_Recommendation'})
 
-
+def user_artist(request):
+    return render(request, 'user/user_artist.html', {'title': 'user_artist'})
 
 # Add this function to your views.py
 @login_required
@@ -138,20 +147,27 @@ def spotify_login(request):
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-# -----------------------------
-# Step 2: Spotify callback
-# -----------------------------
 
-@login_required
-def spotify_login(request):
+def get_token(request):
+    token_info = request.session.get('spotify_token')
+    if not token_info:
+        return None
+
     sp_oauth = SpotifyOAuth(
         client_id=settings.SPOTIPY_CLIENT_ID,
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope,
-        cache_path=None
+        redirect_uri=settings.SPOTIPY_REDIRECT_URI
     )
-    return redirect(sp_oauth.get_authorize_url())
+
+    if sp_oauth.is_token_expired(token_info):
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        request.session['spotify_token'] = token_info
+    return token_info
+
+
+# -----------------------------
+# Step 2: Spotify callback
+# -----------------------------
 
 @login_required
 def spotify_callback(request):
@@ -177,7 +193,7 @@ def spotify_dashboard(request):
     """
     Example page showing top Spotify artists and tracks.
     """
-    token_info = request.session.get('spotify_token', None)
+    token_info = get_token(request)
     if not token_info:
         return redirect('spotify_login')
 
@@ -185,24 +201,36 @@ def spotify_dashboard(request):
     top_artists = sp.current_user_top_artists(limit=5)['items']
     top_tracks = sp.current_user_top_tracks(limit=5)['items']
 
-    return render(request, 'dashboard.html', {
+    return render(request, 'user/dashboard.html', {
         'artists': top_artists,
         'tracks': top_tracks,
     })
 
 #########################SoundCloud Form################################################
+
 @login_required
-def dashboard(request):
+def user_artist(request):
     user = request.user
-    artists = SoundCloudArtist.objects.filter(user=user)
+    artists_list = SoundCloudArtist.objects.filter(user=user).order_by('-added_on')
+
+    paginator = Paginator(artists_list, 5)
+    page_number = request.GET.get('page')
+    artists = paginator.get_page(page_number)
 
     if request.method == 'POST':
+        if 'delete_artist_id' in request.POST:
+            artist_id = request.POST.get('delete_artist_id')
+            artist = get_object_or_404(SoundCloudArtist, id=artist_id, user=user)
+            artist.delete()
+            return redirect('user_artist')
+
+
         form = SoundCloudArtistForm(request.POST)
         if form.is_valid():
             artist = form.save(commit=False)
             artist.user = user
             artist.save()
-            return redirect('dashboard')  # reload dashboard
+            return redirect('user_artist')
     else:
         form = SoundCloudArtistForm()
 
@@ -211,9 +239,9 @@ def dashboard(request):
         'artists': artists,
     }
 
-    return render(request, 'user/dashboard.html', context)
+    return render(request, 'user/user_artist.html', context)
 
-    
+
 @login_required
 def delete_account(request):
     if request.method == "POST":
@@ -358,3 +386,74 @@ def remove_friend(request, user_id):
     return redirect('friends_dashboard')
 
 
+
+
+def format_ai_recommendations(raw_text):
+
+    # Replace ### headers (artist names)
+    text = re.sub(r'###\s*\*\*(\d+)\.\s*(.+?)\*\*', r'<h3>\1. \2</h3>', raw_text)
+    
+    # Replace **bold text** with styled spans  
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    
+    # Process line by line to handle lists properly
+    lines = text.split('\n')
+    formatted_lines = []
+    in_list = False
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # Handle bullet points
+        if stripped.startswith('- '):
+            if not in_list:
+                formatted_lines.append('<ul>')
+                in_list = True
+            item = stripped[2:]  # Remove '- '
+            formatted_lines.append(f'<li>{item}</li>')
+        else:
+            # Close list if we were in one
+            if in_list:
+                formatted_lines.append('</ul>')
+                in_list = False
+            
+            # Handle horizontal rules
+            if stripped == '---':
+                formatted_lines.append('<hr>')
+            # Handle regular paragraphs (skip empty lines)
+            elif stripped:
+                formatted_lines.append(f'<p>{line}</p>')
+            else:
+                formatted_lines.append('')
+    
+    # Close list if still open
+    if in_list:
+        formatted_lines.append('</ul>')
+    
+    return mark_safe('\n'.join(formatted_lines))
+
+
+@login_required
+def ai_recommendations(request):
+    """
+    Display AI-generated music recommendations for the user.
+    """
+    
+    recommendations = None
+    error_message = None
+    
+    # Check if user clicked "Generate Recommendations" button
+    if request.method == 'POST':
+        result = get_music_recommendations(request.user)
+        
+        if result['success']:
+            # Format the recommendations with HTML
+            recommendations = format_ai_recommendations(result['recommendations'])
+        else:
+            error_message = result['message']
+    
+    return render(request, 'user/ai_recommendations.html', {
+        'recommendations': recommendations,
+        'error_message': error_message,
+        'title': 'AI Recommendations'
+    })

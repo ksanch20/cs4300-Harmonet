@@ -9,6 +9,8 @@ urlpatterns = [
     path('register/', views.register, name='register'),# register page
     path('dashboard/', views.dashboard, name='dashboard'),
     path('account_link/', views.account_link, name='account_link'),  # unique name
+    path('user_artist/', views.user_artist, name='user_artist'),
+
 
 
     path('profile/', views.profile, name='profile'),
@@ -37,5 +39,6 @@ urlpatterns = [
     path('decline-request/<int:request_id>/', views.decline_friend_request, name='decline_friend_request'),
     path('remove-friend/<int:user_id>/', views.remove_friend, name='remove_friend'),
 
+    path('ai-recommendations/', views.ai_recommendations, name='ai_recommendations'),
 ]
 

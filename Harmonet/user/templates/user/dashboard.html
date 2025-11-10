@@ -44,13 +44,13 @@
           <div class="card">
             <h3>🤖 AI-Recommendation</h3>
             <p>check your recommendation via AI</p>
-            <a href="{% url 'AI_Recommendation' %}">Open Messages →</a>
+            <a href="{% url 'ai_recommendations' %}">Open Messages →</a>
           </div>
 
           <div class="card">
-            <h3>⚙️ Settings</h3>
-            <p>Configure system and app settings</p>
-            <a href="#">Update Settings →</a>
+            <h3>⚙️ Artist Wallet</h3>
+            <p> Manage your Artist from various Music Platforms </p>
+            <a href="{% url 'user_artist' %}"> add your artist → </a>
           </div>
 
           <div class="card">
@@ -113,40 +113,8 @@
         </div>
       </section>
 
-      <hr class="section-divider" />
-      
-      <section class="most-listened-section">
-        <h2>Your Favorite SoundCloud Artists 🎶</h2>
+    <hr class="section-divider" />
 
-        <form method="POST">
-          {% csrf_token %}
-          {{ form.as_p }}
-          <button type="submit" class="btn-add-artist">Add Artist</button>
-        </form>
-
-        <div class="scroll-wrapper">
-          <button class="scroll-btn left-btn" aria-label="Scroll Left">&#8249;</button>
-          <div class="artist-scroll">
-            {% for artist in artists %}
-            <div class="artist-card">
-              {% if artist.profile_url %}
-                <a href="{{ artist.profile_url }}" target="_blank">
-                 <p>{{ artist.name }}</p>
-               </a>
-             {% else %}
-               <p>{{ artist.name }}</p>
-              {% endif %}
-            </div>
-            {% empty %}
-            <p>No SoundCloud artists added yet.</p>
-            {% endfor %}
-          </div>
-         <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
-       </div>
-      </section>
-      <p>
-        test test test
-      </p>
     </div>
   </main>
 
