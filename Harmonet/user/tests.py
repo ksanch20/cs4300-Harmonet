@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.urls import reverse
+from .models import FriendRequest, FriendRequestManager
 from user.models import MusicPreferences
 
 #Used ChatGPT to help write tests
@@ -9,6 +10,10 @@ class UserAuthTests(TestCase):
     def setUp(self):
         # Create a user to test login
         self.user = User.objects.create_user(username='testuser', email='test@example.com', password='TestPass123')
+        self.user2 = User.objects.create_user(username='testuser2', email='test2@example.com', password='TestPass123')
+        self.user3 = User.objects.create_user(username='testuser3', email='test3@example.com', password='TestPass123')
+        self.user4 = User.objects.create_user(username='testuser4', email='test4@example.com', password='TestPass123')
+        
 
     # -----------------------------
     # SIGNUP TESTS
@@ -302,6 +307,184 @@ class UserAuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Current Password')
         self.assertContains(response, 'New Password')
+        
+        
+        #############################
+        #FRIENDS TESTS#
+        #############################
+    def test_create_friend_request(self):
+        """Test creating a friend request"""
+        friend_request = FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2
+        )
+        
+        self.assertEqual(friend_request.from_user, self.user)
+        self.assertEqual(friend_request.to_user, self.user2)
+        self.assertEqual(friend_request.status, 'pending')
+        self.assertIsNotNone(friend_request.created_at)
+    def test_friend_request_string_representation(self):
+        """Test the __str__ method"""
+        friend_request = FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2
+        )
+        
+        expected = f"{self.user.username} -> {self.user2.username} (pending)"
+        self.assertEqual(str(friend_request), expected)
+    
+    def test_unique_together_constraint(self):
+        """Test that duplicate friend requests are prevented"""
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2
+        )
+        
+        # Attempting to create duplicate should raise error
+        from django.db import IntegrityError
+        with self.assertRaises(IntegrityError):
+            FriendRequest.objects.create(
+                from_user=self.user,
+                to_user=self.user2
+            )
+    
+    def test_accept_friend_request(self):
+        """Test accepting a friend request"""
+        friend_request = FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2
+        )
+        
+        friend_request.status = 'accepted'
+        friend_request.save()
+        
+        self.assertEqual(friend_request.status, 'accepted')
+    
+    def test_decline_friend_request(self):
+        """Test declining a friend request"""
+        friend_request = FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2
+        )
+        
+        friend_request.status = 'declined'
+        friend_request.save()
+        
+        self.assertEqual(friend_request.status, 'declined')
+        
+    def test_friends_method_with_no_friends(self):
+        """Test friends() returns empty queryset when user has no friends"""
+        friends = FriendRequest.objects.friends(self.user)
+        self.assertEqual(friends.count(), 0)
+    
+    def test_friends_method_with_accepted_requests(self):
+        """Test friends() returns correct friends"""
+        # user sends request to User2 (accepted)
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2,
+            status='accepted'
+        )
+        
+        # User3 sends request to user (accepted)
+        FriendRequest.objects.create(
+            from_user=self.user3,
+            to_user=self.user,
+            status='accepted'
+        )
+        
+        # user sends request to User4 (pending - should not appear)
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user4,
+            status='pending'
+        )
+        
+        friends = FriendRequest.objects.friends(self.user)
+        
+        self.assertEqual(friends.count(), 2)
+        self.assertIn(self.user2, friends)
+        self.assertIn(self.user3, friends)
+        self.assertNotIn(self.user4, friends)
+    
+    def test_friends_bidirectional(self):
+        """Test that friendship works both ways"""
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2,
+            status='accepted'
+        )
+        
+        # Both users should see each other as friends
+        user_friends = FriendRequest.objects.friends(self.user)
+        user2_friends = FriendRequest.objects.friends(self.user2)
+        
+        self.assertIn(self.user2, user_friends)
+        self.assertIn(self.user, user2_friends)
+    
+    def test_pending_requests_method(self):
+        """Test pending_requests() returns only pending received requests"""
+        # User2 sends pending request to user
+        FriendRequest.objects.create(
+            from_user=self.user2,
+            to_user=self.user,
+            status='pending'
+        )
+        
+        # User3 sends accepted request to user (should not appear)
+        FriendRequest.objects.create(
+            from_user=self.user3,
+            to_user=self.user,
+            status='accepted'
+        )
+        
+        # user sends request to User4 (should not appear - it's sent, not received)
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user4,
+            status='pending'
+        )
+        
+        pending = FriendRequest.objects.pending_requests(self.user)
+        
+        self.assertEqual(pending.count(), 1)
+        self.assertEqual(pending.first().from_user, self.user2)
+    
+    def test_are_friends_method_true(self):
+        """Test are_friends() returns True for actual friends"""
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2,
+            status='accepted'
+        )
+        
+        self.assertTrue(FriendRequest.objects.are_friends(self.user, self.user2))
+        self.assertTrue(FriendRequest.objects.are_friends(self.user2, self.user))
+    
+    def test_are_friends_method_false_no_request(self):
+        """Test are_friends() returns False when no request exists"""
+        self.assertFalse(FriendRequest.objects.are_friends(self.user, self.user2))
+    
+    def test_are_friends_method_false_pending(self):
+        """Test are_friends() returns False for pending requests"""
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2,
+            status='pending'
+        )
+        
+        self.assertFalse(FriendRequest.objects.are_friends(self.user, self.user2))
+    
+    def test_are_friends_method_false_declined(self):
+        """Test are_friends() returns False for declined requests"""
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2,
+            status='declined'
+        )
+        
+        self.assertFalse(FriendRequest.objects.are_friends(self.user, self.user2))
+     
 
 
 

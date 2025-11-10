@@ -32,6 +32,13 @@ urlpatterns = [
 
     #Music preferences
     path('music-preferences/', views.music_preferences, name='music_preferences'),
+    
+    path('friends_dashboard/', views.friends_dashboard, name='friends_dashboard'),
+    path('send-request/<int:user_id>/', views.send_friend_request, name='send_friend_request'),
+    path('accept-request/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
+    path('decline-request/<int:request_id>/', views.decline_friend_request, name='decline_friend_request'),
+    path('remove-friend/<int:user_id>/', views.remove_friend, name='remove_friend'),
 
     path('ai-recommendations/', views.ai_recommendations, name='ai_recommendations'),
 ]
+
