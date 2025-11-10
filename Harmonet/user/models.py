@@ -4,10 +4,6 @@ from django.utils import timezone
 
 #Stores additional music preferences that users manually input
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
-
 class FriendRequestManager(models.Manager):
     def friends(self, user):
         """Get all friends of a user"""
