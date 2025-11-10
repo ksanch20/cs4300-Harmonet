@@ -37,9 +37,8 @@
                     {% for user in search_results %}
                         <div class="search-result-item">
                             <a href="{% url 'profile' %}">{{ user.username }}</a>
-                            {% if user.email %}
-                                <span class="email">{{ user.email }}</span>
-                            {% endif %}
+
+
                             <form method="post" action="{% url 'send_friend_request' user.id %}" style="display:inline;">
                                 {% csrf_token %}
                                 <button type="submit">Add Friend</button>
