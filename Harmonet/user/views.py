@@ -353,7 +353,7 @@ def send_friend_request(request, user_id):
             messages.info(request, "A friend request already exists.")
     else:
         FriendRequest.objects.create(from_user=request.user, to_user=to_user)
-        messages.success(request, f"Friend request sent to {to_user.username}.")
+      
     return redirect('friends_dashboard')
 
 @login_required
@@ -361,7 +361,7 @@ def accept_friend_request(request, request_id):
     friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
     friend_request.status = 'accepted'
     friend_request.save()
-    messages.success(request, f"You are now friends with {friend_request.from_user.username}.")
+
     return redirect('friends_dashboard')
 
 @login_required
@@ -369,7 +369,6 @@ def decline_friend_request(request, request_id):
     friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
     friend_request.status = 'declined'
     friend_request.save()
-    messages.info(request, "Friend request declined.")
     return redirect('friends_dashboard')
 
 @login_required
@@ -382,7 +381,7 @@ def remove_friend(request, user_id):
         status='accepted'
     ).delete()
     
-    messages.success(request, f"Removed {friend.username} from friends.")
+    
     return redirect('friends_dashboard')
 
 
