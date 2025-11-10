@@ -685,4 +685,4 @@ class AIRecommendationIntegrationTest(TestCase):
         )
         
         self.assertFalse(FriendRequest.objects.are_friends(self.user, self.user2))
-    
+     
