@@ -162,10 +162,8 @@ def spotify_login(request):
 """
 @login_required
 def spotify_callback(request):
-    """
     Handle Spotify OAuth callback
     Save connection and fetch user's top artists/tracks
-    """
     sp_oauth = get_spotify_oauth()
     code = request.GET.get('code')
     
