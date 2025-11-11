@@ -124,3 +124,75 @@ class SoundCloudArtist(models.Model):
     def __str__(self):
         return f"{self.name} ({self.user.username})"
 
+class SpotifyAccount(models.Model):
+    """Store Spotify account connection info for each user"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='spotify_account')
+    
+    # Spotify user info
+    spotify_id = models.CharField(max_length=255, unique=True)
+    display_name = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True)
+    
+    # OAuth tokens
+    access_token = models.TextField()
+    refresh_token = models.TextField()
+    token_expires_at = models.DateTimeField()
+    
+    # Connection timestamps
+    connected_at = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - Spotify: {self.display_name}"
+    
+    class Meta:
+        verbose_name = "Spotify Account"
+        verbose_name_plural = "Spotify Accounts"
+
+
+class SpotifyTopArtist(models.Model):
+    """Cache user's top Spotify artists"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_artists')
+    
+    # Artist info from Spotify
+    spotify_artist_id = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    image_url = models.URLField(blank=True)
+    genres = models.CharField(max_length=500, blank=True)
+    popularity = models.IntegerField(default=0)
+    followers = models.IntegerField(default=0)
+    
+    # Metadata
+    rank = models.IntegerField(default=0)
+    fetched_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['rank']
+        unique_together = ['user', 'rank']
+    
+    def __str__(self):
+        return f"{self.user.username} - #{self.rank}: {self.name}"
+
+
+class SpotifyTopTrack(models.Model):
+    """Cache user's top Spotify tracks"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_tracks')
+    
+    # Track info from Spotify
+    spotify_track_id = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    artist_name = models.CharField(max_length=255)
+    album_name = models.CharField(max_length=255)
+    album_image_url = models.URLField(blank=True)
+    popularity = models.IntegerField(default=0)
+    
+    # Metadata
+    rank = models.IntegerField(default=0)
+    fetched_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['rank']
+        unique_together = ['user', 'rank']
+    
+    def __str__(self):
+        return f"{self.user.username} - #{self.rank}: {self.name}"
