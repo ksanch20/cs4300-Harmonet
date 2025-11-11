@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 from .ai_service import get_music_recommendations
 from django.conf import settings
-from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager
+from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager, SpotifyTopArtist, SpotifyTopTrack
 
 
 from django.core.paginator import Paginator
@@ -22,6 +22,14 @@ from .forms import SoundCloudArtistForm
 import re
 from django.utils.safestring import mark_safe
 
+from .spotify_service import (
+    get_spotify_oauth, 
+    save_spotify_connection, 
+    fetch_and_save_top_artists,
+    fetch_and_save_top_tracks,
+    is_spotify_connected,
+    disconnect_spotify
+)
 
 #################### index ####################################### 
 def index(request):
@@ -57,10 +65,23 @@ def user_login(request):
     form = AuthenticationForm()
     return render(request, 'user/login.html', {'form': form, 'title':'log in'})
 
-
 @login_required
 def dashboard(request):
-    return render(request, 'user/dashboard.html', {'title': 'Dashboard'})
+    """Dashboard view with Spotify integration"""
+    # Check if Spotify is connected
+    spotify_connected = is_spotify_connected(request.user)
+    
+    # Get top artists if connected
+    top_artists = []
+    if spotify_connected:
+        top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
+        print(f"Found {len(top_artists)} top artists for {request.user.username}")
+    
+    return render(request, 'user/dashboard.html', {
+        'title': 'Dashboard',
+        'spotify_connected': spotify_connected,
+        'top_artists': top_artists
+    })
 
 # ---------------- Logout -----------------
 def user_logout(request):
@@ -126,85 +147,81 @@ def password_change(request):
 
 #########################Spotify OAuth######################
 
-# Spotify scopes
-scope = "user-top-read user-read-recently-played"
-
-# -----------------------------
-# Step 1: Spotify login
-# -----------------------------
 @login_required
 def spotify_login(request):
-    """
-    Start the Spotify OAuth flow. Requires user to be logged in to your site.
-    """
-    sp_oauth = SpotifyOAuth(
-        client_id=settings.SPOTIPY_CLIENT_ID,
-        client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope,
-        cache_path=None  # Optional: we store token in session, not cache file
-    )
+    """Start the Spotify OAuth flow"""
+    sp_oauth = get_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-
-def get_token(request):
-    token_info = request.session.get('spotify_token')
-    if not token_info:
-        return None
-
-    sp_oauth = SpotifyOAuth(
-        client_id=settings.SPOTIPY_CLIENT_ID,
-        client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI
-    )
-
-    if sp_oauth.is_token_expired(token_info):
-        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-        request.session['spotify_token'] = token_info
-    return token_info
-
-
-# -----------------------------
-# Step 2: Spotify callback
-# -----------------------------
-
 @login_required
 def spotify_callback(request):
-    sp_oauth = SpotifyOAuth(
-        client_id=settings.SPOTIPY_CLIENT_ID,
-        client_secret=settings.SPOTIPY_CLIENT_SECRET,
-        redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope=scope,
-        cache_path=None
-    )
+    """
+    Handle Spotify OAuth callback
+    Save connection and fetch user's top artists/tracks
+    """
+    sp_oauth = get_spotify_oauth()
     code = request.GET.get('code')
+    
     if code:
-        token_info = sp_oauth.get_access_token(code)
-        request.session['spotify_token'] = token_info
-    return redirect('account_link')  # After linking, go back here
+        try:
+            # Get access token
+            token_info = sp_oauth.get_access_token(code)
+            print(f"Got token for user: {request.user.username}")
+            
+            # Save Spotify connection to database
+            spotify_account = save_spotify_connection(request.user, token_info)
+            print(f"Saved Spotify account: {spotify_account.spotify_id}")
+            
+            # Fetch and save top artists and tracks
+            artists_success = fetch_and_save_top_artists(request.user)
+            tracks_success = fetch_and_save_top_tracks(request.user)
+            
+            print(f"Artists fetch: {artists_success}, Tracks fetch: {tracks_success}")
+            
+            if artists_success and tracks_success:
+                messages.success(request, 'Spotify account connected successfully! Your top music has been loaded.')
+            elif artists_success or tracks_success:
+                messages.warning(request, 'Spotify connected but some data could not be loaded.')
+            else:
+                messages.error(request, 'Spotify connected but could not load your music data.')
+                
+        except Exception as e:
+            print(f"Error in spotify_callback: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'Error connecting Spotify: {str(e)}')
+    else:
+        messages.error(request, 'No authorization code received from Spotify.')
+    
+    # Redirect to dashboard instead of account_link
+    return redirect('dashboard')
 
-
-# -----------------------------
-# Step 3: Spotify Dashboard (optional)
-# -----------------------------
 @login_required
-def spotify_dashboard(request):
-    """
-    Example page showing top Spotify artists and tracks.
-    """
-    token_info = get_token(request)
-    if not token_info:
-        return redirect('spotify_login')
+def spotify_disconnect(request):
+    """Disconnect user's Spotify account"""
+    if request.method == 'POST':
+        disconnect_spotify(request.user)
+        messages.success(request, 'Spotify account disconnected successfully.')
+    return redirect('account_link')
 
-    sp = spotipy.Spotify(auth=token_info['access_token'])
-    top_artists = sp.current_user_top_artists(limit=5)['items']
-    top_tracks = sp.current_user_top_tracks(limit=5)['items']
 
-    return render(request, 'user/dashboard.html', {
-        'artists': top_artists,
-        'tracks': top_tracks,
-    })
+@login_required
+def spotify_refresh_data(request):
+    """Manually refresh Spotify top artists and tracks"""
+    if request.method == 'POST':
+        if is_spotify_connected(request.user):
+            success_artists = fetch_and_save_top_artists(request.user)
+            success_tracks = fetch_and_save_top_tracks(request.user)
+            
+            if success_artists and success_tracks:
+                messages.success(request, 'Your Spotify data has been refreshed!')
+            else:
+                messages.error(request, 'Error refreshing Spotify data.')
+        else:
+            messages.error(request, 'Please connect your Spotify account first.')
+    
+    return redirect('dashboard')
 
 #########################SoundCloud Form################################################
 

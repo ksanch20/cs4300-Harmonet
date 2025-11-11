@@ -27,9 +27,10 @@ database_url = os.environ.get('DATABASE_URL')
 DEBUG = True
 
 # Spotify variables and client ID
-SPOTIPY_CLIENT_ID = "9b551f0dbef84c38b0e3dd1790d8752e"
-SPOTIPY_CLIENT_SECRET = "fc4e30448e214be285df5707a19237d5"
-SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/account/link/"
+SPOTIPY_CLIENT_ID = config('SPOTIPY_CLIENT_ID', default='')
+SPOTIPY_CLIENT_SECRET = config('SPOTIPY_CLIENT_SECRET', default='')
+#for testing use: https://cs4300-harmonet-accj.onrender.com  || https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/ || https://harmonets.org/user/spotify/callback/ || https://cs4300-harmonet-accj.onrender.com
+SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/spotify/callback/"
 
 ALLOWED_HOSTS = [
     'app-cs4300sanchez-19.devedu.io',
