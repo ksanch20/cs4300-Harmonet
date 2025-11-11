@@ -29,8 +29,8 @@ DEBUG = True
 # Spotify variables and client ID
 SPOTIPY_CLIENT_ID = "9b551f0dbef84c38b0e3dd1790d8752e"
 SPOTIPY_CLIENT_SECRET = "fc4e30448e214be285df5707a19237d5"
-#for testing use: https://cs4300-harmonet-accj.onrender.com  || https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/
-SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/spotify/callback/"
+#for testing use: https://cs4300-harmonet-accj.onrender.com  || https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/ || https://harmonets.org/user/spotify/callback/ || https://cs4300-harmonet-accj.onrender.com
+SPOTIPY_REDIRECT_URI = "https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/"
 
 ALLOWED_HOSTS = [
     'app-cs4300sanchez-19.devedu.io',
