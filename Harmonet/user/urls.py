@@ -39,6 +39,7 @@ urlpatterns = [
     path('accept-request/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
     path('decline-request/<int:request_id>/', views.decline_friend_request, name='decline_friend_request'),
     path('remove-friend/<int:user_id>/', views.remove_friend, name='remove_friend'),
+    path('friends/add-by-code/', views.add_friend_by_code, name='add_friend_by_code'),
 
     path('ai-recommendations/', views.ai_recommendations, name='ai_recommendations'),
 ]
