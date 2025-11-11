@@ -65,11 +65,6 @@ def user_login(request):
     form = AuthenticationForm()
     return render(request, 'user/login.html', {'form': form, 'title':'log in'})
 
-
-@login_required
-#def dashboard(request):
-    #return render(request, 'user/dashboard.html', {'title': 'Dashboard'})
-
 @login_required
 def dashboard(request):
     """Dashboard view with Spotify integration"""
@@ -158,33 +153,6 @@ def spotify_login(request):
     sp_oauth = get_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
-
-"""
-@login_required
-def spotify_callback(request):
-    Handle Spotify OAuth callback
-    Save connection and fetch user's top artists/tracks
-    sp_oauth = get_spotify_oauth()
-    code = request.GET.get('code')
-    
-    if code:
-        try:
-            # Get access token
-            token_info = sp_oauth.get_access_token(code)
-            
-            # Save Spotify connection to database
-            save_spotify_connection(request.user, token_info)
-            
-            # Fetch and save top artists and tracks
-            fetch_and_save_top_artists(request.user)
-            fetch_and_save_top_tracks(request.user)
-            
-            messages.success(request, 'Spotify account connected successfully! Your top music has been loaded.')
-        except Exception as e:
-            messages.error(request, f'Error connecting Spotify: {str(e)}')
-    
-    return redirect('account_link')
-"""
 
 @login_required
 def spotify_callback(request):
