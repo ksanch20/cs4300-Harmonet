@@ -27,8 +27,8 @@ database_url = os.environ.get('DATABASE_URL')
 DEBUG = True
 
 # Spotify variables and client ID
-SPOTIPY_CLIENT_ID = config('SPOTIPY_CLIENT_ID')
-SPOTIPY_CLIENT_SECRET = config('SPOTIPY_CLIENT_SECRET')
+SPOTIPY_CLIENT_ID = config('SPOTIPY_CLIENT_ID', default='')
+SPOTIPY_CLIENT_SECRET = config('SPOTIPY_CLIENT_SECRET', default='')
 #for testing use: https://cs4300-harmonet-accj.onrender.com  || https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/ || https://harmonets.org/user/spotify/callback/ || https://cs4300-harmonet-accj.onrender.com
 SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/spotify/callback/"
 
