@@ -150,7 +150,7 @@ STATICFILES_DIRS = [
 
 # Email settings for SendGrid
 EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
-SENDGRID_API_KEY = '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'
+SENDGRID_API_KEY = config('SENDGRID_API_KEY')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply.harmonet@gmail.com')
 SENDGRID_SANDBOX_MODE = False
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False
