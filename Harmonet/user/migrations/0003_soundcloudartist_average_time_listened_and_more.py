@@ -44,62 +44,6 @@ class Migration(migrations.Migration):
                 'unique_together': {('from_user', 'to_user')},
             },
         ),
-        migrations.CreateModel(
-            name='SpotifyAccount',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('spotify_id', models.CharField(max_length=255, unique=True)),
-                ('display_name', models.CharField(blank=True, max_length=255)),
-                ('email', models.EmailField(blank=True, max_length=254)),
-                ('access_token', models.TextField()),
-                ('refresh_token', models.TextField()),
-                ('token_expires_at', models.DateTimeField()),
-                ('connected_at', models.DateTimeField(auto_now_add=True)),
-                ('last_updated', models.DateTimeField(auto_now=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='spotify_account', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'verbose_name': 'Spotify Account',
-                'verbose_name_plural': 'Spotify Accounts',
-            },
-        ),
-        migrations.CreateModel(
-            name='SpotifyTopArtist',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('spotify_artist_id', models.CharField(max_length=255)),
-                ('name', models.CharField(max_length=255)),
-                ('image_url', models.URLField(blank=True)),
-                ('genres', models.CharField(blank=True, max_length=500)),
-                ('popularity', models.IntegerField(default=0)),
-                ('followers', models.IntegerField(default=0)),
-                ('rank', models.IntegerField(default=0)),
-                ('fetched_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='top_artists', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'ordering': ['rank'],
-                'unique_together': {('user', 'rank')},
-            },
-        ),
-        migrations.CreateModel(
-            name='SpotifyTopTrack',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('spotify_track_id', models.CharField(max_length=255)),
-                ('name', models.CharField(max_length=255)),
-                ('artist_name', models.CharField(max_length=255)),
-                ('album_name', models.CharField(max_length=255)),
-                ('album_image_url', models.URLField(blank=True)),
-                ('popularity', models.IntegerField(default=0)),
-                ('rank', models.IntegerField(default=0)),
-                ('fetched_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='top_tracks', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'ordering': ['rank'],
-                'unique_together': {('user', 'rank')},
-            },
-        ),
     ]
+
 
