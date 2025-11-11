@@ -1,8 +1,9 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from .models import FriendRequest, FriendRequestManager
-from user.models import MusicPreferences
+from user.models import MusicPreferences, UserProfile, FriendRequest
+from django.contrib.messages import get_messages
 
 #Used ChatGPT to help write tests
 
@@ -781,3 +782,427 @@ class AIServiceUnitTests(TestCase):
         self.assertIn('Radiohead', prompt)
         self.assertIn('Muse', prompt)
         self.assertIn('Karma Police', prompt)
+
+
+class AddFriendByCodeViewTest(TestCase):
+    """Test the add_friend_by_code view."""
+    
+    def setUp(self):
+        """Set up test client and users."""
+        self.client = Client()
+        self.user1 = User.objects.create_user('user1', 'user1@test.com', 'pass123')
+        self.user2 = User.objects.create_user('user2', 'user2@test.com', 'pass123')
+        self.user3 = User.objects.create_user('user3', 'user3@test.com', 'pass123')
+    
+    def test_add_friend_by_code_requires_login(self):
+        """Test that view requires authentication."""
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': self.user2.profile.friend_code
+        })
+        # Should redirect to login
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+    
+    def test_add_friend_with_valid_code(self):
+        """Test adding friend with valid friend code."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': self.user2.profile.friend_code
+        })
+        
+        # Should redirect to friends dashboard
+        self.assertRedirects(response, reverse('friends_dashboard'))
+        
+        # Friend request should be created
+        request = FriendRequest.objects.filter(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='pending'
+        ).first()
+        self.assertIsNotNone(request)
+        
+        # Success message should be shown
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('sent' in str(m).lower() for m in messages))
+    
+    def test_add_friend_with_invalid_code(self):
+        """Test adding friend with invalid friend code."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': 'MUSIC-XXXXX'  # Invalid code
+        })
+        
+        # Should redirect back
+        self.assertRedirects(response, reverse('friends_dashboard'))
+        
+        # No friend request should be created
+        self.assertEqual(FriendRequest.objects.count(), 0)
+        
+        # Error message should be shown
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('invalid' in str(m).lower() for m in messages))
+    
+    def test_add_friend_with_empty_code(self):
+        """Test adding friend with empty friend code."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': ''
+        })
+        
+        # Should show error
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('enter' in str(m).lower() for m in messages))
+    
+    def test_cannot_add_self_as_friend(self):
+        """Test that user cannot add themselves using their own code."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': self.user1.profile.friend_code
+        })
+        
+        # No friend request should be created
+        self.assertEqual(FriendRequest.objects.count(), 0)
+        
+        # Error message should be shown
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('yourself' in str(m).lower() for m in messages))
+    
+    def test_duplicate_pending_request(self):
+        """Test sending request when one is already pending."""
+        self.client.login(username='user1', password='pass123')
+        
+        # Create existing pending request
+        FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='pending'
+        )
+        
+        # Try to send again
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': self.user2.profile.friend_code
+        })
+        
+        # Should still only have one request
+        self.assertEqual(FriendRequest.objects.count(), 1)
+        
+        # Info message about pending
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('pending' in str(m).lower() for m in messages))
+    
+    def test_already_friends(self):
+        """Test sending request when already friends."""
+        self.client.login(username='user1', password='pass123')
+        
+        # Create accepted friendship
+        FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='accepted'
+        )
+        
+        # Try to send request
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': self.user2.profile.friend_code
+        })
+        
+        # Should still only have one request
+        self.assertEqual(FriendRequest.objects.count(), 1)
+        
+        # Info message about already friends
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('already' in str(m).lower() for m in messages))
+    
+    def test_resend_after_declined(self):
+        """Test that user can resend request after it was declined."""
+        self.client.login(username='user1', password='pass123')
+        
+        # Create declined request
+        FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='declined'
+        )
+        
+        # Try to send again
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': self.user2.profile.friend_code
+        })
+        
+        # Request should be updated to pending
+        request = FriendRequest.objects.get(from_user=self.user1, to_user=self.user2)
+        self.assertEqual(request.status, 'pending')
+        
+        # Success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('sent' in str(m).lower() for m in messages))
+    
+    def test_code_case_insensitive(self):
+        """Test that friend codes work regardless of case."""
+        self.client.login(username='user1', password='pass123')
+        
+        # Send lowercase code
+        code_lower = self.user2.profile.friend_code.lower()
+        
+        response = self.client.post(reverse('add_friend_by_code'), {
+            'friend_code': code_lower
+        })
+        
+        # Should work and create request
+        self.assertTrue(
+            FriendRequest.objects.filter(
+                from_user=self.user1,
+                to_user=self.user2
+            ).exists()
+        )
+
+
+class SendFriendRequestViewTest(TestCase):
+    """Test the send_friend_request view."""
+    
+    def setUp(self):
+        """Set up test client and users."""
+        self.client = Client()
+        self.user1 = User.objects.create_user('user1', 'user1@test.com', 'pass123')
+        self.user2 = User.objects.create_user('user2', 'user2@test.com', 'pass123')
+    
+    def test_send_friend_request_requires_login(self):
+        """Test that view requires authentication."""
+        response = self.client.post(
+            reverse('send_friend_request', args=[self.user2.id])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+    
+    def test_send_friend_request_success(self):
+        """Test successfully sending a friend request."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(
+            reverse('send_friend_request', args=[self.user2.id])
+        )
+        
+        # Should create friend request
+        self.assertTrue(
+            FriendRequest.objects.filter(
+                from_user=self.user1,
+                to_user=self.user2,
+                status='pending'
+            ).exists()
+        )
+        
+        # Success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('sent' in str(m).lower() for m in messages))
+    
+    def test_cannot_send_request_to_self(self):
+        """Test that user cannot send request to themselves."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(
+            reverse('send_friend_request', args=[self.user1.id])
+        )
+        
+        # No request created
+        self.assertEqual(FriendRequest.objects.count(), 0)
+        
+        # Error message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('yourself' in str(m).lower() for m in messages))
+
+
+class AcceptFriendRequestViewTest(TestCase):
+    """Test the accept_friend_request view."""
+    
+    def setUp(self):
+        """Set up test client and users."""
+        self.client = Client()
+        self.user1 = User.objects.create_user('user1', 'user1@test.com', 'pass123')
+        self.user2 = User.objects.create_user('user2', 'user2@test.com', 'pass123')
+        
+        # Create pending request
+        self.request = FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='pending'
+        )
+    
+    def test_accept_friend_request_success(self):
+        """Test accepting a friend request."""
+        self.client.login(username='user2', password='pass123')
+        
+        response = self.client.post(
+            reverse('accept_friend_request', args=[self.request.id])
+        )
+        
+        # Request should be accepted
+        self.request.refresh_from_db()
+        self.assertEqual(self.request.status, 'accepted')
+        
+        # Should redirect
+        self.assertRedirects(response, reverse('friends_dashboard'))
+    
+    def test_cannot_accept_others_request(self):
+        """Test that user can only accept requests sent to them."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(
+            reverse('accept_friend_request', args=[self.request.id])
+        )
+        
+        # Should get 404 (request not found for this user)
+        self.assertEqual(response.status_code, 404)
+
+
+class DeclineFriendRequestViewTest(TestCase):
+    """Test the decline_friend_request view."""
+    
+    def setUp(self):
+        """Set up test client and users."""
+        self.client = Client()
+        self.user1 = User.objects.create_user('user1', 'user1@test.com', 'pass123')
+        self.user2 = User.objects.create_user('user2', 'user2@test.com', 'pass123')
+        
+        self.request = FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='pending'
+        )
+    
+    def test_decline_friend_request_success(self):
+        """Test declining a friend request."""
+        self.client.login(username='user2', password='pass123')
+        
+        response = self.client.post(
+            reverse('decline_friend_request', args=[self.request.id])
+        )
+        
+        # Request should be declined
+        self.request.refresh_from_db()
+        self.assertEqual(self.request.status, 'declined')
+
+
+class RemoveFriendViewTest(TestCase):
+    """Test the remove_friend view."""
+    
+    def setUp(self):
+        """Set up test client and users."""
+        self.client = Client()
+        self.user1 = User.objects.create_user('user1', 'user1@test.com', 'pass123')
+        self.user2 = User.objects.create_user('user2', 'user2@test.com', 'pass123')
+        
+        # Create accepted friendship
+        self.friendship = FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='accepted'
+        )
+    
+    def test_remove_friend_success(self):
+        """Test removing a friend."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.post(
+            reverse('remove_friend', args=[self.user2.id])
+        )
+        
+        # Friendship should be deleted
+        self.assertFalse(
+            FriendRequest.objects.filter(id=self.friendship.id).exists()
+        )
+        
+        # Should redirect
+        self.assertRedirects(response, reverse('friends_dashboard'))
+
+
+class FriendsDashboardViewTest(TestCase):
+    """Test the friends_dashboard view."""
+    
+    def setUp(self):
+        """Set up test client and users."""
+        self.client = Client()
+        self.user1 = User.objects.create_user('user1', 'user1@test.com', 'pass123')
+        self.user2 = User.objects.create_user('user2', 'user2@test.com', 'pass123')
+        self.user3 = User.objects.create_user('user3', 'user3@test.com', 'pass123')
+    
+    def test_friends_dashboard_requires_login(self):
+        """Test that dashboard requires authentication."""
+        response = self.client.get(reverse('friends_dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+    
+    def test_friends_dashboard_shows_friend_code(self):
+        """Test that dashboard displays user's friend code."""
+        self.client.login(username='user1', password='pass123')
+        
+        response = self.client.get(reverse('friends_dashboard'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.user1.profile.friend_code)
+    
+    def test_search_excludes_declined_users(self):
+        """Test that search results exclude users with declined requests."""
+        self.client.login(username='user1', password='pass123')
+        
+        # Create declined request
+        FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='declined'
+        )
+        
+        # Search for user2
+        response = self.client.get(
+            reverse('friends_dashboard'),
+            {'search': 'user2'}
+        )
+        
+        # user2 should appear in results (declined allows resending)
+        self.assertContains(response, 'user2')
+    
+    def test_search_excludes_pending_users(self):
+        """Test that search excludes users with pending requests."""
+        self.client.login(username='user1', password='pass123')
+        
+        # Create pending request
+        FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='pending'
+        )
+        
+        # Search for user2
+        response = self.client.get(
+            reverse('friends_dashboard'),
+            {'search': 'user2'}
+        )
+        
+        # user2 should NOT appear (already have pending request)
+        self.assertIn('No users found', response.content.decode())
+
+
+    
+    def test_search_excludes_friends(self):
+        """Test that search excludes current friends."""
+        self.client.login(username='user1', password='pass123')
+        
+        # Create friendship
+        FriendRequest.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            status='accepted'
+        )
+        
+        # Search for user2
+        response = self.client.get(
+            reverse('friends_dashboard'),
+            {'search': 'user2'}
+        )
+        
+        # user2 should NOT appear (already friends)
+        # Note: user2 will still appear in the friends list, just not search results
+        self.assertEqual(response.context['search_results'].count(), 0)

@@ -1,6 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+import random
+import string
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 #Stores additional music preferences that users manually input
 
@@ -196,3 +200,43 @@ class SpotifyTopTrack(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - #{self.rank}: {self.name}"
+
+
+class UserProfile(models.Model):
+    """Extended user profile with friend code."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    friend_code = models.CharField(max_length=20, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.friend_code:
+            self.friend_code = self.generate_friend_code()
+        super().save(*args, **kwargs)
+    
+    @staticmethod
+    def generate_friend_code():
+        """Generate a unique, user-friendly friend code."""
+        # Format: MUSIC-XXXXX (e.g., MUSIC-A7X9K)
+        while True:
+            # Generate 5 random alphanumeric characters (excluding confusing ones)
+            chars = ''.join(random.choices('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', k=5))
+            code = f'MUSIC-{chars}'
+            
+            # Check if code already exists
+            if not UserProfile.objects.filter(friend_code=code).exists():
+                return code
+    
+    def __str__(self):
+        return f"{self.user.username} ({self.friend_code})"
+
+
+# Signal to auto-create profile when user is created
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

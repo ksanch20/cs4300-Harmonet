@@ -8,7 +8,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from django.db import models
 from django.db.models import Q
-
+from django.utils import timezone
 from django.contrib.auth.models import User
 from .ai_service import get_music_recommendations
 from django.conf import settings
@@ -18,7 +18,6 @@ from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendReq
 from django.core.paginator import Paginator
 from .models import SoundCloudArtist
 from .forms import SoundCloudArtistForm
-
 import re
 from django.utils.safestring import mark_safe
 
@@ -303,7 +302,6 @@ def music_preferences(request):
 ###############################FRIEND REQUESTS#########################
 # views.py
 
-
 @login_required
 def friends_dashboard(request):
     friends = FriendRequest.objects.friends(request.user)
@@ -313,16 +311,19 @@ def friends_dashboard(request):
         status='pending'
     )
     
+    # Get user's friend code
+    friend_code = request.user.profile.friend_code
+    
     # Search functionality
     search_query = request.GET.get('search', '')
     search_results = []
     
     if search_query:
-        # Get all friend request user IDs (both directions, all statuses)
         friend_request_users = FriendRequest.objects.filter(
-            Q(from_user=request.user) | Q(to_user=request.user)
+            Q(from_user=request.user) | Q(to_user=request.user),
+            status__in=['pending', 'accepted']  
         ).values_list('from_user_id', 'to_user_id')
-        
+
         # Flatten the list to get all user IDs involved in requests
         related_user_ids = set()
         for from_id, to_id in friend_request_users:
@@ -340,6 +341,7 @@ def friends_dashboard(request):
         )[:10]  # Limit to 10 results
     
     context = {
+        'friend_code': friend_code,  # ADD THIS LINE
         'friends': friends,
         'pending_received': pending_received,
         'pending_sent': pending_sent,
@@ -354,7 +356,8 @@ def send_friend_request(request, user_id):
     
     if to_user == request.user:
         messages.error(request, "You cannot send a friend request to yourself.")
-        return redirect('profile')
+        return redirect('friends_dashboard')
+    
     # Check if request already exists
     existing = FriendRequest.objects.filter(
         models.Q(from_user=request.user, to_user=to_user) |
@@ -366,11 +369,19 @@ def send_friend_request(request, user_id):
             messages.info(request, "You are already friends.")
         elif existing.status == 'pending':
             messages.info(request, "Friend request already pending.")
-        else:
-            messages.info(request, "A friend request already exists.")
+        elif existing.status == 'declined':
+            # Allow resending after decline - UPDATE TIMESTAMP
+            existing.from_user = request.user
+            existing.to_user = to_user
+            existing.status = 'pending'
+            existing.created_at = timezone.now()  # ← ADD THIS LINE
+            existing.save()
+            messages.success(request, f"Friend request sent to {to_user.username}!")
     else:
+        # Create new friend request
         FriendRequest.objects.create(from_user=request.user, to_user=to_user)
-      
+        messages.success(request, f"Friend request sent to {to_user.username}!")
+    
     return redirect('friends_dashboard')
 
 @login_required
@@ -473,3 +484,59 @@ def ai_recommendations(request):
         'error_message': error_message,
         'title': 'AI Recommendations'
     })
+
+
+@login_required
+def add_friend_by_code(request):
+    """Add friend using their friend code."""
+    
+    if request.method == 'POST':
+        friend_code = request.POST.get('friend_code', '').strip().upper()
+        
+        if not friend_code:
+            messages.error(request, 'Please enter a friend code.')
+            return redirect('friends_dashboard')
+        
+        # Try to find user with this code
+        try:
+            from .models import UserProfile
+            profile = UserProfile.objects.get(friend_code=friend_code)
+            to_user = profile.user
+            
+            # Can't add yourself
+            if to_user == request.user:
+                messages.error(request, 'You cannot add yourself as a friend!')
+                return redirect('friends_dashboard')
+            
+            # Check if request already exists
+            existing = FriendRequest.objects.filter(
+                Q(from_user=request.user, to_user=to_user) |
+                Q(from_user=to_user, to_user=request.user)
+            ).first()
+            
+            if existing:
+                if existing.status == 'accepted':
+                    messages.info(request, f'You are already friends with {to_user.username}!')
+                elif existing.status == 'pending':
+                    messages.info(request, f'Friend request with {to_user.username} is already pending.')
+                elif existing.status == 'declined':
+                    # Allow resending after decline - UPDATE TIMESTAMP
+                    existing.from_user = request.user
+                    existing.to_user = to_user
+                    existing.status = 'pending'
+                    existing.created_at = timezone.now()  # ← ADD THIS LINE
+                    existing.save()
+                    messages.success(request, f'Friend request sent to {to_user.username}!')
+            else:
+                # Create new friend request
+                FriendRequest.objects.create(
+                    from_user=request.user,
+                    to_user=to_user,
+                    status='pending'
+                )
+                messages.success(request, f'Friend request sent to {to_user.username}!')
+        
+        except UserProfile.DoesNotExist:
+            messages.error(request, 'Invalid friend code. Please check and try again.')
+    
+    return redirect('friends_dashboard')
