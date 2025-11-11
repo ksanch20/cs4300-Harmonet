@@ -67,8 +67,26 @@ def user_login(request):
 
 
 @login_required
+#def dashboard(request):
+    #return render(request, 'user/dashboard.html', {'title': 'Dashboard'})
+
+@login_required
 def dashboard(request):
-    return render(request, 'user/dashboard.html', {'title': 'Dashboard'})
+    """Dashboard view with Spotify integration"""
+    # Check if Spotify is connected
+    spotify_connected = is_spotify_connected(request.user)
+    
+    # Get top artists if connected
+    top_artists = []
+    if spotify_connected:
+        top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
+        print(f"Found {len(top_artists)} top artists for {request.user.username}")
+    
+    return render(request, 'user/dashboard.html', {
+        'title': 'Dashboard',
+        'spotify_connected': spotify_connected,
+        'top_artists': top_artists
+    })
 
 # ---------------- Logout -----------------
 def user_logout(request):
@@ -141,7 +159,7 @@ def spotify_login(request):
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-
+"""
 @login_required
 def spotify_callback(request):
     """
@@ -168,7 +186,50 @@ def spotify_callback(request):
             messages.error(request, f'Error connecting Spotify: {str(e)}')
     
     return redirect('account_link')
+"""
 
+@login_required
+def spotify_callback(request):
+    """
+    Handle Spotify OAuth callback
+    Save connection and fetch user's top artists/tracks
+    """
+    sp_oauth = get_spotify_oauth()
+    code = request.GET.get('code')
+    
+    if code:
+        try:
+            # Get access token
+            token_info = sp_oauth.get_access_token(code)
+            print(f"Got token for user: {request.user.username}")
+            
+            # Save Spotify connection to database
+            spotify_account = save_spotify_connection(request.user, token_info)
+            print(f"Saved Spotify account: {spotify_account.spotify_id}")
+            
+            # Fetch and save top artists and tracks
+            artists_success = fetch_and_save_top_artists(request.user)
+            tracks_success = fetch_and_save_top_tracks(request.user)
+            
+            print(f"Artists fetch: {artists_success}, Tracks fetch: {tracks_success}")
+            
+            if artists_success and tracks_success:
+                messages.success(request, 'Spotify account connected successfully! Your top music has been loaded.')
+            elif artists_success or tracks_success:
+                messages.warning(request, 'Spotify connected but some data could not be loaded.')
+            else:
+                messages.error(request, 'Spotify connected but could not load your music data.')
+                
+        except Exception as e:
+            print(f"Error in spotify_callback: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'Error connecting Spotify: {str(e)}')
+    else:
+        messages.error(request, 'No authorization code received from Spotify.')
+    
+    # Redirect to dashboard instead of account_link
+    return redirect('dashboard')
 
 @login_required
 def spotify_disconnect(request):
