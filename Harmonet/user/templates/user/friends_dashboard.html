@@ -315,8 +315,16 @@
       <!-- Header -->
       <div class="dashboard-header">
         <h1> Friends</h1>
-        <p class="dashboard-subtitle">Connect with friends and share your music journey</p>
+        <p class="dashboard-subtitle">
+          Connect with friends and share your music journey
+          <span style="display: inline-block; margin-left: 1rem;">•</span>
+          <a href="{% url 'user_profile' request.user.username %}" 
+             style="color: #5ca1d3; text-decoration: none; font-weight: 500; margin-left: 1rem;">
+            👤 View My Profile
+          </a>
+        </p>
       </div>
+      
 
       <div class="dashboard-wrapper">
         

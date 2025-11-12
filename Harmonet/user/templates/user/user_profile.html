@@ -112,6 +112,34 @@
       text-decoration: underline;
     }
 
+    /* Messages */
+    .message {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .message.success {
+      background-color: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+
+    .message.error {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+
+    .message.info {
+      background-color: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+
     /* Artist Wallet Styles */
     .artists-section {
       background: white;
@@ -277,10 +305,7 @@
         {% if messages %}
           <div style="margin-bottom: 1.5rem;">
             {% for message in messages %}
-              <div style="padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem;
-                          {% if message.tags == 'success' %}background-color: #d1fae5; color: #065f46; border: 1px solid #6ee7b7;
-                          {% elif message.tags == 'error' %}background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;
-                          {% else %}background-color: #dbeafe; color: #1e40af; border: 1px solid #93c5fd;{% endif %}">
+              <div class="message {{ message.tags }}">
                 <span>{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}⚠️{% else %}ℹ️{% endif %}</span>
                 <span>{{ message }}</span>
               </div>
