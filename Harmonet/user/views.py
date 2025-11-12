@@ -540,3 +540,51 @@ def add_friend_by_code(request):
             messages.error(request, 'Invalid friend code. Please check and try again.')
     
     return redirect('friends_dashboard')
+
+@login_required
+def user_profile(request, username):
+    """View another user's public profile."""
+    from django.db.models import Q
+    
+    # Get the user or 404
+    profile_user = get_object_or_404(User, username=username)
+    
+    # Check if they're friends
+    are_friends = FriendRequest.objects.are_friends(request.user, profile_user)
+    
+    # Check for existing friend request
+    existing_request = None
+    if request.user != profile_user:
+        existing_request = FriendRequest.objects.filter(
+            Q(from_user=request.user, to_user=profile_user) |
+            Q(from_user=profile_user, to_user=request.user)
+        ).first()
+    
+    # Get user's artists (adjust import based on your app structure)
+    try:
+        # Import your Artist model - adjust the import path as needed
+        from user.models import SoundCloudArtist  # or Artist, or whatever your model is called
+        
+        # Get this user's artists
+        # Only show artists if: viewing own profile OR friends with this user
+        if request.user == profile_user or are_friends:
+            user_artists = SoundCloudArtist.objects.filter(user=profile_user).order_by('-rating', 'name')[:6]  # Show top 6
+            show_artists = True
+        else:
+            user_artists = []
+            show_artists = False
+            
+    except ImportError:
+        user_artists = []
+        show_artists = False
+    
+    context = {
+        'profile_user': profile_user,
+        'are_friends': are_friends,
+        'existing_request': existing_request,
+        'is_own_profile': request.user == profile_user,
+        'user_artists': user_artists,
+        'show_artists': show_artists,
+    }
+    
+    return render(request, 'user/user_profile.html', context)

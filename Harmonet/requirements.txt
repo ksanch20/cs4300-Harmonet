@@ -11,3 +11,5 @@ psycopg2-binary==2.9.10
 spotipy==2.23.0
 openai==2.6.1
 django-sendgrid-v5
+pylint
+pylint-django
