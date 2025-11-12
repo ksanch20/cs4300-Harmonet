@@ -7,7 +7,7 @@ updates:
       interval: "daily"               # Check for updates every day
       time: "09:00"                   # Optional: UTC time
     open-pull-requests-limit: 5       # Limit open PRs to avoid clutter
-    target-branch: "main"             # Dependabot opens PRs to main
+    target-branch: "dependabot"             # Dependabot opens PRs to main
     commit-message:
       prefix: "deps(pip)"
     ignore:
@@ -21,6 +21,6 @@ updates:
       interval: "daily"               # Check for updates daily
       time: "09:00"
     open-pull-requests-limit: 3
-    target-branch: "main"
+    target-branch: "dependabot"
     commit-message:
       prefix: "deps(actions)"
