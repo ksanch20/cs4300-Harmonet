@@ -27,15 +27,28 @@ def save_spotify_connection(user, token_info):
     # Get Spotify user info
     sp = spotipy.Spotify(auth=token_info['access_token'])
     spotify_user = sp.current_user()
+    spotify_id = spotify_user['id']
     
     # Calculate token expiration time
     expires_at = datetime.fromtimestamp(token_info['expires_at'])
+    
+    # Check if this Spotify account is already connected to a DIFFERENT user
+    existing_connection = SpotifyAccount.objects.filter(
+        spotify_id=spotify_id
+    ).exclude(user=user).first()
+    
+    if existing_connection:
+        raise Exception(
+            f"This Spotify account ({spotify_user.get('display_name', spotify_id)}) is already "
+            f"connected to another harmonets.org account. Each Spotify account can only be "
+            f"connected to one harmonets user account."
+        )
     
     # Save or update SpotifyAccount
     spotify_account, created = SpotifyAccount.objects.update_or_create(
         user=user,
         defaults={
-            'spotify_id': spotify_user['id'],
+            'spotify_id': spotify_id,
             'display_name': spotify_user.get('display_name', ''),
             'email': spotify_user.get('email', ''),
             'access_token': token_info['access_token'],
@@ -45,7 +58,6 @@ def save_spotify_connection(user, token_info):
     )
     
     return spotify_account
-
 
 def get_valid_token(user):
     """
