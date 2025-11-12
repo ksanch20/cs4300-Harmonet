@@ -149,8 +149,24 @@ def password_change(request):
 @login_required
 def spotify_login(request):
     """Start the Spotify OAuth flow"""
+    # Clear any existing Spotify session data
+    if 'spotify_token' in request.session:
+        del request.session['spotify_token']
+    
+    # Store the user ID in session to verify after callback
+    request.session['spotify_auth_user_id'] = request.user.id
+    
     sp_oauth = get_spotify_oauth()
-    auth_url = sp_oauth.get_authorize_url()
+    
+    # Add state parameter for security and debugging
+    state = f"{request.user.id}"
+    auth_url = sp_oauth.get_authorize_url(state=state)
+    
+    print(f"=== SPOTIFY LOGIN START ===")
+    print(f"Harmonets user: {request.user.username} (ID: {request.user.id})")
+    print(f"Redirect URL: {auth_url}")
+    print(f"===========================")
+    
     return redirect(auth_url)
 
 @login_required
@@ -159,18 +175,32 @@ def spotify_callback(request):
     Handle Spotify OAuth callback
     Save connection and fetch user's top artists/tracks
     """
+    # Verify this is the same user who started the OAuth flow
+    auth_user_id = request.session.get('spotify_auth_user_id')
+    if auth_user_id != request.user.id:
+        messages.error(request, 'Session mismatch. Please try connecting again.')
+        return redirect('dashboard')
+    
     sp_oauth = get_spotify_oauth()
     code = request.GET.get('code')
     
     if code:
         try:
+            print(f"=== SPOTIFY CALLBACK START ===")
+            print(f"Harmonets user: {request.user.username} (ID: {request.user.id})")
+            
             # Get access token
             token_info = sp_oauth.get_access_token(code)
             print(f"Got token for user: {request.user.username}")
             
-            # Save Spotify connection to database
+            # Save Spotify connection to database (this will print debug info)
             spotify_account = save_spotify_connection(request.user, token_info)
-            print(f"Saved Spotify account: {spotify_account.spotify_id}")
+            print(f"Successfully saved Spotify account: {spotify_account.spotify_id}")
+            print(f"==============================")
+            
+            # Clean up session
+            if 'spotify_auth_user_id' in request.session:
+                del request.session['spotify_auth_user_id']
             
             # Fetch and save top artists and tracks
             artists_success = fetch_and_save_top_artists(request.user)
@@ -179,30 +209,39 @@ def spotify_callback(request):
             print(f"Artists fetch: {artists_success}, Tracks fetch: {tracks_success}")
             
             if artists_success and tracks_success:
-                messages.success(request, 'Spotify account connected successfully! Your top music has been loaded.')
+                messages.success(request, f'Spotify account connected successfully as {spotify_account.display_name}! Your top music has been loaded.')
             elif artists_success or tracks_success:
                 messages.warning(request, 'Spotify connected but some data could not be loaded.')
             else:
-                messages.error(request, 'Spotify connected but could not load your music data.')
+                messages.warning(request, 'Spotify connected but could not load your music data.')
                 
         except Exception as e:
-            print(f"Error in spotify_callback: {str(e)}")
+            error_str = str(e)
+            print(f"=== SPOTIFY CALLBACK ERROR ===")
+            print(f"Error in spotify_callback: {error_str}")
+            print(f"Harmonets user: {request.user.username}")
             import traceback
             traceback.print_exc()
-            messages.error(request, f'Error connecting Spotify: {str(e)}')
+            print(f"==============================")
+            
+            # User-friendly error message
+            if "already connected" in error_str.lower():
+                messages.error(request, error_str)
+            else:
+                messages.error(request, f'Error connecting Spotify: {error_str}')
     else:
         messages.error(request, 'No authorization code received from Spotify.')
     
-    # Redirect to dashboard instead of account_link
     return redirect('dashboard')
 
 @login_required
 def spotify_disconnect(request):
     """Disconnect user's Spotify account"""
     if request.method == 'POST':
+        print(f"Disconnecting Spotify for user: {request.user.username}")
         disconnect_spotify(request.user)
         messages.success(request, 'Spotify account disconnected successfully.')
-    return redirect('account_link')
+    return redirect('dashboard')  # Changed from account_link to dashboard
 
 
 @login_required
@@ -210,6 +249,7 @@ def spotify_refresh_data(request):
     """Manually refresh Spotify top artists and tracks"""
     if request.method == 'POST':
         if is_spotify_connected(request.user):
+            print(f"Refreshing Spotify data for user: {request.user.username}")
             success_artists = fetch_and_save_top_artists(request.user)
             success_tracks = fetch_and_save_top_tracks(request.user)
             
