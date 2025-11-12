@@ -541,10 +541,10 @@ def add_friend_by_code(request):
     
     return redirect('friends_dashboard')
 
+
 @login_required
 def user_profile(request, username):
     """View another user's public profile."""
-    from django.db.models import Q
     
     # Get the user or 404
     profile_user = get_object_or_404(User, username=username)
@@ -560,29 +560,25 @@ def user_profile(request, username):
             Q(from_user=profile_user, to_user=request.user)
         ).first()
     
-    # Get user's artists (adjust import based on your app structure)
-    try:
-        # Import your Artist model - adjust the import path as needed
-        from user.models import SoundCloudArtist  # or Artist, or whatever your model is called
-        
-        # Get this user's artists
-        # Only show artists if: viewing own profile OR friends with this user
-        if request.user == profile_user or are_friends:
-            user_artists = SoundCloudArtist.objects.filter(user=profile_user).order_by('-rating', 'name')[:6]  # Show top 6
-            show_artists = True
-        else:
-            user_artists = []
-            show_artists = False
-            
-    except ImportError:
-        user_artists = []
-        show_artists = False
+    # Determine if own profile or friends
+    is_own_profile = request.user == profile_user
+    can_view_artists = is_own_profile or are_friends
+    
+    # Get user's artists based on privacy settings
+    user_artists = []
+    show_artists = False
+    
+    if SoundCloudArtist and can_view_artists:
+        user_artists = SoundCloudArtist.objects.filter(
+            user=profile_user
+        ).order_by('-rating', 'name')[:6]
+        show_artists = True
     
     context = {
         'profile_user': profile_user,
         'are_friends': are_friends,
         'existing_request': existing_request,
-        'is_own_profile': request.user == profile_user,
+        'is_own_profile': is_own_profile,
         'user_artists': user_artists,
         'show_artists': show_artists,
     }
