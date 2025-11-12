@@ -5,21 +5,16 @@ updates:
     directory: "/"                    # Root directory where requirements.txt lives
     schedule:
       interval: "daily"               # Check for updates every day
-      time: "09:00"                   # Optional: UTC time
     open-pull-requests-limit: 5       # Limit open PRs to avoid clutter
     target-branch: "main"             # Dependabot opens PRs to main
     commit-message:
       prefix: "deps(pip)"
-    ignore:
-      - dependency-name: "django"
-        versions: ["<4.2"]            # Ignore outdated Django versions
 
-  # --- GitHub Actions (workflow updates) ---
+  # --- GitHub Actions ---
   - package-ecosystem: "github-actions"
-    directory: "/"                    # GitHub Actions are stored in .github/workflows
+    directory: "/.github/workflows"                    # GitHub Actions are stored in .github/workflows
     schedule:
       interval: "daily"               # Check for updates daily
-      time: "09:00"
     open-pull-requests-limit: 3
     target-branch: "main"
     commit-message:
