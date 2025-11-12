@@ -29,4 +29,4 @@ jobs:
       - name: Run Pylint
         run: |
           echo "Running Pylint for HarmoNet..."
-          pylint Harmonet --output-format=colorized || true
+          pylint Harmonet/Harmonet --output-format=colorized || true
