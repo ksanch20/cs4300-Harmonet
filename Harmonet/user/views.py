@@ -64,22 +64,25 @@ def user_login(request):
     form = AuthenticationForm()
     return render(request, 'user/login.html', {'form': form, 'title':'log in'})
 
+
 @login_required
 def dashboard(request):
     """Dashboard view with Spotify integration"""
     # Check if Spotify is connected
     spotify_connected = is_spotify_connected(request.user)
     
-    # Get top artists if connected
     top_artists = []
     if spotify_connected:
         top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
         print(f"Found {len(top_artists)} top artists for {request.user.username}")
     
+    friends = FriendRequest.objects.friends(request.user)
+    
     return render(request, 'user/dashboard.html', {
         'title': 'Dashboard',
         'spotify_connected': spotify_connected,
-        'top_artists': top_artists
+        'top_artists': top_artists,
+        'friends': friends
     })
 
 # ---------------- Logout -----------------
