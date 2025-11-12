@@ -450,6 +450,7 @@ disable=raw-checker-failed,
         W0703,  # broad-except
         E0401,  # import-error (Django lazy imports)
         E1101,  # no-member (ORM dynamic attributes)
+        C0103
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
