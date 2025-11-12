@@ -53,11 +53,21 @@ def save_spotify_connection(user, token_info):
             f"connected to one harmonets user account."
         )
     
-    # Save or update SpotifyAccount
+    # Check if the current user already has a different Spotify account connected
+    try:
+        current_connection = SpotifyAccount.objects.get(user=user)
+        if current_connection.spotify_id != spotify_id:
+            # User is switching to a different Spotify account - delete the old one
+            print(f"User {user.username} switching from Spotify {current_connection.spotify_id} to {spotify_id}")
+            current_connection.delete()
+    except SpotifyAccount.DoesNotExist:
+        pass
+    
+    # Save or create SpotifyAccount (now safe because we've handled conflicts)
     spotify_account, created = SpotifyAccount.objects.update_or_create(
-        user=user,
+        spotify_id=spotify_id,
         defaults={
-            'spotify_id': spotify_id,
+            'user': user,
             'display_name': spotify_user.get('display_name', ''),
             'email': spotify_user.get('email', ''),
             'access_token': token_info['access_token'],
