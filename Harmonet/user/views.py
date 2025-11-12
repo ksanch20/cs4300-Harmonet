@@ -568,7 +568,7 @@ def user_profile(request, username):
     user_artists = []
     show_artists = False
     
-    if SoundCloudArtist and can_view_artists:
+    if can_view_artists:
         user_artists = SoundCloudArtist.objects.filter(
             user=profile_user
         ).order_by('-rating', 'name')[:6]
