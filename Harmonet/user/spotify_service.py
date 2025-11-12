@@ -30,12 +30,12 @@ def save_spotify_connection(user, token_info):
     spotify_id = spotify_user['id']
     
     # DEBUG: Print what we got from Spotify
-    print(f"=== SPOTIFY CONNECTION DEBUG ===")
-    print(f"Harmonets user trying to connect: {user.username}")
+    print(f"=== SPOTIFY USER DATA ===")
+    print(f"Harmonets user trying to connect: {user.username} (ID: {user.id})")
     print(f"Spotify ID returned: {spotify_id}")
     print(f"Spotify display name: {spotify_user.get('display_name', 'N/A')}")
     print(f"Spotify email: {spotify_user.get('email', 'N/A')}")
-    print(f"================================")
+    print(f"========================")
     
     # Calculate token expiration time
     expires_at = datetime.fromtimestamp(token_info['expires_at'])
@@ -46,28 +46,18 @@ def save_spotify_connection(user, token_info):
     ).exclude(user=user).first()
     
     if existing_connection:
-        print(f"ERROR: Spotify ID {spotify_id} is already connected to harmonets user: {existing_connection.user.username}")
+        print(f"❌ ERROR: Spotify ID '{spotify_id}' is already connected to harmonets user: {existing_connection.user.username} (ID: {existing_connection.user.id})")
         raise Exception(
             f"This Spotify account ({spotify_user.get('display_name', spotify_id)}) is already "
             f"connected to another harmonets.org account. Each Spotify account can only be "
             f"connected to one harmonets user account."
         )
     
-    # Check if the current user already has a different Spotify account connected
-    try:
-        current_connection = SpotifyAccount.objects.get(user=user)
-        if current_connection.spotify_id != spotify_id:
-            # User is switching to a different Spotify account - delete the old one
-            print(f"User {user.username} switching from Spotify {current_connection.spotify_id} to {spotify_id}")
-            current_connection.delete()
-    except SpotifyAccount.DoesNotExist:
-        pass
-    
-    # Save or create SpotifyAccount (now safe because we've handled conflicts)
+    # Save or update SpotifyAccount
     spotify_account, created = SpotifyAccount.objects.update_or_create(
-        spotify_id=spotify_id,
+        user=user,
         defaults={
-            'user': user,
+            'spotify_id': spotify_id,
             'display_name': spotify_user.get('display_name', ''),
             'email': spotify_user.get('email', ''),
             'access_token': token_info['access_token'],
@@ -75,6 +65,9 @@ def save_spotify_connection(user, token_info):
             'token_expires_at': expires_at,
         }
     )
+    
+    action = "Created" if created else "Updated"
+    print(f"✅ {action} Spotify connection for {user.username}")
     
     return spotify_account
 
