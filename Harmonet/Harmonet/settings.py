@@ -88,7 +88,7 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {'default': dj_database_url.parse('postgresql://mysite:FAmxpWVgMQe40jnf7Nm5b1BmE5Rpa7oA@dpg-d3qnb3fdiees73agdfvg-a.oregon-postgres.render.com/mysite_80dd')}
+DATABASES = {'default': dj_database_url.parse('postgresql://harmonet_database_user:qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/harmonet_database')}
 
 # Override for tests - use SQLite in-memory
 if 'test' in sys.argv:
