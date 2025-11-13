@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard | Harmonet</title>
+  <title>Dashboard | HarmoNet</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'dashboard_style.css' %}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -10,111 +10,226 @@
 
 <body>
   <nav class="navbar">
-    <div class="logo">Harmonet</div>
-    <div class="auth-buttons">
-      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
-    </div>
-    <div class="auth-buttons">
-      <a href="{% url 'friends_dashboard' %}" class="btn-friends">Friends</a>
+    <div class="logo">HarmoNet</div>
+    <div class="nav-right">
+      <div class="logo"> Welcome </div>
+      <div class="user-menu">
+        <button class="user-icon-btn" onclick="toggleDropdown()" aria-label="User Menu">
+          <span class="user-initial">{{ request.user.username|slice:":1"|upper }}</span>
+        </button>
+        <div class="dropdown-menu" id="userDropdown">
+          <div class="dropdown-header">
+            <strong>{{ request.user.username }}</strong>
+            {% if request.user.email %}
+              <small>{{ request.user.email }}</small>
+            {% endif %}
+          </div>
+          <hr class="dropdown-divider">
+          <a href="{% url 'profile' %}" class="dropdown-item">
+            <span>⚙️</span> Settings
+          </a>
+          <a href="{% url 'logout' %}" class="dropdown-item logout-item">
+            <span>🚪</span> Logout
+          </a>
+        </div>
+      </div>
     </div>
   </nav>
 
-  <main class="dashboard-container">
-    <div class="dashboard-box">
+  <script>
+    function toggleDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.classList.toggle('show');
+    }
 
-      <div class="dashboard-header">
-        <h1>Welcome to Your Harmonet Dashboard!</h1>
-        <p class="dashboard-subtitle">All Your Music Needs in One Area</p>
-      </div>
+    // Close dropdown when clicking outside
+    window.onclick = function(event) {
+      if (!event.target.matches('.user-icon-btn') && !event.target.matches('.user-initial')) {
+        const dropdown = document.getElementById('userDropdown');
+        if (dropdown.classList.contains('show')) {
+          dropdown.classList.remove('show');
+        }
+      }
+    }
+  </script>
 
-      <div class="dashboard-wrapper">
-        <div class="dashboard-grid">
-          <div class="card">
-            <h3>👤 Profile</h3>
-            <p>Manage your account settings and preferences</p>
-            <a href="{% url 'profile' %}">Go to Profile →</a>
+  <div class="main-layout">
+    <main class="dashboard-container">
+      
+      <div class="dashboard-box">
+        <div class="dashboard-header">
+          <h1>Welcome to Your HarmoNet Dashboard!</h1>
+          <p class="dashboard-subtitle">All Your Music Needs Compact into One Application</p>
+        </div>
+
+        <div class="dashboard-wrapper">
+          <div class="dashboard-grid">
+
+            <div class="card">
+              <h3>👤 Friends</h3>
+              <p>Conncet and Manage your Harmonet Friends</p>
+              <a href="{% url 'friends_dashboard' %}">Go to Profile →</a>
+            </div>
+
+            <div class="card">
+              <h3>📊 Analytics</h3>
+              <p>View your performance and insights</p>
+              <a href="{% url 'analytics' %}">View Analytics →</a>
+            </div>
+
+            <div class="card">
+              <h3>🤖 AI-Recommendation</h3>
+              <p>Check your recommendation via AI</p>
+              <a href="{% url 'ai_recommendations' %}">Open Messages →</a>
+            </div>
+
+            <div class="card">
+              <h3>⚙️ Artist Wallet</h3>
+              <p>Manage your Artist from various Music Platforms</p>
+              <a href="{% url 'user_artist' %}">Add your artist →</a>
+            </div>
+
+            <div class="card">
+              <h3>🎧 Connect Accounts</h3>
+              <p>Link your Spotify and YouTube to view your listening stats</p>
+              <a href="{% url 'account_link' %}">Connect Accounts →</a>
+            </div>
+
+            <div class="card">
+              <h3>📅 Music Year-In-Review (TEST)</h3>
+              <p>Summary of Top Artists, Albums, and Genres</p>
+              <a href="{% url 'account_link' %}">TEST →</a>
+            </div>
+
           </div>
+        </div>
 
-          <div class="card">
-            <h3>📊 Analytics</h3>
-            <p>View your performance and insights</p>
-            <a href="{% url 'analytics' %}">View Analytics →</a>
-          </div>
+        <hr class="section-divider" />
 
-          <div class="card">
-            <h3>🤖 AI-Recommendation</h3>
-            <p>check your recommendation via AI</p>
-            <a href="{% url 'ai_recommendations' %}">Open Messages →</a>
-          </div>
-
-          <div class="card">
-            <h3>⚙️ Artist Wallet</h3>
-            <p> Manage your Artist from various Music Platforms </p>
-            <a href="{% url 'user_artist' %}"> add your artist → </a>
-          </div>
-
-          <div class="card">
-            <h3>🎧 Connect Accounts</h3>
-            <p>Link your Spotify and Youtube to view your listening stats</p>
-            <a href="{% url 'account_link' %}">Connect Accounts →</a>
-          </div>
-
-          <div class="card">
-            <h3>📅 Music Year-In-Review (TEST) CARD </h3>
-            <p>Summary of Top Artist, Albums, and genres </p>
-            <a href="{% url 'account_link' %}"> TEST </a>
-          </div>
-
+        <section class="most-listened-section">
+          <h2>Listen to Your Top 5 Favorite Artists?</h2>
           
+          {% if spotify_connected and top_artists %}
+            <!-- Show Spotify Artists -->
+            <div class="scroll-wrapper">
+              <button class="scroll-btn left-btn" aria-label="Scroll Left">&#8249;</button>
+              <div class="artist-scroll">
+                {% for artist in top_artists %}
+                <div class="artist-card">
+                  <div class="artist-image">
+                    {% if artist.image_url %}
+                      <img src="{{ artist.image_url }}" alt="{{ artist.name }}" />
+                    {% else %}
+                      <img src="{% static 'images/default-artist.jpg' %}" alt="{{ artist.name }}" />
+                    {% endif %}
+                  </div>
+                  <p>{{ artist.name }}</p>
+                  {% if artist.genre %}
+                    <small style="color: #666; font-size: 0.9em;">{{ artist.genre }}</small>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+              <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
+            </div>
+          {% else %}
+            <!-- Show placeholder or connect message -->
+            <div style="text-align: center; padding: 2rem; background: white; border-radius: 12px; margin-top: 1.5rem;">
+              <p style="color: #666; margin-bottom: 1rem;">Connect your Spotify account to see your top artists!</p>
+              <a href="{% url 'account_link' %}" style="display: inline-block; padding: 12px 24px; background: #1DB954; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Connect Spotify</a>
+            </div>
+          {% endif %}
+        </section>
 
+        <hr class="section-divider" />
+
+        <div class="album-discovery-section"
+             style="margin: 30px 0; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+          <h2>🎵 Discover Albums</h2>
+
+          <form method="post" style="margin: 20px 0;">
+            {% csrf_token %}
+            <input type="text"
+                   name="artist_name"
+                   placeholder="Enter artist name (e.g., Taylor Swift)"
+                   style="padding: 10px; width: 300px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px;"
+                   required>
+            <button type="submit"
+                    style="padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; margin-left: 10px;">
+              Search Albums
+            </button>
+          </form>
+
+          {% if album_error %}
+            <p style="color: red; margin: 10px 0;">❌ {{ album_error }}</p>
+          {% endif %}
+
+          {% if albums %}
+            <div style="margin-top: 20px;">
+              <h3>Albums by {{ searched_artist_name }} ({{ albums|length }} found)</h3>
+              <ul style="list-style: none; padding: 0; max-height: 400px; overflow-y: auto;">
+                {% for album in albums %}
+                  <li style="padding: 10px; border-bottom: 1px solid #ddd; background: white; margin: 5px 0;">
+                    <strong>{{ album.title }}</strong>
+                    {% if album.date %}
+                      <span style="color: #666;"> - {{ album.date }}</span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% elif searched_artist_name %}
+            <p>No albums found for "{{ searched_artist_name }}"</p>
+          {% endif %}
         </div>
       </div>
 
-
-      <hr class="section-divider" />
-
-      <section class="most-listened-section">
-        <h2>Listen to Your Top 5 Favorite Artist?</h2>
-        
-        {% if spotify_connected and top_artists %}
-          <!-- Show Spotify Artists -->
-          <div class="scroll-wrapper">
-            <button class="scroll-btn left-btn" aria-label="Scroll Left">&#8249;</button>
-            <div class="artist-scroll">
-              {% for artist in top_artists %}
-              <div class="artist-card">
-                <div class="artist-image">
-                  {% if artist.image_url %}
-                    <img src="{{ artist.image_url }}" alt="{{ artist.name }}" />
-                  {% else %}
-                    <img src="{% static 'images/default-artist.jpg' %}" alt="{{ artist.name }}" />
-                  {% endif %}
-                </div>
-                <p>{{ artist.name }}</p>
+      <div class="friend-box">
+        <div class="friend-dashboard-header">
+          <h1>👥 HarmoNet Friends</h1>
+          <p style="font-size: 0.9em; color: #6b7280; margin-top: 5px;"> Total Friends: {{ friends.count }} friend{{ friends.count|pluralize }}</p>
+        </div>
+      
+        {% if friends %}
+          {% for friend in friends %}
+          <div class="friend-card">
+            <div class="friend-card-content">
+              <div class="friend-avatar">
+                {{ friend.username|slice:":1"|upper }}
               </div>
-              {% endfor %}
+              <div class="friend-info">
+                <h3 class="friend-name">{{ friend.username }}</h3>
+                <p class="friend-code">
+                  {% if friend.profile.friend_code %}
+                    {{ friend.profile.friend_code }}
+                  {% else %}
+                    Friend
+                  {% endif %}
+                </p>
+              </div>
+              <a href="{% url 'profile' %}?user={{ friend.id }}" class="friend-view-btn">
+                View
+              </a>
             </div>
-            <button class="scroll-btn right-btn" aria-label="Scroll Right">&#8250;</button>
           </div>
+          {% endfor %}
         {% else %}
-          <!-- Show placeholder or connect message -->
-          <div style="text-align: center; padding: 2rem; background: white; border-radius: 12px; margin-top: 1.5rem;">
-            <p style="color: #666; margin-bottom: 1rem;">Connect your Spotify account to see your top artists!</p>
-            <a href="{% url 'account_link' %}" style="display: inline-block; padding: 12px 24px; background: #1DB954; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Connect Spotify</a>
+          <div class="friend-card-empty">
+            <div class="empty-state">
+              <p class="empty-text">No friends yet. Start connecting!</p>
+              <a href="{% url 'friends_dashboard' %}" class="add-friends-btn">
+                Add Friends
+              </a>
+            </div>
           </div>
         {% endif %}
-      </section>
-
-    <hr class="section-divider" />
-
-    </div>
-  </main>
+      
+      </div>
+    </main>
+  </div>
 
   <footer class="footer">
-    <p>&copy; 2025 Harmonet. All rights reserved.</p>
+    <p>&copy; 2025 HarmoNet. All rights reserved.</p>
   </footer>
-
-
-
 </body>
 </html>
