@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-#z%-s1%bi6fkcnbl1x4r-0jsenlqt-4x$jyrp^4x_%2-!8hjxu'
-database_url = os.environ.get('DATABASE_URL')
+database_url = 'postgresql://harmonet_database_user:qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/harmonet_database'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
