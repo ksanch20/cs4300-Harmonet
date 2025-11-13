@@ -585,6 +585,21 @@ def ai_recommendations(request):
     recommendations = None
     error_message = None
     
+    # Check Spotify connection status
+    spotify_connected = is_spotify_connected(request.user)
+    
+    # Check if user has manual preferences
+    has_manual_prefs = False
+    try:
+        prefs = request.user.music_preferences
+        has_manual_prefs = bool(
+            prefs.get_artists_list() or 
+            prefs.get_genres_list() or 
+            prefs.get_tracks_list()
+        )
+    except:
+        pass
+    
     # Check if user clicked "Generate Recommendations" button
     if request.method == 'POST':
         result = get_music_recommendations(request.user)
@@ -598,6 +613,8 @@ def ai_recommendations(request):
     return render(request, 'user/ai_recommendations.html', {
         'recommendations': recommendations,
         'error_message': error_message,
+        'spotify_connected': spotify_connected,
+        'has_manual_prefs': has_manual_prefs,
         'title': 'AI Recommendations'
     })
 
