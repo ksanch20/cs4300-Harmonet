@@ -163,6 +163,17 @@
       color: #1e2a38;
       font-size: 1rem;
     }
+    .friend-username-link {
+      text-decoration: none;
+      color: #1e2a38;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .friend-username-link:hover {
+      color: #5ca1d3;
+      text-decoration: underline;
+    }
 
     .friend-meta {
       font-size: 0.85rem;
@@ -304,8 +315,16 @@
       <!-- Header -->
       <div class="dashboard-header">
         <h1> Friends</h1>
-        <p class="dashboard-subtitle">Connect with friends and share your music journey</p>
+        <p class="dashboard-subtitle">
+          Connect with friends and share your music journey
+          <span style="display: inline-block; margin-left: 1rem;">•</span>
+          <a href="{% url 'user_profile' request.user.username %}" 
+             style="color: #5ca1d3; text-decoration: none; font-weight: 500; margin-left: 1rem;">
+            👤 View My Profile
+          </a>
+        </p>
       </div>
+      
 
       <div class="dashboard-wrapper">
         
@@ -380,7 +399,9 @@
                   <div class="friend-info">
                     <div class="friend-avatar">{{ user.username|slice:":1"|upper }}</div>
                     <div class="friend-details">
-                      <span class="friend-username">{{ user.username }}</span>
+                      <a href="{% url 'user_profile' user.username %}" class="friend-username-link">
+                        {{ user.username }}
+                      </a>
                     </div>
                   </div>
                   <div class="friend-actions">
@@ -409,7 +430,9 @@
                 <div class="friend-info">
                   <div class="friend-avatar">{{ request.from_user.username|slice:":1"|upper }}</div>
                   <div class="friend-details">
-                    <span class="friend-username">{{ request.from_user.username }}</span>
+                    <a href="{% url 'user_profile' request.from_user.username %}" class="friend-username-link">
+                      {{ request.from_user.username }}
+                    </a>
                     <span class="friend-meta">{{ request.created_at|timesince }} ago</span>
                   </div>
                 </div>
@@ -437,7 +460,9 @@
                 <div class="friend-info">
                   <div class="friend-avatar">{{ request.to_user.username|slice:":1"|upper }}</div>
                   <div class="friend-details">
-                    <span class="friend-username">{{ request.to_user.username }}</span>
+                    <a href="{% url 'user_profile' request.to_user.username %}" class="friend-username-link">
+                      {{ request.to_user.username }}
+                    </a>                    
                     <span class="friend-meta">Sent {{ request.created_at|timesince }} ago</span>
                   </div>
                 </div>
@@ -458,7 +483,9 @@
                 <div class="friend-info">
                   <div class="friend-avatar">{{ friend.username|slice:":1"|upper }}</div>
                   <div class="friend-details">
-                    <span class="friend-username">{{ friend.username }}</span>
+                    <a href="{% url 'user_profile' friend.username %}" class="friend-username-link">
+                      {{ friend.username }}
+                    </a>
                   </div>
                 </div>
                 <div class="friend-actions">
