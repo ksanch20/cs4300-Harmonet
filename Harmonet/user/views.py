@@ -64,6 +64,7 @@ def user_login(request):
     form = AuthenticationForm()
     return render(request, 'user/login.html', {'form': form, 'title':'log in'})
 
+
 @login_required
 def dashboard(request):
     """Dashboard view with Spotify integration and detailed debugging"""
@@ -97,12 +98,15 @@ def dashboard(request):
     else:
         print(f"Dashboard load for {request.user.username}: Spotify NOT connected")
     
+    friends = FriendRequest.objects.friends(request.user)
+    
     return render(request, 'user/dashboard.html', {
         'title': 'Dashboard',
         'spotify_connected': spotify_connected,
         'spotify_account': spotify_account,
         'top_artists': top_artists,
-        'top_tracks': top_tracks
+        'top_tracks': top_tracks,
+        'friends': friends
     })
 
 # ---------------- Logout -----------------
@@ -654,3 +658,47 @@ def add_friend_by_code(request):
             messages.error(request, 'Invalid friend code. Please check and try again.')
     
     return redirect('friends_dashboard')
+
+
+@login_required
+def user_profile(request, username):
+    """View another user's public profile."""
+    
+    # Get the user or 404
+    profile_user = get_object_or_404(User, username=username)
+    
+    # Check if they're friends
+    are_friends = FriendRequest.objects.are_friends(request.user, profile_user)
+    
+    # Check for existing friend request
+    existing_request = None
+    if request.user != profile_user:
+        existing_request = FriendRequest.objects.filter(
+            Q(from_user=request.user, to_user=profile_user) |
+            Q(from_user=profile_user, to_user=request.user)
+        ).first()
+    
+    # Determine if own profile or friends
+    is_own_profile = request.user == profile_user
+    can_view_artists = is_own_profile or are_friends
+    
+    # Get user's artists based on privacy settings
+    user_artists = []
+    show_artists = False
+    
+    if can_view_artists:
+        user_artists = SoundCloudArtist.objects.filter(
+            user=profile_user
+        ).order_by('-rating', 'name')[:6]
+        show_artists = True
+    
+    context = {
+        'profile_user': profile_user,
+        'are_friends': are_friends,
+        'existing_request': existing_request,
+        'is_own_profile': is_own_profile,
+        'user_artists': user_artists,
+        'show_artists': show_artists,
+    }
+    
+    return render(request, 'user/user_profile.html', context)

@@ -1,58 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>User Profile Settings</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'profile_style.css' %}" />
-</head>
-<body>
-  <div class="container">
-    <div class="sidebar">
-      <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
-      <a href="#">General</a>
-      <a href="#">Featured Showcase</a>
-      <a href="#">Privacy Settings</a>
-      <a href="{% url 'account_link' %}">Linked Accounts</a>
-      <a href="{% url 'music_preferences' %}">Music Preferences</a>
-      <a href="{% url 'password_change' %}">Change Password </a>
+{% extends 'user/base.html' %}
+{% load static %}
+
+{% block title %}User Profile Settings | HarmoNet{% endblock %}
+
+{% block nav_extra %}
+  <!-- Remove "Welcome" text for this page -->
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'profile_style.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="sidebar">
+    <a href="#">General</a>
+    <a href="#">Featured Showcase</a>
+    <a href="#">Privacy Settings</a>
+    <a href="{% url 'account_link' %}">Linked Accounts</a>
+    <a href="{% url 'music_preferences' %}">Music Preferences</a>
+    <a href="{% url 'password_change' %}">Change Password</a>
+  </div>
+
+  <div class="content">
+    <h2>Welcome to your Profile: {{ request.user.username }}</h2>
+
+    <p>
+      Your profile name and avatar represent you throughout the platform and must be appropriate for all audiences.
+    </p>
+
+    <div class="profile-info">
+      <div class="profile-item">
+        <strong>Email:</strong> <span>{{ request.user.email }}</span>
+      </div>
+
+      <div class="profile-item">
+        <strong>Account Created:</strong> <span>{{ request.user.date_joined|date:"F d, Y" }}</span>
+      </div>
+
+      <div class="profile-item">
+        <strong>Last Login:</strong> <span>{{ request.user.last_login|date:"F d, Y g:i A" }}</span>
+      </div>
     </div>
 
-    <div class="content">
-      <h2>Welcome to your Profile: {{ request.user.username }}</h2>
+    <div class="delete-account-container">
+      <form method="post" action="{% url 'delete_account' %}" id="deleteForm">
+        {% csrf_token %}
+        <button class="delete-account-btn" type="button" onclick="confirmDelete()">Delete Account</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
-      <p>
-        Your profile name and avatar represent you throughout the platform and must be appropriate for all audiences.
-      </p>
-
-      <div class="profile-info">
-        <div class="profile-item">
-          <strong>Email:</strong> <span>{{ request.user.email }}</span>
-        </div>
-
-        <div class="profile-item">
-          <strong>Account Created:</strong> <span>         </span>
-        </div>
-
-        <div class="profile-item">
-          <strong>Last Login:</strong> <span>         </span>
-        </div>
-      </div>
-
-
-      <div class="delete-account-container">
-        <form method="post" action="{% url 'delete_account' %}" id="deleteForm">
-          {% csrf_token %}
-          <button class="delete-account-btn" type="button" onclick="confirmDelete()">Delete Account</button>
-        </form>
-      </div>
-
-  <script>
-    function confirmDelete() {
-      if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-        document.getElementById('deleteForm').submit();
-      }
+{% block extra_js %}
+<script>
+  function confirmDelete() {
+    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      document.getElementById('deleteForm').submit();
     }
-  </script>
-</body>
-</html>
+  }
+</script>
+{% endblock %}
