@@ -189,6 +189,18 @@
             </p>
           </div>
 
+          <div class="info-box" style="background-color: {% if spotify_connected %}#d1fae5{% else %}#fef3c7{% endif %}; border-left: 4px solid {% if spotify_connected %}#10b981{% else %}#f59e0b{% endif %};">
+            <p>
+              {% if spotify_connected %}
+                <strong>🎵 Using your Spotify data:</strong> We're analyzing your top artists and tracks from Spotify, 
+                {% if has_manual_prefs %}plus your manual preferences,{% endif %} to give you the best recommendations!
+              {% else %}
+                <strong>💡 Tip:</strong> Connect your Spotify account to get even better recommendations based on your listening history!
+                <a href="{% url 'account_link' %}" style="color: #dc2626; font-weight: 600; text-decoration: underline;">Connect Spotify →</a>
+              {% endif %}
+            </p>
+          </div>
+
           <!-- Error message -->
           {% if error_message %}
             <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #991b1b; border: 1px solid #fca5a5;">
