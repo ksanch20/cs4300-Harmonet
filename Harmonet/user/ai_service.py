@@ -87,17 +87,48 @@ def gather_user_music_data(user):
     data = {
         'has_data': False,
         'spotify_connected': False,
+        'spotify_top_artists': [],
+        'spotify_top_tracks': [],
         'manual_artists': [],
         'manual_genres': [],
         'manual_tracks': []
     }
     
     # Get Spotify data (if available)
-    # TODO: Add when Spotify integration is complete
-    # token_info = request.session.get('spotify_token')
-    # if token_info:
-    #     data['spotify_connected'] = True
-    #     data['has_data'] = True
+    try:
+        from .models import SpotifyTopArtist, SpotifyTopTrack
+        from .spotify_service import is_spotify_connected
+        
+        if is_spotify_connected(user):
+            data['spotify_connected'] = True
+            data['has_data'] = True
+            
+            # Get top artists from Spotify
+            top_artists = SpotifyTopArtist.objects.filter(user=user).order_by('rank')[:10]
+            data['spotify_top_artists'] = [
+                {
+                    'name': artist.name,
+                    'genres': artist.genres,
+                    'popularity': artist.popularity
+                }
+                for artist in top_artists
+            ]
+            
+            # Get top tracks from Spotify
+            top_tracks = SpotifyTopTrack.objects.filter(user=user).order_by('rank')[:10]
+            data['spotify_top_tracks'] = [
+                {
+                    'name': track.name,
+                    'artist': track.artist_name,
+                    'popularity': track.popularity
+                }
+                for track in top_tracks
+            ]
+            
+            print(f"✅ Loaded Spotify data: {len(data['spotify_top_artists'])} artists, {len(data['spotify_top_tracks'])} tracks")
+            
+    except Exception as e:
+        print(f"⚠️ Error loading Spotify data: {e}")
     
     # Get manual music preferences
     try:
