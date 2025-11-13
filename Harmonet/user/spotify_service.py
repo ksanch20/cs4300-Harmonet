@@ -12,7 +12,8 @@ def get_spotify_oauth():
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
         redirect_uri=settings.SPOTIPY_REDIRECT_URI,
         scope="user-top-read user-read-email user-read-private",
-        cache_path=None
+        cache_path=None,
+        show_dialog=True  # ← ADD THIS LINE - Forces Spotify to show login dialog
     )
 
 
