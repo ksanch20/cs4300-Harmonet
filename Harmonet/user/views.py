@@ -180,18 +180,23 @@ def password_change(request):
 @login_required
 def spotify_login(request):
     """Start the Spotify OAuth flow"""
-    # Clear any existing Spotify session data
-    if 'spotify_token' in request.session:
-        del request.session['spotify_token']
+    # COMPREHENSIVE SESSION CLEARING
+    keys_to_clear = ['spotify_token', 'spotify_auth_user_id', 'spotify_state']
+    for key in keys_to_clear:
+        if key in request.session:
+            del request.session[key]
+    
+    # Force session save
+    request.session.modified = True
     
     # Store the user ID in session to verify after callback
     request.session['spotify_auth_user_id'] = request.user.id
     
-    sp_oauth = get_spotify_oauth()
+    # Pass request to get_spotify_oauth for unique state generation
+    sp_oauth = get_spotify_oauth(request)
     
-    # Add state parameter for security and debugging
-    state = f"{request.user.id}"
-    auth_url = sp_oauth.get_authorize_url(state=state)
+    # Get authorization URL (show_dialog=True will force Spotify login screen)
+    auth_url = sp_oauth.get_authorize_url()
     
     print(f"=== SPOTIFY LOGIN START ===")
     print(f"Harmonets user: {request.user.username} (ID: {request.user.id})")
