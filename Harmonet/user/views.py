@@ -81,12 +81,6 @@ def dashboard(request):
             top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
             top_tracks = SpotifyTopTrack.objects.filter(user=request.user).order_by('rank')[:5]
             
-            print(f"\n=== DASHBOARD LOAD FOR {request.user.username} ===")
-            print(f"Spotify connected: Yes (ID: {spotify_account.spotify_id})")
-            print(f"Display name: {spotify_account.display_name}")
-            print(f"Found {len(top_artists)} top artists")
-            print(f"Found {len(top_tracks)} top tracks")
-            
             # Debug: Show if data exists but isn't loading
             if len(top_artists) == 0:
                 total_artists = SpotifyTopArtist.objects.filter(user=request.user).count()
@@ -95,8 +89,6 @@ def dashboard(request):
             if len(top_tracks) == 0:
                 total_tracks = SpotifyTopTrack.objects.filter(user=request.user).count()
                 print(f"⚠️ WARNING: No tracks in top 5, but {total_tracks} total tracks in database")
-            
-            print(f"===========================================\n")
             
         except Exception as e:
             print(f"❌ Error loading Spotify data for {request.user.username}: {e}")
@@ -189,19 +181,14 @@ def spotify_login(request):
     # Force session save
     request.session.modified = True
     
-    # Store the user ID in session to verify after callback
+    # Store the user ID in the session to verify after the callback
     request.session['spotify_auth_user_id'] = request.user.id
     
-    sp_oauth = get_spotify_oauth()  # ← THIS LINE - NO ARGUMENTS!
+    sp_oauth = get_spotify_oauth()
     
     # Add state parameter for security and debugging
     state = f"{request.user.id}"
     auth_url = sp_oauth.get_authorize_url(state=state)
-    
-    print(f"=== SPOTIFY LOGIN START ===")
-    print(f"Harmonets user: {request.user.username} (ID: {request.user.id})")
-    print(f"Redirect URL: {auth_url}")
-    print(f"===========================")
     
     return redirect(auth_url)
 
@@ -242,9 +229,6 @@ def spotify_callback(request):
             print(f"\n=== STARTING DATA FETCH FOR {request.user.username} ===")
             artists_result = fetch_and_save_top_artists(request.user)
             tracks_result = fetch_and_save_top_tracks(request.user)
-            
-            print(f"Artists result: {artists_result}")
-            print(f"Tracks result: {tracks_result}")
             print(f"=== DATA FETCH COMPLETE ===\n")
             
             # Check results and show appropriate message
@@ -299,7 +283,7 @@ def spotify_disconnect(request):
         print(f"Disconnecting Spotify for user: {request.user.username}")
         disconnect_spotify(request.user)
         messages.success(request, 'Spotify account disconnected successfully.')
-    return redirect('dashboard')  # Changed from account_link to dashboard
+    return redirect('dashboard')
 
 
 @login_required
@@ -311,9 +295,6 @@ def spotify_refresh_data(request):
             
             artists_result = fetch_and_save_top_artists(request.user)
             tracks_result = fetch_and_save_top_tracks(request.user)
-            
-            print(f"Refresh results - Artists: {artists_result}, Tracks: {tracks_result}")
-            print(f"=======================================\n")
             
             if artists_result['success'] and tracks_result['success']:
                 messages.success(
