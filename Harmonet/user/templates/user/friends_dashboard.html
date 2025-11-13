@@ -1,537 +1,521 @@
-{% load static %}
+{% extends 'user/base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Friends - Harmonet</title>
-  <link rel="stylesheet" href="{% static 'dashboard_style.css' %}">
-  <link rel="stylesheet" href="{% static 'styles.css' %}">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+{% block title %}Friends - HarmoNet{% endblock %}
+
+{% block nav_extra %}
+  <!-- Remove "Welcome" text for this page -->
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Friend Code Box Styling */
+  .friend-code-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
   
-  <style>
-    /* Friend Code Box Styling */
-    .friend-code-box {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 2rem;
-      border-radius: 12px;
-      text-align: center;
-      margin-bottom: 2rem;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    }
-    
-    .friend-code-label {
-      margin: 0 0 0.5rem 0;
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-    
-    .friend-code-display {
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      margin: 1rem 0;
-      font-family: 'Courier New', monospace;
-    }
-    
-    .friend-code-hint {
-      margin: 0.5rem 0 1.5rem 0;
-      font-size: 0.85rem;
-      opacity: 0.9;
-    }
-    
-    .copy-btn {
-      background: white;
-      color: #667eea;
-      padding: 0.75rem 2rem;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s;
-      font-size: 1rem;
-    }
-    
-    .copy-btn:hover {
-      transform: scale(1.05);
-    }
+  .friend-code-label {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+  
+  .friend-code-display {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin: 1rem 0;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .friend-code-hint {
+    margin: 0.5rem 0 1.5rem 0;
+    font-size: 0.85rem;
+    opacity: 0.9;
+  }
+  
+  .copy-btn {
+    background: white;
+    color: #667eea;
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s;
+    font-size: 1rem;
+  }
+  
+  .copy-btn:hover {
+    transform: scale(1.05);
+  }
 
-    /* Add Friends Section */
+  /* Add Friends Section */
+  .add-friends-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .add-friend-card {
+    background: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+  }
+
+  .add-friend-card h4 {
+    margin: 0 0 1rem 0;
+    color: #1e2a38;
+    font-size: 1.1rem;
+  }
+
+  .add-input-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .add-input-group input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+
+  .add-input-group input:focus {
+    outline: none;
+    border-color: #5ca1d3;
+  }
+
+  .add-input-group button {
+    white-space: nowrap;
+  }
+
+  /* Friend Lists */
+  .friends-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .friends-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1e2a38;
+    font-size: 1.3rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+
+  .friend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s;
+  }
+
+  .friend-item:last-child {
+    border-bottom: none;
+  }
+
+  .friend-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .friend-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .friend-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .friend-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .friend-username {
+    font-weight: 600;
+    color: #1e2a38;
+    font-size: 1rem;
+  }
+  
+  .friend-username-link {
+    text-decoration: none;
+    color: #1e2a38;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .friend-username-link:hover {
+    color: #5ca1d3;
+    text-decoration: underline;
+  }
+
+  .friend-meta {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  .friend-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-accept {
+    background: #10b981;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+
+  .btn-accept:hover {
+    opacity: 0.9;
+  }
+
+  .btn-decline,
+  .btn-remove {
+    background: #ef4444;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+
+  .btn-decline:hover,
+  .btn-remove:hover {
+    opacity: 0.9;
+  }
+
+  .btn-cancel {
+    background: #6b7280;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+
+  .btn-cancel:hover {
+    opacity: 0.9;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Search Results */
+  .search-results {
+    margin-top: 1rem;
+  }
+
+  .search-result-header {
+    padding: 0.75rem;
+    background: #f3f4f6;
+    border-radius: 6px 6px 0 0;
+    font-weight: 600;
+    color: #1e2a38;
+  }
+
+  /* Messages */
+  .messages-container {
+    margin-bottom: 1.5rem;
+  }
+
+  .message {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .message.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+
+  .message.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+
+  .message.info {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+  }
+
+  @media (max-width: 768px) {
     .add-friends-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
+      grid-template-columns: 1fr;
     }
+  }
+</style>
+{% endblock %}
 
-    .add-friend-card {
-      background: #f9fafb;
-      padding: 1.5rem;
-      border-radius: 10px;
-      border: 2px solid #e5e7eb;
-    }
-
-    .add-friend-card h4 {
-      margin: 0 0 1rem 0;
-      color: #1e2a38;
-      font-size: 1.1rem;
-    }
-
-    .add-input-group {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .add-input-group input {
-      flex: 1;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-
-    .add-input-group input:focus {
-      outline: none;
-      border-color: #5ca1d3;
-    }
-
-    .add-input-group button {
-      white-space: nowrap;
-    }
-
-    /* Friend Lists */
-    .friends-section {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 10px;
-      margin-bottom: 1.5rem;
-      border: 1px solid #e5e7eb;
-    }
-
-    .friends-section h3 {
-      margin: 0 0 1.5rem 0;
-      color: #1e2a38;
-      font-size: 1.3rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid #f3f4f6;
-    }
-
-    .friend-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem;
-      border-bottom: 1px solid #f3f4f6;
-      transition: background-color 0.2s;
-    }
-
-    .friend-item:last-child {
-      border-bottom: none;
-    }
-
-    .friend-item:hover {
-      background-color: #f9fafb;
-    }
-
-    .friend-info {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .friend-avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 1.2rem;
-    }
-
-    .friend-details {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .friend-username {
-      font-weight: 600;
-      color: #1e2a38;
-      font-size: 1rem;
-    }
-    .friend-username-link {
-      text-decoration: none;
-      color: #1e2a38;
-      font-weight: 600;
-      transition: color 0.2s;
-    }
-
-    .friend-username-link:hover {
-      color: #5ca1d3;
-      text-decoration: underline;
-    }
-
-    .friend-meta {
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-
-    .friend-actions {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .btn-accept {
-      background: #10b981;
-      color: white;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: opacity 0.2s;
-    }
-
-    .btn-accept:hover {
-      opacity: 0.9;
-    }
-
-    .btn-decline,
-    .btn-remove {
-      background: #ef4444;
-      color: white;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: opacity 0.2s;
-    }
-
-    .btn-decline:hover,
-    .btn-remove:hover {
-      opacity: 0.9;
-    }
-
-    .btn-cancel {
-      background: #6b7280;
-      color: white;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: opacity 0.2s;
-    }
-
-    .btn-cancel:hover {
-      opacity: 0.9;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: #6b7280;
-    }
-
-    .empty-state-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-    }
-
-    /* Search Results */
-    .search-results {
-      margin-top: 1rem;
-    }
-
-    .search-result-header {
-      padding: 0.75rem;
-      background: #f3f4f6;
-      border-radius: 6px 6px 0 0;
-      font-weight: 600;
-      color: #1e2a38;
-    }
-
-    /* Messages */
-    .messages-container {
-      margin-bottom: 1.5rem;
-    }
-
-    .message {
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 0.95rem;
-    }
-
-    .message.success {
-      background-color: #d1fae5;
-      color: #065f46;
-      border: 1px solid #6ee7b7;
-    }
-
-    .message.error {
-      background-color: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fca5a5;
-    }
-
-    .message.info {
-      background-color: #dbeafe;
-      color: #1e40af;
-      border: 1px solid #93c5fd;
-    }
-
-    @media (max-width: 768px) {
-      .add-friends-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <!-- Navbar -->
-  <nav class="navbar">
-    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: inherit;">
-      <div class="logo">Harmonet</div>
-    </a>
-    <div class="auth-buttons">
-      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+{% block content %}
+<main class="dashboard-container">
+  <div class="dashboard-box">
+    
+    <!-- Header -->
+    <div class="dashboard-header">
+      <h1>👥 Friends</h1>
+      <p class="dashboard-subtitle">
+        Connect with friends and share your music journey
+        <span style="display: inline-block; margin-left: 1rem;">•</span>
+        <a href="{% url 'user_profile' request.user.username %}" 
+           style="color: #5ca1d3; text-decoration: none; font-weight: 500; margin-left: 1rem;">
+          👤 View My Profile
+        </a>
+      </p>
     </div>
-  </nav>
+    
 
-  <!-- Main Content -->
-  <main class="dashboard-container">
-    <div class="dashboard-box">
+    <div class="dashboard-wrapper">
       
-      <!-- Header -->
-      <div class="dashboard-header">
-        <h1> Friends</h1>
-        <p class="dashboard-subtitle">
-          Connect with friends and share your music journey
-          <span style="display: inline-block; margin-left: 1rem;">•</span>
-          <a href="{% url 'user_profile' request.user.username %}" 
-             style="color: #5ca1d3; text-decoration: none; font-weight: 500; margin-left: 1rem;">
-            👤 View My Profile
-          </a>
-        </p>
+      <!-- Friend Code Display -->
+      <div class="friend-code-box">
+        <p class="friend-code-label">Your Friend Code</p>
+        <div class="friend-code-display">{{ friend_code }}</div>
+        <p class="friend-code-hint">Share this code with friends to connect</p>
+        <button class="copy-btn" onclick="copyFriendCode()">
+          📋 Copy Friend Code
+        </button>
       </div>
-      
 
-      <div class="dashboard-wrapper">
-        
-        <!-- Friend Code Display -->
-        <div class="friend-code-box">
-          <p class="friend-code-label">Your Friend Code</p>
-          <div class="friend-code-display">{{ friend_code }}</div>
-          <p class="friend-code-hint">Share this code with friends to connect</p>
-          <button class="copy-btn" onclick="copyFriendCode()">
-             Copy Friend Code
-          </button>
-        </div>
-
-        <!-- Messages -->
-        {% if messages %}
-          <div class="messages-container">
-            {% for message in messages %}
-              <div class="message {{ message.tags }}">
-                <span>{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}⚠️{% else %}ℹ️{% endif %}</span>
-                <span>{{ message }}</span>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        <!-- Add Friends Section -->
-        <div class="add-friends-grid">
-          <!-- By Friend Code -->
-          <div class="add-friend-card">
-            <h4> Add by Friend Code</h4>
-            <form method="post" action="{% url 'add_friend_by_code' %}" class="add-input-group">
-              {% csrf_token %}
-              <input 
-                type="text" 
-                name="friend_code" 
-                placeholder="MUSIC-XXXXX"
-                style="text-transform: uppercase; font-family: 'Courier New', monospace;"
-                maxlength="15"
-                required
-              >
-              <button type="submit" class="btn-primary">Send Request</button>
-            </form>
-          </div>
-
-          <!-- By Username -->
-          <div class="add-friend-card">
-            <h4> Search by Username</h4>
-            <form method="get" action="{% url 'friends_dashboard' %}" class="add-input-group">
-              <input 
-                type="text" 
-                name="search" 
-                placeholder="Search username or email..."
-                value="{{ search_query }}"
-              >
-              <button type="submit" class="btn-primary">Search</button>
-              {% if search_query %}
-                <a href="{% url 'friends_dashboard' %}" class="btn-secondary" style="padding: 0.75rem 1rem; text-decoration: none; display: inline-block;">Clear</a>
-              {% endif %}
-            </form>
-          </div>
-        </div>
-
-        <!-- Search Results -->
-        {% if search_query %}
-          <div class="friends-section">
-            <div class="search-result-header">
-              Search Results for "{{ search_query }}"
+      <!-- Messages -->
+      {% if messages %}
+        <div class="messages-container">
+          {% for message in messages %}
+            <div class="message {{ message.tags }}">
+              <span>{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}⚠️{% else %}ℹ️{% endif %}</span>
+              <span>{{ message }}</span>
             </div>
-            {% if search_results %}
-              {% for user in search_results %}
-                <div class="friend-item">
-                  <div class="friend-info">
-                    <div class="friend-avatar">{{ user.username|slice:":1"|upper }}</div>
-                    <div class="friend-details">
-                      <a href="{% url 'user_profile' user.username %}" class="friend-username-link">
-                        {{ user.username }}
-                      </a>
-                    </div>
-                  </div>
-                  <div class="friend-actions">
-                    <form method="post" action="{% url 'send_friend_request' user.id %}" style="display:inline;">
-                      {% csrf_token %}
-                      <button type="submit" class="btn-accept">Add Friend</button>
-                    </form>
-                  </div>
-                </div>
-              {% endfor %}
-            {% else %}
-              <div class="empty-state">
-                <div class="empty-state-icon">🔍</div>
-                <p>No users found matching "{{ search_query }}"</p>
-              </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Add Friends Section -->
+      <div class="add-friends-grid">
+        <!-- By Friend Code -->
+        <div class="add-friend-card">
+          <h4>🔢 Add by Friend Code</h4>
+          <form method="post" action="{% url 'add_friend_by_code' %}" class="add-input-group">
+            {% csrf_token %}
+            <input 
+              type="text" 
+              name="friend_code" 
+              placeholder="MUSIC-XXXXX"
+              style="text-transform: uppercase; font-family: 'Courier New', monospace;"
+              maxlength="15"
+              required
+            >
+            <button type="submit" class="btn-primary">Send Request</button>
+          </form>
+        </div>
+
+        <!-- By Username -->
+        <div class="add-friend-card">
+          <h4>🔍 Search by Username</h4>
+          <form method="get" action="{% url 'friends_dashboard' %}" class="add-input-group">
+            <input 
+              type="text" 
+              name="search" 
+              placeholder="Search username or email..."
+              value="{{ search_query }}"
+            >
+            <button type="submit" class="btn-primary">Search</button>
+            {% if search_query %}
+              <a href="{% url 'friends_dashboard' %}" class="btn-secondary" style="padding: 0.75rem 1rem; text-decoration: none; display: inline-block;">Clear</a>
             {% endif %}
-          </div>
-        {% endif %}
+          </form>
+        </div>
+      </div>
 
-        <!-- Pending Friend Requests -->
-        {% if pending_received %}
-          <div class="friends-section">
-            <h3> Friend Requests ({{ pending_received.count }})</h3>
-            {% for request in pending_received %}
-              <div class="friend-item">
-                <div class="friend-info">
-                  <div class="friend-avatar">{{ request.from_user.username|slice:":1"|upper }}</div>
-                  <div class="friend-details">
-                    <a href="{% url 'user_profile' request.from_user.username %}" class="friend-username-link">
-                      {{ request.from_user.username }}
-                    </a>
-                    <span class="friend-meta">{{ request.created_at|timesince }} ago</span>
-                  </div>
-                </div>
-                <div class="friend-actions">
-                  <form method="post" action="{% url 'accept_friend_request' request.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-accept">✓ Accept</button>
-                  </form>
-                  <form method="post" action="{% url 'decline_friend_request' request.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-decline">✗ Decline</button>
-                  </form>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        <!-- Sent Requests -->
-        {% if pending_sent %}
-          <div class="friends-section">
-            <h3> Sent Requests ({{ pending_sent.count }})</h3>
-            {% for request in pending_sent %}
-              <div class="friend-item">
-                <div class="friend-info">
-                  <div class="friend-avatar">{{ request.to_user.username|slice:":1"|upper }}</div>
-                  <div class="friend-details">
-                    <a href="{% url 'user_profile' request.to_user.username %}" class="friend-username-link">
-                      {{ request.to_user.username }}
-                    </a>                    
-                    <span class="friend-meta">Sent {{ request.created_at|timesince }} ago</span>
-                  </div>
-                </div>
-                <div class="friend-actions">
-                  <span style="color: #6b7280; font-size: 0.9rem;">Waiting for response...</span>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        <!-- Friends List -->
+      <!-- Search Results -->
+      {% if search_query %}
         <div class="friends-section">
-          <h3> Your Friends ({{ friends.count }})</h3>
-          {% if friends %}
-            {% for friend in friends %}
+          <div class="search-result-header">
+            Search Results for "{{ search_query }}"
+          </div>
+          {% if search_results %}
+            {% for user in search_results %}
               <div class="friend-item">
                 <div class="friend-info">
-                  <div class="friend-avatar">{{ friend.username|slice:":1"|upper }}</div>
+                  <div class="friend-avatar">{{ user.username|slice:":1"|upper }}</div>
                   <div class="friend-details">
-                    <a href="{% url 'user_profile' friend.username %}" class="friend-username-link">
-                      {{ friend.username }}
+                    <a href="{% url 'user_profile' user.username %}" class="friend-username-link">
+                      {{ user.username }}
                     </a>
                   </div>
                 </div>
                 <div class="friend-actions">
-                  <form method="post" action="{% url 'remove_friend' friend.id %}" style="display:inline;" onsubmit="return confirm('Remove {{ friend.username }} from friends?');">
+                  <form method="post" action="{% url 'send_friend_request' user.id %}" style="display:inline;">
                     {% csrf_token %}
-                    <button type="submit" class="btn-remove">Remove</button>
+                    <button type="submit" class="btn-accept">Add Friend</button>
                   </form>
                 </div>
               </div>
             {% endfor %}
           {% else %}
             <div class="empty-state">
-              <div class="empty-state-icon">🎵</div>
-              <p>No friends yet! Share your friend code or search for users to get started.</p>
+              <div class="empty-state-icon">🔍</div>
+              <p>No users found matching "{{ search_query }}"</p>
             </div>
           {% endif %}
         </div>
+      {% endif %}
 
+      <!-- Pending Friend Requests -->
+      {% if pending_received %}
+        <div class="friends-section">
+          <h3>📬 Friend Requests ({{ pending_received.count }})</h3>
+          {% for request in pending_received %}
+            <div class="friend-item">
+              <div class="friend-info">
+                <div class="friend-avatar">{{ request.from_user.username|slice:":1"|upper }}</div>
+                <div class="friend-details">
+                  <a href="{% url 'user_profile' request.from_user.username %}" class="friend-username-link">
+                    {{ request.from_user.username }}
+                  </a>
+                  <span class="friend-meta">{{ request.created_at|timesince }} ago</span>
+                </div>
+              </div>
+              <div class="friend-actions">
+                <form method="post" action="{% url 'accept_friend_request' request.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-accept">✓ Accept</button>
+                </form>
+                <form method="post" action="{% url 'decline_friend_request' request.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-decline">✗ Decline</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Sent Requests -->
+      {% if pending_sent %}
+        <div class="friends-section">
+          <h3>📤 Sent Requests ({{ pending_sent.count }})</h3>
+          {% for request in pending_sent %}
+            <div class="friend-item">
+              <div class="friend-info">
+                <div class="friend-avatar">{{ request.to_user.username|slice:":1"|upper }}</div>
+                <div class="friend-details">
+                  <a href="{% url 'user_profile' request.to_user.username %}" class="friend-username-link">
+                    {{ request.to_user.username }}
+                  </a>                    
+                  <span class="friend-meta">Sent {{ request.created_at|timesince }} ago</span>
+                </div>
+              </div>
+              <div class="friend-actions">
+                <span style="color: #6b7280; font-size: 0.9rem;">Waiting for response...</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Friends List -->
+      <div class="friends-section">
+        <h3>👥 Your Friends ({{ friends.count }})</h3>
+        {% if friends %}
+          {% for friend in friends %}
+            <div class="friend-item">
+              <div class="friend-info">
+                <div class="friend-avatar">{{ friend.username|slice:":1"|upper }}</div>
+                <div class="friend-details">
+                  <a href="{% url 'user_profile' friend.username %}" class="friend-username-link">
+                    {{ friend.username }}
+                  </a>
+                </div>
+              </div>
+              <div class="friend-actions">
+                <form method="post" action="{% url 'remove_friend' friend.id %}" style="display:inline;" onsubmit="return confirm('Remove {{ friend.username }} from friends?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-remove">Remove</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-state-icon">🎵</div>
+            <p>No friends yet! Share your friend code or search for users to get started.</p>
+          </div>
+        {% endif %}
       </div>
+
     </div>
-  </main>
+  </div>
+</main>
+{% endblock %}
 
-  <!-- Footer -->
-  <footer class="footer">
-    <p>&copy; 2025 Harmonet. All rights reserved.</p>
-  </footer>
-
-  <script>
-    function copyFriendCode() {
-      const code = '{{ friend_code }}';
-      navigator.clipboard.writeText(code).then(() => {
-        const btn = event.target;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '✓ Copied!';
-        btn.style.background = '#10b981';
-        btn.style.color = 'white';
-        
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-          btn.style.background = 'white';
-          btn.style.color = '#667eea';
-        }, 2000);
-      }).catch(err => {
-        alert('Friend code: ' + code);
-      });
-    }
-  </script>
-</body>
-</html>
+{% block extra_js %}
+<script>
+  function copyFriendCode() {
+    const code = '{{ friend_code }}';
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = event.target;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '✓ Copied!';
+      btn.style.background = '#10b981';
+      btn.style.color = 'white';
+      
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = 'white';
+        btn.style.color = '#667eea';
+      }, 2000);
+    }).catch(err => {
+      alert('Friend code: ' + code);
+    });
+  }
+</script>
+{% endblock %}

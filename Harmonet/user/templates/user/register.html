@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Register - Harmonet</title>
+  <title>Register - HarmoNet</title>
   <link rel="stylesheet" href="{% static 'styles.css' %}">
   <style>
     .register-section {
@@ -140,7 +140,7 @@
   <!-- Navbar matching homepage -->
   <nav class="navbar">
     <a href="{% url 'index' %}" style="text-decoration: none; color: inherit;">
-      <div class="logo">Harmonet</div>
+      <div class="logo">HarmoNet</div>
     </a>
     <div class="auth-buttons">
       <button onclick="location.href='{% url 'login' %}'">Login</button>
@@ -152,7 +152,7 @@
   <section class="register-section">
     <div class="register-container">
       <h2>Create Account</h2>
-      <p class="subtitle">Join Harmonet and start tracking your music journey</p>
+      <p class="subtitle">Join HarmoNet and start tracking your music journey</p>
 
       <!-- Display non-field form errors -->
       {% if form.non_field_errors %}
@@ -232,7 +232,7 @@
 
   <!-- Footer matching homepage -->
   <footer class="footer">
-    <p>&copy; 2025 Harmonet. All rights reserved.</p>
+    <p>&copy; 2025 HarmoNet. All rights reserved.</p>
   </footer>
 </body>
 </html>
