@@ -66,20 +66,51 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard view with Spotify integration"""
+    """Dashboard view with Spotify integration and detailed debugging"""
     # Check if Spotify is connected
     spotify_connected = is_spotify_connected(request.user)
     
-    # Get top artists if connected
+    # Get top artists and tracks if connected
     top_artists = []
+    top_tracks = []
+    spotify_account = None
+    
     if spotify_connected:
-        top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
-        print(f"Found {len(top_artists)} top artists for {request.user.username}")
+        try:
+            spotify_account = request.user.spotify_account
+            top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
+            top_tracks = SpotifyTopTrack.objects.filter(user=request.user).order_by('rank')[:5]
+            
+            print(f"\n=== DASHBOARD LOAD FOR {request.user.username} ===")
+            print(f"Spotify connected: Yes (ID: {spotify_account.spotify_id})")
+            print(f"Display name: {spotify_account.display_name}")
+            print(f"Found {len(top_artists)} top artists")
+            print(f"Found {len(top_tracks)} top tracks")
+            
+            # Debug: Show if data exists but isn't loading
+            if len(top_artists) == 0:
+                total_artists = SpotifyTopArtist.objects.filter(user=request.user).count()
+                print(f"⚠️ WARNING: No artists in top 5, but {total_artists} total artists in database")
+            
+            if len(top_tracks) == 0:
+                total_tracks = SpotifyTopTrack.objects.filter(user=request.user).count()
+                print(f"⚠️ WARNING: No tracks in top 5, but {total_tracks} total tracks in database")
+            
+            print(f"===========================================\n")
+            
+        except Exception as e:
+            print(f"❌ Error loading Spotify data for {request.user.username}: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print(f"Dashboard load for {request.user.username}: Spotify NOT connected")
     
     return render(request, 'user/dashboard.html', {
         'title': 'Dashboard',
         'spotify_connected': spotify_connected,
-        'top_artists': top_artists
+        'spotify_account': spotify_account,
+        'top_artists': top_artists,
+        'top_tracks': top_tracks
     })
 
 # ---------------- Logout -----------------
@@ -202,18 +233,36 @@ def spotify_callback(request):
             if 'spotify_auth_user_id' in request.session:
                 del request.session['spotify_auth_user_id']
             
-            # Fetch and save top artists and tracks
-            artists_success = fetch_and_save_top_artists(request.user)
-            tracks_success = fetch_and_save_top_tracks(request.user)
+            # Fetch and save top artists and tracks with detailed error handling
+            print(f"\n=== STARTING DATA FETCH FOR {request.user.username} ===")
+            artists_result = fetch_and_save_top_artists(request.user)
+            tracks_result = fetch_and_save_top_tracks(request.user)
             
-            print(f"Artists fetch: {artists_success}, Tracks fetch: {tracks_success}")
+            print(f"Artists result: {artists_result}")
+            print(f"Tracks result: {tracks_result}")
+            print(f"=== DATA FETCH COMPLETE ===\n")
             
-            if artists_success and tracks_success:
-                messages.success(request, f'Spotify account connected successfully as {spotify_account.display_name}! Your top music has been loaded.')
-            elif artists_success or tracks_success:
-                messages.warning(request, 'Spotify connected but some data could not be loaded.')
+            # Check results and show appropriate message
+            if artists_result['success'] and tracks_result['success']:
+                messages.success(
+                    request, 
+                    f'✅ Spotify connected as {spotify_account.display_name}! '
+                    f'Loaded {artists_result["count"]} artists and {tracks_result["count"]} tracks.'
+                )
+            elif artists_result['success'] or tracks_result['success']:
+                messages.warning(
+                    request,
+                    f'⚠️ Spotify connected but only partial data loaded. '
+                    f'Artists: {artists_result["count"]}, Tracks: {tracks_result["count"]}. '
+                    f'Try refreshing your data from the dashboard.'
+                )
             else:
-                messages.warning(request, 'Spotify connected but could not load your music data.')
+                messages.warning(
+                    request,
+                    f'⚠️ Spotify connected as {spotify_account.display_name}, but could not load your music data. '
+                    f'Error: {artists_result.get("message", "Unknown error")}. '
+                    f'Please try the "Refresh Data" button on your dashboard.'
+                )
                 
         except Exception as e:
             error_str = str(e)
@@ -226,9 +275,13 @@ def spotify_callback(request):
             
             # User-friendly error message
             if "already connected" in error_str.lower():
-                messages.error(request, error_str)
+                messages.error(
+                    request, 
+                    f'❌ {error_str} Please disconnect from the other account first, '
+                    f'or use a different Spotify account.'
+                )
             else:
-                messages.error(request, f'Error connecting Spotify: {error_str}')
+                messages.error(request, f'❌ Error connecting Spotify: {error_str}')
     else:
         messages.error(request, 'No authorization code received from Spotify.')
     
@@ -246,22 +299,40 @@ def spotify_disconnect(request):
 
 @login_required
 def spotify_refresh_data(request):
-    """Manually refresh Spotify top artists and tracks"""
+    """Manually refresh Spotify top artists and tracks with detailed feedback"""
     if request.method == 'POST':
         if is_spotify_connected(request.user):
-            print(f"Refreshing Spotify data for user: {request.user.username}")
-            success_artists = fetch_and_save_top_artists(request.user)
-            success_tracks = fetch_and_save_top_tracks(request.user)
+            print(f"\n=== MANUAL REFRESH FOR {request.user.username} ===")
             
-            if success_artists and success_tracks:
-                messages.success(request, 'Your Spotify data has been refreshed!')
+            artists_result = fetch_and_save_top_artists(request.user)
+            tracks_result = fetch_and_save_top_tracks(request.user)
+            
+            print(f"Refresh results - Artists: {artists_result}, Tracks: {tracks_result}")
+            print(f"=======================================\n")
+            
+            if artists_result['success'] and tracks_result['success']:
+                messages.success(
+                    request, 
+                    f'✅ Data refreshed! Loaded {artists_result["count"]} artists and {tracks_result["count"]} tracks.'
+                )
+            elif artists_result['success'] or tracks_result['success']:
+                messages.warning(
+                    request,
+                    f'⚠️ Partial refresh. Artists: {artists_result["count"]}, Tracks: {tracks_result["count"]}. '
+                    f'Errors: {artists_result.get("message", "N/A")} / {tracks_result.get("message", "N/A")}'
+                )
             else:
-                messages.error(request, 'Error refreshing Spotify data.')
+                messages.error(
+                    request,
+                    f'❌ Could not refresh data. '
+                    f'Artists error: {artists_result.get("message", "Unknown")}. '
+                    f'Tracks error: {tracks_result.get("message", "Unknown")}. '
+                    f'Your Spotify connection may have expired - try disconnecting and reconnecting.'
+                )
         else:
             messages.error(request, 'Please connect your Spotify account first.')
     
     return redirect('dashboard')
-
 #########################SoundCloud Form################################################
 
 @login_required
