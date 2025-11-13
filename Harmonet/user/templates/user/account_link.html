@@ -1,89 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title> Account Link | Harmonet</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'account_link.css' %}">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-</head>
+{% extends 'user/base.html' %}
+{% load static %}
 
-<body>
-  <nav class="navbar">
-    <div class="logo">Harmonet</div>
-    <div class="auth-buttons">
-      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
-    </div>
-  </nav>
+{% block title %}Account Link | HarmoNet{% endblock %}
 
+{% block nav_extra %}
+  <!-- Remove "Welcome" text for this page -->
+{% endblock %}
 
-  <div class="user-Container">
-    <h2> Welcome: {{ request.user.username }}</h2>
-    <h2> Please Link your Spotify and Youtube Music </h2>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'account_link.css' %}">
+{% endblock %}
 
-  </div>
-  <div class="cards-container">
+{% block content %}
+<div class="user-Container">
+  <h2> Welcome: {{ request.user.username }}</h2>
+  <h2> Please Link your Spotify Account </h2>
+
+</div>
+<div class="cards-container">
 
 
-    <div class="account-card spotify-card">
-        <div class="card-content">
+  <div class="account-card spotify-card">
+      <div class="card-content">
 
-            <div class="card-logo">
-                <img src="spotify-logo.png" alt="Spotify Logo">
-            </div>
+          <div class="card-logo">
+              <img src="spotify-logo.png" alt="Spotify Logo">
+          </div>
 
-            <div class="card-info">
-                <h3>🎧 Connect Spotify</h3>
-                <p>Link your Spotify to view your listening stats</p>
-            </div>
+          <div class="card-info">
+              <h3>🎧 Connect Spotify</h3>
+              <p>Link your Spotify to view your listening stats</p>
+          </div>
 
-            <div class="card-action">
-                <a href="{% url 'spotify_login' %}" class="btn spotify-btn">Connect →</a>
-            </div>
-        </div>
-    </div>
-
-
-<div class="account-card youtube-card">
-  <div class="card-content">
-
-      <div class="card-logo">
-          <img src="youtube-logo.png" alt="YouTube Logo">
-      </div>
-
-      <div class="card-info">
-          <h3>▶ Connect YouTube</h3>
-          <p>Link your YouTube to view your watched videos and playlists</p>
-      </div>
-
-      <div class="card-action">
-          <a href="#" class="btn youtube-btn">Connect →</a>
+          <div class="card-action">
+              <a href="{% url 'spotify_login' %}" class="btn spotify-btn">Connect →</a>
+          </div>
       </div>
   </div>
-</div>
-
-
-<div class="auth-buttons">
-  <a href="{% url 'dashboard' %}" class="btn-logout">dashboard</a>
-</div>
-
 
 
 {% if spotify_data %}
 <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; margin-top: 15px;">
-  <p style="margin: 8px 0; color: #2e7d32; font-size: 0.95rem;"><strong style="color: #1b5e20;">Display Name:</strong> {{ spotify_data.display_name }}</p>
-  <p style="margin: 8px 0; color: #2e7d32; font-size: 0.95rem;"><strong style="color: #1b5e20;">Email:</strong> {{ spotify_data.email }}</p>
-  <p style="margin: 8px 0; color: #2e7d32; font-size: 0.95rem;"><strong style="color: #1b5e20;">Spotify ID:</strong> {{ spotify_data.spotify_id }}</p>
-  <p style="margin-top: 12px; font-size: 0.85rem; color: #558b2f;">
-    ✓ Your top music data is saved and will appear on your dashboard!
-  </p>
+<p style="margin: 8px 0; color: #2e7d32; font-size: 0.95rem;"><strong style="color: #1b5e20;">Display Name:</strong> {{ spotify_data.display_name }}</p>
+<p style="margin: 8px 0; color: #2e7d32; font-size: 0.95rem;"><strong style="color: #1b5e20;">Email:</strong> {{ spotify_data.email }}</p>
+<p style="margin: 8px 0; color: #2e7d32; font-size: 0.95rem;"><strong style="color: #1b5e20;">Spotify ID:</strong> {{ spotify_data.spotify_id }}</p>
+<p style="margin-top: 12px; font-size: 0.85rem; color: #558b2f;">
+  ✓ Your top music data is saved and will appear on your dashboard!
+</p>
 </div>
 {% endif %}
 
-
-  <footer class="footer">
-    <p>&copy; 2025 Harmonet. All rights reserved.</p>
-  </footer>
-</body>
-
-</html>
+</div>
+{% endblock %}
