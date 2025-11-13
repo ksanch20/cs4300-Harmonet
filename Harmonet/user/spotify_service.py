@@ -31,12 +31,12 @@ def save_spotify_connection(user, token_info):
     spotify_id = spotify_user['id']
     
     # DEBUG: Print what we got from Spotify
-    print(f"=== SPOTIFY USER DATA ===")
-    print(f"Harmonets user trying to connect: {user.username} (ID: {user.id})")
-    print(f"Spotify ID returned: {spotify_id}")
-    print(f"Spotify display name: {spotify_user.get('display_name', 'N/A')}")
-    print(f"Spotify email: {spotify_user.get('email', 'N/A')}")
-    print(f"========================")
+    #print(f"=== SPOTIFY USER DATA ===")
+    #print(f"Harmonets user trying to connect: {user.username} (ID: {user.id})")
+    #print(f"Spotify ID returned: {spotify_id}")
+    #print(f"Spotify display name: {spotify_user.get('display_name', 'N/A')}")
+    #print(f"Spotify email: {spotify_user.get('email', 'N/A')}")
+    #print(f"========================")
     
     # Calculate token expiration time
     expires_at = datetime.fromtimestamp(token_info['expires_at'])
