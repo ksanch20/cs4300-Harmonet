@@ -637,20 +637,22 @@ class AIRecommendationsEssentialTests(TestCase):
     def test_gather_music_data_function(self):
         """Test the data gathering function works."""
         from user.ai_service import gather_user_music_data
+        from unittest.mock import patch
         
-        # User with no preferences
-        data = gather_user_music_data(self.user)
-        self.assertFalse(data['has_data'])
+        # User with no preferences and no Spotify
+        with patch('user.ai_service.is_spotify_connected', return_value=False):
+            data = gather_user_music_data(self.user)
+            self.assertFalse(data['has_data'])
         
         # User with preferences
         MusicPreferences.objects.create(
             user=self.user,
             favorite_artists='Taylor Swift'
         )
-        data = gather_user_music_data(self.user)
-        self.assertTrue(data['has_data'])
-        self.assertIn('Taylor Swift', data['manual_artists'])
-
+        with patch('user.ai_service.is_spotify_connected', return_value=False):
+            data = gather_user_music_data(self.user)
+            self.assertTrue(data['has_data'])
+            self.assertIn('Taylor Swift', data['manual_artists'])
 
 # ========================================
 # INTEGRATION TEST 
@@ -717,6 +719,9 @@ class AIServiceUnitTests(TestCase):
     def test_get_music_recommendations_success(self):
         mock_data = {
             'has_data': True,
+            'spotify_connected': False,
+            'spotify_top_artists': [],
+            'spotify_top_tracks': [],
             'manual_artists': ['Muse'],
             'manual_genres': ['Rock'],
             'manual_tracks': ['Uprising']
@@ -733,14 +738,16 @@ class AIServiceUnitTests(TestCase):
     def test_get_music_recommendations_openai_error(self):
         mock_data = {
             'has_data': True,
+            'spotify_connected': False,
+            'spotify_top_artists': [],
+            'spotify_top_tracks': [],
             'manual_artists': [],
             'manual_genres': [],
-            'manual_tracks': [],
-            'spotify_artists': []
+            'manual_tracks': []
         }
 
         with patch('user.ai_service.gather_user_music_data', return_value=mock_data), \
-        patch('user.ai_service.client.chat.completions.create', side_effect=Exception("API error")):
+             patch('user.ai_service.client.chat.completions.create', side_effect=Exception("API error")):
             result = get_music_recommendations(self.mock_user)
             self.assertFalse(result['success'])
             self.assertIn('Error generating recommendations', result['message'])
@@ -757,32 +764,126 @@ class AIServiceUnitTests(TestCase):
         mock_prefs.get_tracks_list.return_value = ['Uprising']
         self.mock_user.music_preferences = mock_prefs
 
-        data = gather_user_music_data(self.mock_user)
-        self.assertTrue(data['has_data'])
-        self.assertEqual(data['manual_artists'], ['Muse'])
+        with patch('user.ai_service.is_spotify_connected', return_value=False):
+            data = gather_user_music_data(self.mock_user)
+            self.assertTrue(data['has_data'])
+            self.assertEqual(data['manual_artists'], ['Muse'])
+            self.assertFalse(data['spotify_connected'])
 
     def test_gather_user_music_data_no_preferences(self):
-        del self.mock_user.music_preferences  # Simulate missing attribute
-        data = gather_user_music_data(self.mock_user)
-        self.assertFalse(data['has_data'])
-
+        # Simulate user with no preferences AND no Spotify
+        del self.mock_user.music_preferences
+        
+        # Mock the is_spotify_connected to return False
+        with patch('user.ai_service.is_spotify_connected', return_value=False):
+            data = gather_user_music_data(self.mock_user)
+            self.assertFalse(data['has_data'])
+            self.assertFalse(data['spotify_connected'])
+    
+    def test_gather_user_music_data_with_spotify(self):
+        """Test gathering data when Spotify is connected"""
+        # Create a real user for this test
+        from user.models import SpotifyTopArtist, SpotifyTopTrack
+        
+        user = User.objects.create_user('spotifyuser', 'spotify@test.com', 'pass123')
+        
+        # Create mock Spotify data
+        SpotifyTopArtist.objects.create(
+            user=user,
+            spotify_artist_id='test123',
+            name='Test Artist',
+            genres='Rock, Alternative',
+            rank=1
+        )
+        
+        SpotifyTopTrack.objects.create(
+            user=user,
+            spotify_track_id='track123',
+            name='Test Song',
+            artist_name='Test Artist',
+            rank=1
+        )
+        
+        # Mock is_spotify_connected to return True
+        with patch('user.ai_service.is_spotify_connected', return_value=True):
+            data = gather_user_music_data(user)
+            
+            self.assertTrue(data['has_data'])
+            self.assertTrue(data['spotify_connected'])
+            self.assertEqual(len(data['spotify_top_artists']), 1)
+            self.assertEqual(len(data['spotify_top_tracks']), 1)
+            self.assertEqual(data['spotify_top_artists'][0]['name'], 'Test Artist')
+    
     # -------------------------------
     # build_recommendation_prompt()
     # -------------------------------
 
     def test_build_recommendation_prompt_output(self):
         music_data = {
+            'spotify_connected': True,
+            'spotify_top_artists': [
+                {'name': 'Muse', 'genres': 'Rock, Alternative', 'popularity': 80}
+            ],
+            'spotify_top_tracks': [
+                {'name': 'Uprising', 'artist': 'Muse', 'popularity': 75}
+            ],
             'manual_artists': ['Radiohead'],
             'manual_genres': ['Alternative'],
-            'manual_tracks': ['Karma Police', 'No Surprises'],
-            'spotify_artists': ['Muse']
+            'manual_tracks': ['Karma Police', 'No Surprises']
         }
         prompt = build_recommendation_prompt(music_data)
-        self.assertIn('**Favorite Artists:**', prompt)
-        self.assertIn('Radiohead', prompt)
+        
+        # Check for Spotify data
+        self.assertIn('From Spotify - Your Top Artists:', prompt)
         self.assertIn('Muse', prompt)
+        self.assertIn('Uprising', prompt)
+        
+        # Check for manual data
+        self.assertIn('Additional Favorite Artists:', prompt)
+        self.assertIn('Radiohead', prompt)
         self.assertIn('Karma Police', prompt)
 
+    def test_build_recommendation_prompt_manual_only(self):
+        """Test prompt building with only manual preferences (no Spotify)"""
+        music_data = {
+            'spotify_connected': False,
+            'spotify_top_artists': [],
+            'spotify_top_tracks': [],
+            'manual_artists': ['Radiohead'],
+            'manual_genres': ['Alternative'],
+            'manual_tracks': ['Karma Police']
+        }
+        prompt = build_recommendation_prompt(music_data)
+        
+        # Should NOT have Spotify sections
+        self.assertNotIn('From Spotify', prompt)
+        
+        # Should have manual sections (without "Additional")
+        self.assertIn('Favorite Artists:', prompt)
+        self.assertIn('Radiohead', prompt)
+
+    def test_build_recommendation_prompt_spotify_only(self):
+        """Test prompt building with only Spotify data (no manual preferences)"""
+        music_data = {
+            'spotify_connected': True,
+            'spotify_top_artists': [
+                {'name': 'Taylor Swift', 'genres': 'Pop', 'popularity': 95}
+            ],
+            'spotify_top_tracks': [
+                {'name': 'Anti-Hero', 'artist': 'Taylor Swift', 'popularity': 90}
+            ],
+            'manual_artists': [],
+            'manual_genres': [],
+            'manual_tracks': []
+        }
+        prompt = build_recommendation_prompt(music_data)
+        
+        # Should have Spotify sections
+        self.assertIn('From Spotify', prompt)
+        self.assertIn('Taylor Swift', prompt)
+        
+        # Should NOT have manual sections
+        self.assertNotIn('Additional Favorite', prompt)
 
 class AddFriendByCodeViewTest(TestCase):
     """Test the add_friend_by_code view."""
