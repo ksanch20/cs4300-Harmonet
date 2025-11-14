@@ -1,0 +1,478 @@
+{% extends 'user/base.html' %}
+
+{% block title %}{{ profile_user.username }} - HarmoNet{% endblock %}
+
+{% block nav_extra %}
+  <!-- Remove "Welcome" text for this page -->
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .profile-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .profile-avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 3rem;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+
+  .profile-username {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e2a38;
+    margin-bottom: 0.5rem;
+  }
+
+  .profile-meta {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin: 0.25rem 0;
+  }
+
+  .profile-code {
+    display: inline-block;
+    background: #f3f4f6;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #5ca1d3;
+    margin-top: 0.5rem;
+  }
+
+  .friendship-status-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .status-friends {
+    background: #d1fae5;
+    color: #065f46;
+    border: 2px solid #6ee7b7;
+  }
+
+  .status-pending {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 2px solid #93c5fd;
+  }
+
+  .status-none {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #5ca1d3;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .back-link:hover {
+    color: #4a8bb8;
+    text-decoration: underline;
+  }
+
+  /* Messages */
+  .message {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .message.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+
+  .message.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+
+  .message.info {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+  }
+
+  /* Artist Wallet Styles */
+  .artists-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .artists-section h3 {
+    margin: 0 0 0.5rem 0;
+    color: #1e2a38;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .artists-section .subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .artists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  .artist-mini-card {
+    background: #f9fafb;
+    padding: 1.25rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+  }
+
+  .artist-mini-card:hover {
+    border-color: #5ca1d3;
+    box-shadow: 0 2px 8px rgba(92, 161, 211, 0.1);
+  }
+
+  .artist-mini-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .artist-mini-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .artist-mini-name {
+    font-weight: 600;
+    color: #1e2a38;
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .artist-mini-name:hover {
+    color: #5ca1d3;
+  }
+
+  .artist-mini-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  .artist-mini-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .no-artists-message {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+  }
+
+  .view-all-link {
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  .view-all-link a {
+    color: #5ca1d3;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .view-all-link a:hover {
+    text-decoration: underline;
+  }
+
+  .locked-message {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6b7280;
+  }
+
+  .locked-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .action-buttons {
+      flex-direction: column;
+    }
+    
+    .artists-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dashboard-container">
+  <div class="dashboard-box">
+    
+    <!-- Header -->
+    <div class="dashboard-header">
+      <h1>👤 User Profile</h1>
+    </div>
+
+    <div class="dashboard-wrapper">
+      
+      <!-- Messages -->
+      {% if messages %}
+        <div style="margin-bottom: 1.5rem;">
+          {% for message in messages %}
+            <div class="message {{ message.tags }}">
+              <span>{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}⚠️{% else %}ℹ️{% endif %}</span>
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Profile Header -->
+      <div class="profile-header">
+        <div class="profile-avatar-large">
+          {{ profile_user.username|slice:":1"|upper }}
+        </div>
+        <h2 class="profile-username">{{ profile_user.username }}</h2>
+        <p class="profile-meta">Joined {{ profile_user.date_joined|date:"F Y" }}</p>
+        <div class="profile-code">{{ profile_user.profile.friend_code }}</div>
+      </div>
+
+      <!-- Friendship Status -->
+      {% if not is_own_profile %}
+        <div class="friendship-status-card">
+          
+          {% if are_friends %}
+            <!-- Already Friends -->
+            <div class="status-badge status-friends">✓ Friends</div>
+            <p style="color: #6b7280; margin-bottom: 1.5rem;">
+              You are friends with {{ profile_user.username }}
+            </p>
+            <form method="post" action="{% url 'remove_friend' profile_user.id %}" onsubmit="return confirm('Remove {{ profile_user.username }} from friends?');">
+              {% csrf_token %}
+              <button type="submit" class="btn-secondary" style="padding: 0.75rem 2rem;">
+                Remove Friend
+              </button>
+            </form>
+          
+          {% elif existing_request %}
+            {% if existing_request.status == 'pending' %}
+              {% if existing_request.from_user == request.user %}
+                <!-- Request Sent -->
+                <div class="status-badge status-pending">📤 Request Sent</div>
+                <p style="color: #6b7280;">
+                  Waiting for {{ profile_user.username }} to respond
+                </p>
+              
+              {% else %}
+                <!-- Request Received -->
+                <div class="status-badge status-pending">📬 Request Received</div>
+                <p style="color: #6b7280; margin-bottom: 1.5rem;">
+                  {{ profile_user.username }} wants to be friends
+                </p>
+                <div class="action-buttons">
+                  <form method="post" action="{% url 'accept_friend_request' existing_request.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary" style="padding: 0.75rem 2rem;">
+                      ✓ Accept Request
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'decline_friend_request' existing_request.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-secondary" style="padding: 0.75rem 2rem;">
+                      ✗ Decline
+                    </button>
+                  </form>
+                </div>
+              {% endif %}
+            
+            {% elif existing_request.status == 'declined' %}
+              <!-- Previously Declined -->
+              <div class="status-badge status-none">Not Friends</div>
+              <p style="color: #6b7280; margin-bottom: 1.5rem;">
+                You can send a new friend request
+              </p>
+              <form method="post" action="{% url 'send_friend_request' profile_user.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary" style="padding: 0.75rem 2rem;">
+                  Send Friend Request
+                </button>
+              </form>
+            {% endif %}
+          
+          {% else %}
+            <!-- No Relationship -->
+            <div class="status-badge status-none">Not Friends</div>
+            <p style="color: #6b7280; margin-bottom: 1.5rem;">
+              Connect with {{ profile_user.username }}
+            </p>
+            <form method="post" action="{% url 'send_friend_request' profile_user.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-primary" style="padding: 0.75rem 2rem;">
+                Send Friend Request
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      
+      {% else %}
+        <!-- Own Profile -->
+        <div class="friendship-status-card">
+          <div class="status-badge" style="background: #f3f4f6; color: #1e2a38; border: 2px solid #e5e7eb;">
+            👤 This is Your Profile
+          </div>
+          <p style="color: #6b7280; margin-bottom: 1.5rem;">
+            Share your friend code with others to connect
+          </p>
+          <a href="{% url 'profile' %}" class="btn-primary" style="display: inline-block; padding: 0.75rem 2rem; text-decoration: none;">
+            Edit Profile Settings
+          </a>
+        </div>
+      {% endif %}
+
+      <!-- Artist Wallet Section -->
+      <div class="artists-section">
+        <h3>🎵 Favorite Artists</h3>
+        
+        {% if show_artists %}
+          {% if user_artists %}
+            <p class="subtitle">{{ profile_user.username }}'s top artists</p>
+            
+            <div class="artists-grid">
+              {% for artist in user_artists %}
+                <div class="artist-mini-card">
+                  <div class="artist-mini-header">
+                    <div class="artist-mini-avatar">{{ artist.name|slice:":1"|upper }}</div>
+                    <div>
+                      {% if artist.profile_url %}
+                        <a href="{{ artist.profile_url }}" target="_blank" class="artist-mini-name">
+                          {{ artist.name }}
+                        </a>
+                      {% else %}
+                        <div class="artist-mini-name">{{ artist.name }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  
+                  <div class="artist-mini-details">
+                    <div class="artist-mini-detail">
+                      <span>🎵</span>
+                      <span>{{ artist.genre|default:"Genre not specified" }}</span>
+                    </div>
+                    {% if artist.rating %}
+                      <div class="artist-mini-detail">
+                        <span>⭐</span>
+                        <span>Rating: {{ artist.rating }}/5</span>
+                      </div>
+                    {% endif %}
+                    {% if artist.average_time_listened %}
+                      <div class="artist-mini-detail">
+                        <span>⏱️</span>
+                        <span>{{ artist.average_time_listened }} min avg</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            {% if is_own_profile %}
+              <div class="view-all-link">
+                <a href="{% url 'user_artist' %}">View & Manage All Artists →</a>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="no-artists-message">
+              {% if is_own_profile %}
+                <p>You haven't added any artists yet.</p>
+                <a href="{% url 'user_artist' %}" class="btn-primary" style="display: inline-block; margin-top: 1rem; text-decoration: none; padding: 0.75rem 1.5rem;">
+                  Add Your First Artist
+                </a>
+              {% else %}
+                <p>{{ profile_user.username }} hasn't added any artists yet.</p>
+              {% endif %}
+            </div>
+          {% endif %}
+
+        {% else %}
+          <!-- Not friends - locked -->
+          <div class="locked-message">
+            <div class="locked-icon">🔒</div>
+            <p><strong>Artist collection is private</strong></p>
+            <p>Become friends with {{ profile_user.username }} to see their favorite artists</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</main>
+{% endblock %}
