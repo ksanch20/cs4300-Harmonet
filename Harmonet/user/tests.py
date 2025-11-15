@@ -640,7 +640,7 @@ class AIRecommendationsEssentialTests(TestCase):
         from unittest.mock import patch
         
         # User with no preferences and no Spotify
-        with patch('user.ai_service.is_spotify_connected', return_value=False):
+        with patch('user.spotify_service.is_spotify_connected', return_value=False):
             data = gather_user_music_data(self.user)
             self.assertFalse(data['has_data'])
         
@@ -649,7 +649,7 @@ class AIRecommendationsEssentialTests(TestCase):
             user=self.user,
             favorite_artists='Taylor Swift'
         )
-        with patch('user.ai_service.is_spotify_connected', return_value=False):
+        with patch('user.spotify_service.is_spotify_connected', return_value=False):
             data = gather_user_music_data(self.user)
             self.assertTrue(data['has_data'])
             self.assertIn('Taylor Swift', data['manual_artists'])
@@ -764,7 +764,7 @@ class AIServiceUnitTests(TestCase):
         mock_prefs.get_tracks_list.return_value = ['Uprising']
         self.mock_user.music_preferences = mock_prefs
 
-        with patch('user.ai_service.is_spotify_connected', return_value=False):
+        with patch('user.spotify_service.is_spotify_connected', return_value=False):
             data = gather_user_music_data(self.mock_user)
             self.assertTrue(data['has_data'])
             self.assertEqual(data['manual_artists'], ['Muse'])
@@ -775,7 +775,7 @@ class AIServiceUnitTests(TestCase):
         del self.mock_user.music_preferences
         
         # Mock the is_spotify_connected to return False
-        with patch('user.ai_service.is_spotify_connected', return_value=False):
+        with patch('user.spotify_service.is_spotify_connected', return_value=False):
             data = gather_user_music_data(self.mock_user)
             self.assertFalse(data['has_data'])
             self.assertFalse(data['spotify_connected'])
