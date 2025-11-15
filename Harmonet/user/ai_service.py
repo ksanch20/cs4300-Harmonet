@@ -126,9 +126,9 @@ def build_recommendation_prompt(music_data):
     prompt_parts.append("Based on this user's music taste, recommend 5 artists they would love:\n")
     
     # Add Spotify data if available
-    if music_data.get('spotify_artists'):
+    if music_data.get('spotify_top_artists'):
         prompt_parts.append("\n**From Spotify:**")
-        prompt_parts.append(", ".join(music_data['spotify_artists']))
+        prompt_parts.append(", ".join(music_data['spotify_top_artists']))
     
     # Add manual preferences
     if music_data['manual_artists']:
