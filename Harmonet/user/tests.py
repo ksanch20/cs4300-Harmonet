@@ -1214,6 +1214,12 @@ class FriendsDashboardViewTest(TestCase):
         self.assertEqual(response.context['search_results'].count(), 0)
 
 
+from django.test import TestCase, Client
+from django.urls import reverse
+from django.contrib.auth.models import User
+from .models import Artist, Album
+from unittest.mock import patch, MagicMock
+import json
 
 
 class ArtistWalletTests(TestCase):
@@ -1314,6 +1320,7 @@ class ArtistWalletTests(TestCase):
 
 
 class MusicBrainzSearchTests(TestCase):
+    """Tests for MusicBrainz artist search."""
     
     def setUp(self):
         self.client = Client()
@@ -1354,7 +1361,182 @@ class MusicBrainzSearchTests(TestCase):
         self.assertEqual(data['artists'][0]['name'], 'Test Artist')
 
 
+class MusicBrainzServiceTests(TestCase):
+    """Test MusicBrainz service methods directly to increase coverage."""
+    
+    @patch('user.services.musicbrainz.requests.Session.get')
+    def test_search_artists_method(self, mock_get):
+        """Test the search_artists method logic."""
+        from user.services.musicbrainz import MusicBrainzAPI
+        
+        # Mock the HTTP response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'artists': [
+                {
+                    'id': 'test-id',
+                    'name': 'Test Artist',
+                    'country': 'US',
+                    'type': 'Person',
+                    'score': 100,
+                    'disambiguation': 'American rapper',
+                    'genres': [{'name': 'rock'}],
+                    'tags': [{'name': 'pop'}]
+                }
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+        
+        # Call the actual method
+        api = MusicBrainzAPI()
+        results = api.search_artists('Test')
+        
+        # Verify the method processed the data correctly
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['name'], 'Test Artist')
+        self.assertEqual(results[0]['country'], 'US')
+        self.assertIn('rock', results[0]['genres'])
+    
+    @patch('user.services.musicbrainz.requests.Session.get')
+    def test_get_artist_albums_sorting(self, mock_get):
+        """Test that albums are sorted by release date (newest first)."""
+        from user.services.musicbrainz import MusicBrainzAPI
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'release-groups': [
+                {
+                    'id': '1',
+                    'title': 'Old Album',
+                    'first-release-date': '2020-01-01',
+                    'primary-type': 'Album'
+                },
+                {
+                    'id': '2',
+                    'title': 'New Album',
+                    'first-release-date': '2023-01-01',
+                    'primary-type': 'Album'
+                },
+                {
+                    'id': '3',
+                    'title': 'Middle Album',
+                    'first-release-date': '2021-06-15',
+                    'primary-type': 'Album'
+                }
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+        
+        api = MusicBrainzAPI()
+        albums = api.get_artist_albums('test-artist-id', limit=5)
+        
+        # Verify newest album comes first
+        self.assertEqual(albums[0]['title'], 'New Album')
+        self.assertEqual(albums[1]['title'], 'Middle Album')
+        self.assertEqual(albums[2]['title'], 'Old Album')
+    
+    def test_extract_genres_method(self):
+        """Test the _extract_genres helper method."""
+        from user.services.musicbrainz import MusicBrainzAPI
+        
+        api = MusicBrainzAPI()
+        
+        artist_data = {
+            'genres': [
+                {'name': 'rock'},
+                {'name': 'pop'}
+            ],
+            'tags': [
+                {'name': 'alternative'},
+                {'name': 'indie'},
+                {'name': 'experimental'}
+            ]
+        }
+        
+        genres = api._extract_genres(artist_data)
+        
+        self.assertIn('rock', genres)
+        self.assertIn('pop', genres)
+        self.assertLessEqual(len(genres), 3)  # Max 3 genres
+    
+    def test_extract_genres_with_no_data(self):
+        """Test _extract_genres with empty data."""
+        from user.services.musicbrainz import MusicBrainzAPI
+        
+        api = MusicBrainzAPI()
+        genres = api._extract_genres({})
+        
+        self.assertEqual(genres, [])
+    
+    @patch('user.services.musicbrainz.requests.Session.get')
+    def test_get_artist_details(self, mock_get):
+        """Test getting artist details."""
+        from user.services.musicbrainz import MusicBrainzAPI
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'id': 'artist-id',
+            'name': 'Artist Name',
+            'relations': [
+                {
+                    'type': 'official homepage',
+                    'url': {'resource': 'https://artist.com'}
+                }
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+        
+        api = MusicBrainzAPI()
+        details = api.get_artist_details('artist-id')
+        
+        self.assertIsNotNone(details)
+        self.assertEqual(details['name'], 'Artist Name')
+    
+    @patch('user.services.musicbrainz.requests.get')
+    def test_get_album_cover_art(self, mock_get):
+        """Test fetching album cover art."""
+        from user.services.musicbrainz import MusicBrainzAPI
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'images': [
+                {
+                    'thumbnails': {
+                        'small': 'https://example.com/small.jpg',
+                        '250': 'https://example.com/250.jpg'
+                    }
+                }
+            ]
+        }
+        mock_get.return_value = mock_response
+        
+        api = MusicBrainzAPI()
+        cover_url = api.get_album_cover_art('release-group-id')
+        
+        self.assertEqual(cover_url, 'https://example.com/small.jpg')
+    
+    @patch('user.services.musicbrainz.requests.get')
+    def test_get_album_cover_art_not_found(self, mock_get):
+        """Test when cover art is not available."""
+        from user.services.musicbrainz import MusicBrainzAPI
+        
+        mock_get.side_effect = Exception("Not found")
+        
+        api = MusicBrainzAPI()
+        cover_url = api.get_album_cover_art('release-group-id')
+        
+        self.assertIsNone(cover_url)
+
+
 class AlbumTests(TestCase):
+    """Tests for Album model and functionality."""
     
     def setUp(self):
         self.user = User.objects.create_user(
@@ -1386,6 +1568,7 @@ class AlbumTests(TestCase):
             release_date='1969-09-26'
         )
         
+        self.client = Client()
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('user_artist'))
         
@@ -1406,6 +1589,7 @@ class AlbumTests(TestCase):
 
 
 class ArtistModelTests(TestCase):
+    """Tests for Artist model."""
     
     def setUp(self):
         self.user = User.objects.create_user(
