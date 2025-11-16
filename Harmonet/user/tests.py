@@ -719,7 +719,9 @@ class AIServiceUnitTests(TestCase):
             'has_data': True,
             'manual_artists': ['Muse'],
             'manual_genres': ['Rock'],
-            'manual_tracks': ['Uprising']
+            'manual_tracks': ['Uprising'],
+            'spotify_top_artists': [],
+            'spotify_top_tracks': []
         }
         mock_response = Mock()
         mock_response.choices = [Mock(message=Mock(content='Recommended artists...'))]
@@ -736,7 +738,8 @@ class AIServiceUnitTests(TestCase):
             'manual_artists': [],
             'manual_genres': [],
             'manual_tracks': [],
-            'spotify_top_artists': []
+            'spotify_top_artists': [],
+            'spotify_top_tracks': []
         }
 
         with patch('user.ai_service.gather_user_music_data', return_value=mock_data), \
@@ -762,8 +765,14 @@ class AIServiceUnitTests(TestCase):
         self.assertEqual(data['manual_artists'], ['Muse'])
 
     def test_gather_user_music_data_no_preferences(self):
-        del self.mock_user.music_preferences  # Simulate missing attribute
-        data = gather_user_music_data(self.mock_user)
+        # Simulate user with no music_preferences attribute
+        mock_user = Mock()
+        mock_user.id = 1
+        # Remove the music_preferences attribute entirely
+        if hasattr(mock_user, 'music_preferences'):
+            delattr(mock_user, 'music_preferences')
+        
+        data = gather_user_music_data(mock_user)
         self.assertFalse(data['has_data'])
 
     # -------------------------------
@@ -775,14 +784,14 @@ class AIServiceUnitTests(TestCase):
             'manual_artists': ['Radiohead'],
             'manual_genres': ['Alternative'],
             'manual_tracks': ['Karma Police', 'No Surprises'],
-            'spotify_top_artists': ['Muse']
+            'spotify_top_artists': [{'name': 'Muse', 'genres': 'Rock, Alternative'}],
+            'spotify_top_tracks': [{'name': 'Uprising', 'artist': 'Muse'}]
         }
         prompt = build_recommendation_prompt(music_data)
         self.assertIn('**Favorite Artists:**', prompt)
         self.assertIn('Radiohead', prompt)
         self.assertIn('Muse', prompt)
         self.assertIn('Karma Police', prompt)
-
 
 class AddFriendByCodeViewTest(TestCase):
     """Test the add_friend_by_code view."""
