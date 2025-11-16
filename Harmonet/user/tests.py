@@ -753,26 +753,36 @@ class AIServiceUnitTests(TestCase):
     # gather_user_music_data()
     # -------------------------------
 
-    def test_gather_user_music_data_with_preferences(self):
-        mock_prefs = Mock()
-        mock_prefs.get_artists_list.return_value = ['Muse']
-        mock_prefs.get_genres_list.return_value = ['Rock']
-        mock_prefs.get_tracks_list.return_value = ['Uprising']
-        self.mock_user.music_preferences = mock_prefs
+def test_gather_user_music_data_with_preferences(self):
+    # Create a proper mock user with music_preferences
+    mock_user = Mock()
+    mock_user.id = 1
+    
+    mock_prefs = Mock()
+    mock_prefs.get_artists_list.return_value = ['Muse']
+    mock_prefs.get_genres_list.return_value = ['Rock']
+    mock_prefs.get_tracks_list.return_value = ['Uprising']
+    mock_user.music_preferences = mock_prefs
 
-        data = gather_user_music_data(self.mock_user)
+    # Mock is_spotify_connected to return False so we only test manual preferences
+    with patch('user.spotify_service.is_spotify_connected', return_value=False):
+        data = gather_user_music_data(mock_user)
         self.assertTrue(data['has_data'])
         self.assertEqual(data['manual_artists'], ['Muse'])
+        self.assertEqual(data['manual_genres'], ['Rock'])
+        self.assertEqual(data['manual_tracks'], ['Uprising'])
 
-    def test_gather_user_music_data_no_preferences(self):
-        # Simulate user with no music_preferences attribute and no spotify connection
-        mock_user = Mock(spec=['id'])  # Only allow 'id' attribute
-        mock_user.id = 1
-        
-        # Patch both is_spotify_connected and the model imports to prevent any data loading
-        with patch('user.ai_service.is_spotify_connected', return_value=False):
-            data = gather_user_music_data(mock_user)
-            self.assertFalse(data['has_data'])
+def test_gather_user_music_data_no_preferences(self):
+    # Simulate user with no music_preferences attribute and no spotify connection
+    mock_user = Mock()
+    mock_user.id = 1
+    
+    # When accessing music_preferences, raise AttributeError (simulating no preferences)
+    type(mock_user).music_preferences = PropertyMock(side_effect=AttributeError)
+    
+    with patch('user.spotify_service.is_spotify_connected', return_value=False):
+        data = gather_user_music_data(mock_user)
+        self.assertFalse(data['has_data'])
 
     # -------------------------------
     # build_recommendation_prompt()
