@@ -3,16 +3,18 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    path('', views.index, name='index'),  # user homepage / index
-    path('login/', views.user_login, name='login'),  # login page
-    path('logout/', views.user_logout, name='logout'),   # logout
-    path('register/', views.register, name='register'),# register page
+    path('', views.index, name='index'),
+    path('login/', views.user_login, name='login'),
+    path('logout/', views.user_logout, name='logout'),
+    path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
-    path('account_link/', views.account_link, name='account_link'),  # unique name
-    path('user_artist/', views.user_artist, name='user_artist'),
-
-
-
+    path('account_link/', views.account_link, name='account_link'),
+    path('user_artist/', views.artist_wallet, name='user_artist'),
+    
+    # API endpoints for MusicBrainz integration
+    path('api/search-artists/', views.search_artists_api, name='search_artists_api'),
+    path('api/add-artist/', views.add_artist_from_api, name='add_artist_from_api'),
+    
     path('profile/', views.profile, name='profile'),
     path('analytics/', views.analytics, name='analytics'),
     path('AI_Recommendation/', views.AI_Recommendation, name='AI_Recommendation'), #Change password

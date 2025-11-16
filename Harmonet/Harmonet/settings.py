@@ -168,3 +168,6 @@ LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
 OPENAI_API_KEY=config('OPENAI_API_KEY', default='')
 
 
+
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
+CSRF_COOKIE_SAMESITE = 'Lax'

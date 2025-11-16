@@ -240,3 +240,51 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
+
+from django.db import models
+from django.contrib.auth.models import User
+
+from django.db import models
+from django.contrib.auth.models import User
+
+class Artist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='artists')
+    name = models.CharField(max_length=200)
+    profile_url = models.URLField(blank=True, null=True)
+    genre = models.CharField(max_length=100, blank=True, null=True)
+    average_time_listened = models.IntegerField(blank=True, null=True, help_text="Minutes")
+    rating = models.IntegerField(blank=True, null=True, choices=[(i, i) for i in range(1, 6)])
+    
+    # MusicBrainz specific fields
+    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True, unique=False)
+    artist_image = models.URLField(blank=True, null=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    disambiguation = models.CharField(max_length=200, blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['user', 'musicbrainz_id']
+
+    def __str__(self):
+        return f"{self.name} - {self.user.username}"
+
+
+# ADD THIS NEW MODEL:
+class Album(models.Model):
+    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='albums')
+    title = models.CharField(max_length=200)
+    release_date = models.CharField(max_length=100, blank=True, null=True)
+    album_type = models.CharField(max_length=50, blank=True, null=True)  # Album, EP, Single
+    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
+    cover_art_url = models.URLField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-release_date']
+
+    def __str__(self):
+        return f"{self.title} - {self.artist.name}"

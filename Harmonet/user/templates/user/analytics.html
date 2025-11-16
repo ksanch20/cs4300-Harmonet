@@ -1,11 +1,151 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    hello world 2
-</body>
-</html>
+{% extends 'user/base.html' %}
+{% load static %}
+
+{% block title %}Spotify Analytics Preview | HarmoNet{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/analytics_spotify_preview.css' %}">
+
+<div class="main-layout spotify-analytics">
+  <main class="analytics-container">
+    <header class="analytics-header">
+      <div class="header-left">
+        <h1>Spotify Analytics (Preview)</h1>
+        <p class="subtitle">Personalized insights from your connected Spotify account — preview mode</p>
+      </div>
+      <div class="header-actions">
+        <a href="#" class="btn small">Manage Connections</a>
+        <a href="#" class="btn ghost small">Back to Dashboard</a>
+      </div>
+    </header>
+
+    <section class="profile-summary card">
+      <div class="profile-left">
+        <img class="profile-image" src="{% static 'images/default-artist.jpg' %}" alt="Preview avatar" width="96" height="96" loading="lazy">
+        <div class="profile-meta">
+          <h2 class="profile-name">Preview User</h2>
+          <p class="profile-sub">Spotify ID: <span class="muted">preview_user_123</span></p>
+          <p class="profile-sub">Country: <span class="muted">US</span></p>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat">
+          <div class="stat-value">12,482</div>
+          <div class="stat-label">Total Plays</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">214</div>
+          <div class="stat-label">Unique Artists</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">Indie Pop</div>
+          <div class="stat-label">Top Genre</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">1,204</div>
+          <div class="stat-label">Followers</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="overview-grid">
+      <div class="card plays-over-time">
+        <div class="card-header">
+          <h3>Plays Over Time</h3>
+          <form class="range-form" method="get">
+            <label for="range-select" class="sr-only">Range</label>
+            <select id="range-select" name="range">
+              <option value="30">30d</option>
+              <option value="90" selected>90d</option>
+              <option value="365">1yr</option>
+            </select>
+          </form>
+        </div>
+        <div class="chart-placeholder">[Chart Placeholder — Plays Over Time]</div>
+      </div>
+
+      <div class="right-column">
+        <div class="card top-artists">
+          <div class="card-header"><h3>Top Artists</h3></div>
+          <ol class="top-list">
+            <li class="top-item">
+              <img src="{% static 'images/default-artist.jpg' %}" alt="Artist 1" loading="lazy" width="56" height="56">
+              <div class="top-meta">
+                <div class="top-name">Artist One</div>
+                <div class="top-sub muted">Pop; Indie</div>
+              </div>
+              <div class="top-value">3,210</div>
+            </li>
+            <li class="top-item">
+              <img src="{% static 'images/default-artist.jpg' %}" alt="Artist 2" loading="lazy" width="56" height="56">
+              <div class="top-meta">
+                <div class="top-name">Artist Two</div>
+                <div class="top-sub muted">Alternative</div>
+              </div>
+              <div class="top-value">2,876</div>
+            </li>
+            <li class="top-item"> <div class="empty">More artists shown in live view</div> </li>
+          </ol>
+        </div>
+
+        <div class="card top-tracks">
+          <div class="card-header"><h3>Top Tracks</h3></div>
+          <ol class="top-list">
+            <li class="top-item">
+              <div class="top-meta">
+                <div class="top-name">Track A</div>
+                <div class="top-sub muted">Artist One</div>
+              </div>
+              <div class="top-value">1,502</div>
+            </li>
+            <li class="top-item">
+              <div class="top-meta">
+                <div class="top-name">Track B</div>
+                <div class="top-sub muted">Artist Two</div>
+              </div>
+              <div class="top-value">1,210</div>
+            </li>
+            <li class="top-item"> <div class="empty">More tracks shown in live view</div> </li>
+          </ol>
+        </div>
+
+        <div class="card devices-breakdown">
+          <div class="card-header"><h3>Devices / Platforms</h3></div>
+          <ul class="device-list">
+            <li><strong>Mobile</strong><span class="muted"> — 8,432 plays</span></li>
+            <li><strong>Desktop</strong><span class="muted"> — 3,120 plays</span></li>
+            <li class="empty">Device breakdown available in live view</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="recent-activity card">
+      <div class="card-header"><h3>Recent Spotify Activity</h3></div>
+      <ul class="recent-list">
+        <li>
+          <img src="{% static 'images/default-artist.jpg' %}" alt="Track" loading="lazy" width="56" height="56">
+          <div class="recent-meta">
+            <div class="recent-track">Sample Track 1</div>
+            <div class="recent-sub muted">Artist One • 2025-11-14 20:03</div>
+          </div>
+          <div class="recent-actions">
+            <a class="btn ghost tiny" href="#">Open</a>
+          </div>
+        </li>
+        <li>
+          <img src="{% static 'images/default-artist.jpg' %}" alt="Track" loading="lazy" width="56" height="56">
+          <div class="recent-meta">
+            <div class="recent-track">Sample Track 2</div>
+            <div class="recent-sub muted">Artist Two • 2025-11-14 19:32</div>
+          </div>
+          <div class="recent-actions">
+            <a class="btn ghost tiny" href="#">Open</a>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </main>
+</div>
+{% endblock %}
