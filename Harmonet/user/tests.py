@@ -1,9 +1,15 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
-from .models import FriendRequest, FriendRequestManager
+from .models import FriendRequest, FriendRequestManager, Artist, Album
 from user.models import MusicPreferences, UserProfile, FriendRequest
 from django.contrib.messages import get_messages
+from unittest.mock import patch
+import json
+
+
+
+
 
 #Used ChatGPT to help write tests
 
@@ -1206,3 +1212,233 @@ class FriendsDashboardViewTest(TestCase):
         # user2 should NOT appear (already friends)
         # Note: user2 will still appear in the friends list, just not search results
         self.assertEqual(response.context['search_results'].count(), 0)
+
+
+
+
+class ArtistWalletTests(TestCase):
+    """Tests for Artist Wallet functionality."""
+    
+    def setUp(self):
+        """Set up test client and users."""
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
+        self.other_user = User.objects.create_user(
+            username='otheruser',
+            password='testpass123'
+        )
+    
+    def test_artist_wallet_requires_login(self):
+        """Test that artist wallet page requires authentication."""
+        response = self.client.get(reverse('user_artist'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+    
+    def test_artist_wallet_displays_user_artists(self):
+        """Test that logged-in user sees their artists."""
+        # Create artist for user
+        Artist.objects.create(
+            user=self.user,
+            name='The Beatles',
+            genre='Rock',
+            rating=5
+        )
+        
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('user_artist'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'The Beatles')
+    
+    def test_user_only_sees_own_artists(self):
+        """Test that users only see their own artists, not others'."""
+        # Create artist for different users
+        Artist.objects.create(user=self.user, name='My Artist', genre='Rock')
+        Artist.objects.create(user=self.other_user, name='Other Artist', genre='Pop')
+        
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('user_artist'))
+        
+        self.assertContains(response, 'My Artist')
+        self.assertNotContains(response, 'Other Artist')
+    
+    def test_add_artist_manually(self):
+        """Test manually adding an artist via form."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.post(reverse('user_artist'), {
+            'name': 'Drake',
+            'genre': 'Hip-Hop',
+            'rating': 5
+        })
+        
+        self.assertEqual(response.status_code, 302)  # Redirects after success
+        self.assertTrue(Artist.objects.filter(user=self.user, name='Drake').exists())
+    
+    def test_delete_artist(self):
+        """Test deleting an artist from wallet."""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Artist to Delete',
+            genre='Rock'
+        )
+        
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.post(
+            reverse('user_artist'),
+            {'delete_artist_id': artist.id}
+        )
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Artist.objects.filter(id=artist.id).exists())
+    
+    def test_cannot_delete_other_users_artist(self):
+        """Test that users cannot delete artists belonging to others."""
+        artist = Artist.objects.create(
+            user=self.other_user,
+            name='Other User Artist',
+            genre='Rock'
+        )
+        
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.post(
+            reverse('user_artist'),
+            {'delete_artist_id': artist.id}
+        )
+        
+        # Artist should still exist
+        self.assertTrue(Artist.objects.filter(id=artist.id).exists())
+
+
+class MusicBrainzSearchTests(TestCase):
+    
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
+        self.client.login(username='testuser', password='testpass123')
+    
+    def test_search_api_endpoint_exists(self):
+        response = self.client.get(reverse('search_artists_api'), {'query': 'Beatles'})
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search_requires_minimum_length(self):
+        response = self.client.get(reverse('search_artists_api'), {'query': 'a'})
+        data = json.loads(response.content)
+        self.assertEqual(data['artists'], [])
+    
+    @patch('user.services.musicbrainz.MusicBrainzAPI.search_artists')
+    def test_search_returns_artists(self, mock_search):
+        """Test that search returns artist data."""
+        mock_search.return_value = [
+            {
+                'id': 'test-id',
+                'name': 'Test Artist',
+                'country': 'US',
+                'genres': ['rock'],
+                'disambiguation': '',
+                'score': 100
+            }
+        ]
+        
+        response = self.client.get(reverse('search_artists_api'), {'query': 'Test'})
+        data = json.loads(response.content)
+        
+        self.assertIn('artists', data)
+        self.assertEqual(len(data['artists']), 1)
+        self.assertEqual(data['artists'][0]['name'], 'Test Artist')
+
+
+class AlbumTests(TestCase):
+    
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
+        self.artist = Artist.objects.create(
+            user=self.user,
+            name='Test Artist',
+            musicbrainz_id='test-id',
+            genre='Rock'
+        )
+    
+    def test_create_album_for_artist(self):
+        album = Album.objects.create(
+            artist=self.artist,
+            title='Test Album',
+            release_date='2023-01-01',
+            album_type='Album'
+        )
+        
+        self.assertEqual(album.artist, self.artist)
+        self.assertEqual(self.artist.albums.count(), 1)
+    
+    def test_albums_display_on_artist_card(self):
+        Album.objects.create(
+            artist=self.artist,
+            title='Abbey Road',
+            release_date='1969-09-26'
+        )
+        
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('user_artist'))
+        
+        self.assertContains(response, 'Abbey Road')
+        self.assertContains(response, 'Recent Albums')
+    
+    def test_deleting_artist_deletes_albums(self):
+        Album.objects.create(
+            artist=self.artist,
+            title='Test Album',
+            release_date='2023-01-01'
+        )
+        
+        artist_id = self.artist.id
+        self.artist.delete()
+        
+        self.assertEqual(Album.objects.filter(artist_id=artist_id).count(), 0)
+
+
+class ArtistModelTests(TestCase):
+    
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
+    
+    def test_artist_string_representation(self):
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Taylor Swift'
+        )
+        
+        self.assertEqual(str(artist), 'Taylor Swift - testuser')
+    
+    def test_artist_ordering(self):
+        artist1 = Artist.objects.create(user=self.user, name='First')
+        artist2 = Artist.objects.create(user=self.user, name='Second')
+        
+        artists = Artist.objects.filter(user=self.user)
+        self.assertEqual(artists[0], artist2) 
+    
+    def test_cannot_add_duplicate_musicbrainz_artist(self):
+        Artist.objects.create(
+            user=self.user,
+            name='Test Artist',
+            musicbrainz_id='same-id'
+        )
+        
+        from django.db import IntegrityError
+        with self.assertRaises(IntegrityError):
+            Artist.objects.create(
+                user=self.user,
+                name='Test Artist',
+                musicbrainz_id='same-id'
+            )

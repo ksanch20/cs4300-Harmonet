@@ -13,7 +13,8 @@ from django.contrib.auth.models import User
 from .ai_service import get_music_recommendations
 from django.conf import settings
 from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager, SpotifyTopArtist, SpotifyTopTrack
-
+from django.http import JsonResponse
+from .models import Artist, Album
 
 from django.core.paginator import Paginator
 from .models import SoundCloudArtist
@@ -29,6 +30,12 @@ from .spotify_service import (
     is_spotify_connected,
     disconnect_spotify
 )
+
+
+from django.http import JsonResponse
+from .models import Artist, Album 
+from .forms import ArtistForm
+import logging
 
 #################### index ####################################### 
 def index(request):

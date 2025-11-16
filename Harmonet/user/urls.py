@@ -9,8 +9,6 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('account_link/', views.account_link, name='account_link'),
-    
-    # Artist wallet - using the NEW artist_wallet view
     path('user_artist/', views.artist_wallet, name='user_artist'),
     
     # API endpoints for MusicBrainz integration
