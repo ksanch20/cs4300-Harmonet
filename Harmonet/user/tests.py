@@ -736,7 +736,7 @@ class AIServiceUnitTests(TestCase):
             'manual_artists': [],
             'manual_genres': [],
             'manual_tracks': [],
-            'spotify_artists': []
+            'top_spotify_artists': []
         }
 
         with patch('user.ai_service.gather_user_music_data', return_value=mock_data), \
@@ -775,7 +775,7 @@ class AIServiceUnitTests(TestCase):
             'manual_artists': ['Radiohead'],
             'manual_genres': ['Alternative'],
             'manual_tracks': ['Karma Police', 'No Surprises'],
-            'spotify_artists': ['Muse']
+            'top_spotify_artists': ['Muse']
         }
         prompt = build_recommendation_prompt(music_data)
         self.assertIn('**Favorite Artists:**', prompt)
