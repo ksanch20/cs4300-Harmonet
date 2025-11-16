@@ -545,6 +545,10 @@ def add_friend_by_code(request):
     return redirect('friends_dashboard')
 
 
+from django.db.models import Q
+from .models import Artist, FriendRequest
+
+
 @login_required
 def user_profile(request, username):
     """View another user's public profile."""
@@ -572,9 +576,10 @@ def user_profile(request, username):
     show_artists = False
     
     if can_view_artists:
-        user_artists = SoundCloudArtist.objects.filter(
+        # Changed from SoundCloudArtist to Artist
+        user_artists = Artist.objects.filter(
             user=profile_user
-        ).order_by('-rating', 'name')[:6]
+        ).order_by('-created_at')[:6]  # Show 6 most recent artists
         show_artists = True
     
     context = {
@@ -587,3 +592,193 @@ def user_profile(request, username):
     }
     
     return render(request, 'user/user_profile.html', context)
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from .models import Artist, Album  # Update this in views.py
+from .forms import ArtistForm
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    from .services.musicbrainz import MusicBrainzAPI
+except ImportError as e:
+    logger.error(f"Failed to import MusicBrainzAPI: {e}")
+    MusicBrainzAPI = None
+
+@login_required
+def artist_wallet(request):
+    """Main artist wallet view"""
+    # Handle artist deletion
+    if request.method == 'POST' and 'delete_artist_id' in request.POST:
+        artist_id = request.POST.get('delete_artist_id')
+        try:
+            artist = Artist.objects.get(id=artist_id, user=request.user)
+            artist_name = artist.name
+            artist.delete()
+            messages.success(request, f'Artist "{artist_name}" removed successfully!')
+        except Artist.DoesNotExist:
+            messages.error(request, 'Artist not found.')
+        return redirect('user_artist')
+    
+    # Handle manual artist addition
+    if request.method == 'POST' and 'name' in request.POST:
+        form = ArtistForm(request.POST)
+        if form.is_valid():
+            artist = form.save(commit=False)
+            artist.user = request.user
+            artist.save()
+            messages.success(request, f'Artist "{artist.name}" added successfully!')
+            return redirect('user_artist')
+    else:
+        form = ArtistForm()
+    
+    # Get user's artists with their albums
+    artists_list = Artist.objects.filter(user=request.user).prefetch_related('albums').order_by('-created_at')
+    
+    paginator = Paginator(artists_list, 10)
+    page_number = request.GET.get('page', 1)
+    artists = paginator.get_page(page_number)
+    
+    context = {
+        'form': form,
+        'artists': artists,
+    }
+    return render(request, 'user/user_artist.html', context)
+
+
+@login_required
+def search_artists_api(request):
+    """AJAX endpoint to search for artists using MusicBrainz API"""
+    try:
+        query = request.GET.get('query', '').strip()
+        
+        if not query or len(query) < 2:
+            return JsonResponse({'artists': []})
+        
+        if MusicBrainzAPI is None:
+            return JsonResponse({
+                'error': 'API service not configured properly',
+                'artists': []
+            }, status=500)
+        
+        api = MusicBrainzAPI()
+        artists = api.search_artists(query, limit=15)
+        
+        return JsonResponse({'artists': artists})
+        
+    except Exception as e:
+        logger.error(f"Error in search_artists_api: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'error': f'Search failed: {str(e)}',
+            'artists': []
+        }, status=500)
+
+
+@login_required
+def add_artist_from_api(request):
+    """Add an artist from MusicBrainz API search results"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=400)
+    
+    try:
+        artist_id = request.POST.get('artist_id')
+        artist_name = request.POST.get('artist_name')
+        country = request.POST.get('country', '')
+        disambiguation = request.POST.get('disambiguation', '')
+        genres = request.POST.get('genres', '')
+        
+        logger.info(f"User {request.user.username} adding artist: {artist_name}")
+        
+        if not artist_id or not artist_name:
+            return JsonResponse({'error': 'Missing required fields', 'success': False}, status=400)
+        
+        # Check if artist already exists for this user
+        if Artist.objects.filter(user=request.user, musicbrainz_id=artist_id).exists():
+            return JsonResponse({
+                'error': 'You already have this artist in your wallet',
+                'success': False
+            }, status=400)
+        
+        if MusicBrainzAPI is None:
+            return JsonResponse({
+                'error': 'API service not configured properly',
+                'success': False
+            }, status=500)
+        
+        # Get additional details from API
+        api = MusicBrainzAPI()
+        details = api.get_artist_details(artist_id)
+        
+        # Try to get artist image
+        image_url = None
+        if details:
+            image_url = api.get_artist_image(artist_id)
+        
+        # Extract profile URL from relationships
+        profile_url = ''
+        if details and 'relations' in details:
+            for relation in details.get('relations', []):
+                if relation.get('type') in ['official homepage', 'social network']:
+                    profile_url = relation.get('url', {}).get('resource', '')
+                    break
+        
+# Create artist first
+        artist = Artist.objects.create(
+            user=request.user,
+            name=artist_name,
+            musicbrainz_id=artist_id,
+            profile_url=profile_url,
+            genre=genres or 'Not specified',
+            country=country,
+            disambiguation=disambiguation,
+            artist_image=image_url,
+            rating=5
+        )
+        
+        logger.info(f"Created artist {artist_name} (ID: {artist.id})")
+        
+        # Fetch and save albums - with better error handling
+        albums_created = 0
+        try:
+            logger.info(f"Attempting to fetch albums for MusicBrainz ID: {artist_id}")
+            albums_data = api.get_artist_albums(artist_id, limit=5)
+            logger.info(f"API returned {len(albums_data)} albums")
+            
+            for album_data in albums_data:
+                try:
+                    album = Album.objects.create(
+                        artist=artist,
+                        title=album_data.get('title', 'Unknown Title'),
+                        release_date=album_data.get('release_date', ''),
+                        album_type=album_data.get('type', 'Album'),
+                        musicbrainz_id=album_data.get('id', ''),
+                        cover_art_url=album_data.get('cover_art', '')
+                    )
+                    albums_created += 1
+                    logger.info(f"Created album: {album.title}")
+                except Exception as album_error:
+                    logger.error(f"Error creating album: {album_error}")
+                    continue
+            
+            logger.info(f"Successfully created {albums_created} albums for {artist_name}")
+        except Exception as albums_error:
+            logger.error(f"Error fetching albums: {albums_error}", exc_info=True)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Artist "{artist_name}" added with {albums_created} albums!',
+            'artist_id': artist.id,
+            'albums_count': albums_created
+        })
+        
+    except Exception as e:
+        logger.error(f"Error adding artist: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'error': f'Failed to add artist: {str(e)}',
+            'success': False
+        }, status=500)

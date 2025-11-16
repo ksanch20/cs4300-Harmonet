@@ -9,6 +9,79 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'user_artist.css' %}">
+<style>
+/* Override styles directly in template */
+.artist-card {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto !important;
+  gap: 1.5rem !important;
+  align-items: start !important;
+  padding: 1.5rem !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.artist-info {
+  display: contents !important;
+}
+
+.artist-avatar, .artist-avatar-img {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 12px !important;
+  grid-column: 1 !important;
+  grid-row: 1 / span 2 !important;
+}
+
+.artist-details {
+  grid-column: 2 !important;
+  grid-row: 1 / span 2 !important;
+}
+
+.delete-form {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+}
+
+.btn-remove-artist {
+  background-color: #ef4444 !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.albums-grid {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 1rem !important;
+  overflow-x: auto !important;
+  padding: 0.5rem 0 0.75rem 0 !important;
+}
+
+.album-item {
+  flex: 0 0 auto !important;
+  width: 110px !important;
+}
+
+.album-cover, .album-cover-placeholder {
+  width: 110px !important;
+  height: 110px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.artist-name, .artist-link {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -17,77 +90,163 @@
     <hr class="section-divider" />
 
     <section class="artist-section">
-      <h2>Your Favorite Artists 🎶</h2>
-      <p>Add your favorite artists below and access them easily.</p>
+      <h2>HarmoNet Artist Wallet 🎶</h2>
+      
+      <!-- Messages -->
+      {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
 
-      <form method="POST" class="artist-form">
-        {% csrf_token %}
+      <!-- Artist Search Section -->
+      <div class="search-section">
+        <h3>🔍 Search Artists</h3>
+        <p>Search and add your favorite Artist. </p>
+        <p>Powered by  MusicBrainz </p>
         
-        <div class="form-group">
-          {{ form.name.label_tag }}
-          {{ form.name }}
-        </div>
-
-        <div class="form-group">
-          {{ form.profile_url.label_tag }}
-          {{ form.profile_url }}
-        </div>
-
-        <div class="form-group">
-          {{ form.genre.label_tag }}
-          <div class="select-wrapper">
-            {{ form.genre }}
+        <div class="search-container">
+          <input 
+            type="text" 
+            id="artistSearchInput" 
+            placeholder="Search for an artist (e.g., The Beatles, Taylor Swift)..." 
+            class="search-input"
+          />
+          <div id="searchResults" class="search-results"></div>
+          <div id="searchLoading" class="search-loading" style="display: none;">
+            🔍 Searching MusicBrainz...
           </div>
+          <div id="searchError" class="search-error" style="display: none;"></div>
         </div>
-
-        <div class="form-group">
-          {{ form.average_time_listened.label_tag }}
-          <div class="select-wrapper">
-            {{ form.average_time_listened }}
-          </div>
-        </div>
-
-        <div class="form-group">
-          {{ form.rating.label_tag }}
-          <div class="select-wrapper">
-            {{ form.rating }}
-          </div>
-        </div>
-
-        <button type="submit" class="btn-add-artist">+ Add Artist</button>
-      </form>
+      </div>
 
       <hr class="divider">
 
+      <!-- Manual Artist Addition -->
+      <details class="manual-add-section">
+        <summary>➕ Add Artist Manually</summary>
+        <form method="POST" class="artist-form">
+          {% csrf_token %}
+          
+          <div class="form-group">
+            {{ form.name.label_tag }}
+            {{ form.name }}
+          </div>
+
+          <div class="form-group">
+            {{ form.profile_url.label_tag }}
+            {{ form.profile_url }}
+          </div>
+
+          <div class="form-group">
+            {{ form.genre.label_tag }}
+            <div class="select-wrapper">
+              {{ form.genre }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            {{ form.average_time_listened.label_tag }}
+            <div class="select-wrapper">
+              {{ form.average_time_listened }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            {{ form.rating.label_tag }}
+            <div class="select-wrapper">
+              {{ form.rating }}
+            </div>
+          </div>
+
+          <button type="submit" class="btn-add-artist">+ Add Artist</button>
+        </form>
+      </details>
+
+      <hr class="divider">
+
+      <!-- Artist List Section -->
       <section class="artist-list-section">
+        <h3>Your Artists ({{ artists.paginator.count }} total)</h3>
         {% if artists %}
           {% for artist in artists %}
             <div class="artist-card">
               
               <div class="artist-info">
-                <div class="artist-avatar">{{ artist.name|slice:":1" }}</div>
+                {% if artist.artist_image %}
+                  <img src="{{ artist.artist_image }}" alt="{{ artist.name }}" class="artist-avatar-img">
+                {% else %}
+                  <div class="artist-avatar">{{ artist.name|slice:":1"|upper }}</div>
+                {% endif %}
 
-                <div>
+                <div class="artist-details">
                   {% if artist.profile_url %}
-                    <a href="{{ artist.profile_url }}" target="_blank" class="artist-link">{{ artist.name }}</a>
+                    <a href="{{ artist.profile_url }}" target="_blank" class="artist-link">
+                      {{ artist.name }}
+                    </a>
                   {% else %}
                     <span class="artist-name">{{ artist.name }}</span>
                   {% endif %}
 
+                  {% if artist.disambiguation %}
+                    <span class="artist-disambiguation">({{ artist.disambiguation }})</span>
+                  {% endif %}
+
+                  {% if artist.country %}
+                    <p class="artist-country">🌍 {{ artist.country }}</p>
+                  {% endif %}
+
                   <p class="artist-genre">🎵 Genre: {{ artist.genre|default:"Not specified" }}</p>
-                  <p class="artist-time">⏱️ Avg. Time Listened: {{ artist.average_time_listened|default:"N/A" }} minutes</p>
-                  <p class="artist-rating">⭐ Rating: {{ artist.rating|default:"N/A" }}</p>
+                  
+                  {% if artist.average_time_listened %}
+                    <p class="artist-time">⏱️ Avg. Time Listened: {{ artist.average_time_listened }} minutes</p>
+                  {% endif %}
+                  
+                  {% if artist.rating %}
+                    <p class="artist-rating">⭐ Rating: {{ artist.rating }}/5</p>
+                  {% endif %}
+                  
+                  <p style="font-size: 0.75rem; color: #999;">Added: {{ artist.created_at|date:"M d, Y" }}</p>
+                  
+                  <!-- Albums Section -->
+                  {% if artist.albums.all %}
+                    <div class="albums-section">
+                      <h4 class="albums-title">Recent Albums ({{ artist.albums.count }})</h4>
+                      <div class="albums-grid" style="display: flex !important; flex-direction: row !important; overflow-x: auto; justify-content: center;">
+                        {% for album in artist.albums.all|slice:":5" %}
+                          <div class="album-item" style="flex: 0 0 auto; width: 110px;">
+                            {% if album.cover_art_url %}
+                              <img src="{{ album.cover_art_url }}" alt="{{ album.title }}" class="album-cover" style="width: 110px; height: 110px; display: block;">
+                            {% else %}
+                              <div class="album-cover-placeholder" style="width: 110px; height: 110px;">
+                                <span>🎵</span>
+                              </div>
+                            {% endif %}
+                            <div class="album-info-tooltip">
+                              <strong>{{ album.title }}</strong><br>
+                              <small>{{ album.album_type }} • {{ album.release_date|slice:":4"|default:"Unknown" }}</small>
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endif %}
                 </div>
               </div>
 
-              <form method="POST" style="margin-left: 1rem;">
+              <form method="POST" class="delete-form">
                 {% csrf_token %}
                 <input type="hidden" name="delete_artist_id" value="{{ artist.id }}">
-                <button type="submit" class="btn-remove-artist">Remove</button>
+                <button type="submit" class="btn-remove-artist" onclick="return confirm('Remove {{ artist.name }}?');">
+                  Remove
+                </button>
               </form>
             </div>
           {% endfor %}
 
+          {% if artists.paginator.num_pages > 1 %}
           <div class="pagination">
             {% if artists.has_previous %}
               <a href="?page={{ artists.previous_page_number }}" class="page-btn">Previous</a>
@@ -97,9 +256,10 @@
               <a href="?page={{ artists.next_page_number }}" class="page-btn">Next</a>
             {% endif %}
           </div>
+          {% endif %}
 
         {% else %}
-          <p class="no-artists-msg">No artists added yet. Add one above!</p>
+          <p class="no-artists-msg">No artists added yet. Search and add one above!</p>
         {% endif %}
       </section>
     </section>
@@ -107,4 +267,198 @@
     <hr class="section-divider" />
   </div>
 </main>
+
+<script>
+  let searchTimeout;
+  const searchInput = document.getElementById('artistSearchInput');
+  const searchResults = document.getElementById('searchResults');
+  const searchLoading = document.getElementById('searchLoading');
+  const searchError = document.getElementById('searchError');
+
+  searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+
+    // Hide all status elements
+    searchResults.style.display = 'none';
+    searchLoading.style.display = 'none';
+    searchError.style.display = 'none';
+    searchResults.innerHTML = '';
+
+    if (query.length < 2) {
+      return;
+    }
+
+    searchLoading.style.display = 'block';
+
+    searchTimeout = setTimeout(() => {
+      console.log('Searching for:', query);
+      
+      fetch(`/user/api/search-artists/?query=${encodeURIComponent(query)}`)
+        .then(response => {
+          console.log('Response status:', response.status);
+          
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Search results:', data);
+          searchLoading.style.display = 'none';
+          
+          if (data.error) {
+            showError(data.error);
+          } else {
+            displaySearchResults(data.artists);
+          }
+        })
+        .catch(error => {
+          console.error('Search error:', error);
+          searchLoading.style.display = 'none';
+          showError(error.message || 'Error searching artists. Please try again.');
+        });
+    }, 500);
+  });
+
+  function showError(message) {
+    searchError.textContent = message;
+    searchError.style.display = 'block';
+    searchResults.style.display = 'none';
+  }
+
+  function displaySearchResults(artists) {
+    searchError.style.display = 'none';
+    
+    if (!artists || artists.length === 0) {
+      searchResults.innerHTML = '<div class="no-results">No artists found. Try a different search.</div>';
+      searchResults.style.display = 'block';
+      return;
+    }
+
+    const resultsHTML = artists.map(artist => {
+      const genres = (artist.genres && artist.genres.length > 0) 
+        ? artist.genres.join(', ') 
+        : 'Unknown';
+      const disambiguation = artist.disambiguation 
+        ? `<span class="result-disambiguation">(${escapeHtml(artist.disambiguation)})</span>` 
+        : '';
+      const country = artist.country 
+        ? `<span class="result-country">🌍 ${escapeHtml(artist.country)}</span>` 
+        : '';
+      
+      return `
+        <div class="search-result-item">
+          <div class="result-info">
+            <div class="result-name">
+              ${escapeHtml(artist.name)} ${disambiguation}
+            </div>
+            <div class="result-meta">
+              ${country}
+              <span class="result-genre">🎵 ${escapeHtml(genres)}</span>
+            </div>
+          </div>
+          <button 
+            class="btn-add-from-search" 
+            onclick="addArtistFromSearch('${artist.id}', '${escapeHtml(artist.name)}', '${escapeHtml(artist.country || '')}', '${escapeHtml(artist.disambiguation || '')}', '${escapeHtml(genres)}')"
+          >
+            Add
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    searchResults.innerHTML = resultsHTML;
+    searchResults.style.display = 'block';
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function addArtistFromSearch(artistId, name, country, disambiguation, genres) {
+    const csrftoken = getCookie('csrftoken');
+    const formData = new FormData();
+    formData.append('artist_id', artistId);
+    formData.append('artist_name', name);
+    formData.append('country', country);
+    formData.append('disambiguation', disambiguation);
+    formData.append('genres', genres);
+
+    // Disable button to prevent double-clicks
+    event.target.disabled = true;
+    event.target.textContent = 'Adding...';
+
+    fetch('/user/api/add-artist/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrftoken,
+      },
+      body: formData
+    })
+    .then(response => {
+      console.log('Add artist response status:', response.status);
+      if (!response.ok) {
+        return response.text().then(text => {
+          console.error('Response text:', text);
+          try {
+            const data = JSON.parse(text);
+            throw new Error(data.error || 'Failed to add artist');
+          } catch (e) {
+            throw new Error('Server returned an error. Check console for details.');
+          }
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Add artist success response:', data);
+      if (data.success) {
+        // Close search results
+        searchResults.style.display = 'none';
+        searchInput.value = '';
+        
+        // Show success message and reload
+        alert(`${data.message || 'Artist added successfully!'}`);
+        window.location.reload();
+      } else {
+        alert(data.error || 'Error adding artist');
+        event.target.disabled = false;
+        event.target.textContent = 'Add';
+      }
+    })
+    .catch(error => {
+      console.error('Error adding artist:', error);
+      alert(error.message || 'Error adding artist. Please try again.');
+      event.target.disabled = false;
+      event.target.textContent = 'Add';
+    });
+  }
+
+  // Close search results when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-container')) {
+      searchResults.style.display = 'none';
+    }
+  });
+</script>
 {% endblock %}

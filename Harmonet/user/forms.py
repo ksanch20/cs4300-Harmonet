@@ -100,3 +100,28 @@ class SoundCloudArtistForm(forms.ModelForm):
                 raise forms.ValidationError("Rating must be between 1 and 5.")
             return rating
         return None
+
+from django import forms
+from .models import Artist
+
+class ArtistForm(forms.ModelForm):
+    class Meta:
+        model = Artist
+        fields = ['name', 'profile_url', 'genre', 'average_time_listened', 'rating']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Artist name'}),
+            'profile_url': forms.URLInput(attrs={'placeholder': 'https://...'}),
+            'genre': forms.TextInput(attrs={'placeholder': 'e.g., Rock, Pop, Jazz'}),
+            'average_time_listened': forms.NumberInput(attrs={'placeholder': 'Minutes'}),
+            'rating': forms.Select(choices=[(i, f'{i} ⭐') for i in range(1, 6)]),
+        }
+
+class ArtistSearchForm(forms.Form):
+    query = forms.CharField(
+        max_length=200, 
+        required=True,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Search for an artist...',
+            'class': 'search-input'
+        })
+    )

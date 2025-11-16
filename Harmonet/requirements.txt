@@ -13,3 +13,4 @@ openai==2.8.0
 django-sendgrid-v5
 pylint
 pylint-django
+requests>=2.31.0
