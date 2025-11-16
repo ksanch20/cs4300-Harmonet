@@ -770,7 +770,7 @@ class AIServiceUnitTests(TestCase):
         mock_user.id = 1
         
         # Patch both is_spotify_connected and the model imports to prevent any data loading
-        with patch('user.ai_service.is_spotify_connected', return_value=False):
+        with patch('user.ai_service.spotify_connected', return_value=False):
             data = gather_user_music_data(mock_user)
             self.assertFalse(data['has_data'])
 
