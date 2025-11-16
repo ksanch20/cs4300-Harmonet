@@ -765,15 +765,14 @@ class AIServiceUnitTests(TestCase):
         self.assertEqual(data['manual_artists'], ['Muse'])
 
     def test_gather_user_music_data_no_preferences(self):
-        # Simulate user with no music_preferences attribute
-        mock_user = Mock()
+        # Simulate user with no music_preferences attribute and no spotify connection
+        mock_user = Mock(spec=['id'])  # Only allow 'id' attribute
         mock_user.id = 1
-        # Remove the music_preferences attribute entirely
-        if hasattr(mock_user, 'music_preferences'):
-            delattr(mock_user, 'music_preferences')
         
-        data = gather_user_music_data(mock_user)
-        self.assertFalse(data['has_data'])
+        # Patch both is_spotify_connected and the model imports to prevent any data loading
+        with patch('user.ai_service.is_spotify_connected', return_value=False):
+            data = gather_user_music_data(mock_user)
+            self.assertFalse(data['has_data'])
 
     # -------------------------------
     # build_recommendation_prompt()
@@ -788,7 +787,7 @@ class AIServiceUnitTests(TestCase):
             'spotify_top_tracks': [{'name': 'Uprising', 'artist': 'Muse'}]
         }
         prompt = build_recommendation_prompt(music_data)
-        self.assertIn('**Favorite Artists:**', prompt)
+        self.assertIn('**Additional Favorite Artists:**', prompt)
         self.assertIn('Radiohead', prompt)
         self.assertIn('Muse', prompt)
         self.assertIn('Karma Police', prompt)
