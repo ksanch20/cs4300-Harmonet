@@ -168,11 +168,6 @@ LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
 OPENAI_API_KEY=config('OPENAI_API_KEY', default='')
 
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'https://app-cs4300sanchez-19.devedu.io',  # Your actual domain
-]
 
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'
