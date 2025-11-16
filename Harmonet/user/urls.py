@@ -42,5 +42,6 @@ urlpatterns = [
     path('friends/add-by-code/', views.add_friend_by_code, name='add_friend_by_code'),
 
     path('ai-recommendations/', views.ai_recommendations, name='ai_recommendations'),
+    path('user/<str:username>/', views.user_profile, name='user_profile'),
 ]
 

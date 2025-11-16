@@ -1,283 +1,267 @@
-{% load static %}
+{% extends 'user/base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>AI Recommendations - Harmonet</title>
-  <link rel="stylesheet" href="{% static 'dashboard_style.css' %}">
-  <link rel="stylesheet" href="{% static 'styles.css' %}">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  
-  <style>
-    /* Loading spinner styles */
-    .loading-container {
-      display: none;
-      text-align: center;
-      padding: 60px 20px;
-    }
+{% block title %}AI Recommendations - HarmoNet{% endblock %}
 
-    .loading-container.active {
-      display: block;
-    }
+{% block nav_extra %}
+  <!-- Remove "Welcome" text for this page -->
+{% endblock %}
 
-    .spinner {
-      border: 4px solid #f3f4f6;
-      border-top: 4px solid #6366f1;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
+{% block extra_css %}
+<style>
+  /* Loading spinner styles */
+  .loading-container {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+  }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+  .loading-container.active {
+    display: block;
+  }
 
-    .loading-text {
-      font-size: 18px;
-      color: #6366f1;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
+  .spinner {
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #6366f1;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
 
-    .loading-subtext {
-      color: #6b7280;
-      font-size: 14px;
-    }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 
-    /* Hide generate button when loading */
-    #generate-form.hidden {
-      display: none;
-    }
+  .loading-text {
+    font-size: 18px;
+    color: #6366f1;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
 
-    /* Generate section styling */
-    .generate-section {
-      text-align: center;
-      padding: 40px 20px;
-    }
+  .loading-subtext {
+    color: #6b7280;
+    font-size: 14px;
+  }
 
-    .generate-section p {
-      font-size: 18px;
-      margin-bottom: 30px;
-      color: #4b5563;
-    }
+  /* Hide generate button when loading */
+  #generate-form.hidden {
+    display: none;
+  }
 
-    /* Recommendations display - Beautiful formatting */
-    .recommendations-box {
-      background-color: #ffffff;
-      padding: 30px;
-      border-radius: 12px;
-      margin-top: 20px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+  /* Generate section styling */
+  .generate-section {
+    text-align: center;
+    padding: 40px 20px;
+  }
 
-    /* Artist headers */
-    .recommendations-box h3 {
-      color: #1e2a38;
-      font-size: 20px;
-      font-weight: 700;
-      margin: 30px 0 15px 0;
-      padding-bottom: 10px;
-      border-bottom: 3px solid #5ca1d3;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+  .generate-section p {
+    font-size: 18px;
+    margin-bottom: 30px;
+    color: #4b5563;
+  }
 
-    .recommendations-box h3:first-child {
-      margin-top: 0;
-    }
+  /* Recommendations display - Beautiful formatting */
+  .recommendations-box {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    margin-top: 20px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
 
-    /* Paragraphs */
-    .recommendations-box p {
-      margin: 12px 0;
-      color: #374151;
-      line-height: 1.8;
-      font-size: 15px;
-    }
+  /* Artist headers */
+  .recommendations-box h3 {
+    color: #1e2a38;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 30px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #5ca1d3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-    /* Bold text highlighting */
-    .recommendations-box strong {
-      color: #5ca1d3;
-      font-weight: 600;
-    }
+  .recommendations-box h3:first-child {
+    margin-top: 0;
+  }
 
-    /* Bullet lists */
-    .recommendations-box ul {
-      margin: 15px 0;
-      padding-left: 0;
-      list-style-type: none;
-    }
+  /* Paragraphs */
+  .recommendations-box p {
+    margin: 12px 0;
+    color: #374151;
+    line-height: 1.8;
+    font-size: 15px;
+  }
 
-    .recommendations-box li {
-      margin: 10px 0;
-      padding: 10px 15px 10px 40px;
-      position: relative;
-      color: #374151;
-      background-color: #f9fafb;
-      border-radius: 6px;
-      line-height: 1.6;
-      font-size: 15px;
-      border-left: 3px solid #e5e7eb;
-      transition: all 0.2s;
-    }
+  /* Bold text highlighting */
+  .recommendations-box strong {
+    color: #5ca1d3;
+    font-weight: 600;
+  }
 
-    .recommendations-box li:hover {
-      background-color: #f3f4f6;
-      border-left-color: #5ca1d3;
-    }
+  /* Bullet lists */
+  .recommendations-box ul {
+    margin: 15px 0;
+    padding-left: 0;
+    list-style-type: none;
+  }
 
+  .recommendations-box li {
+    margin: 10px 0;
+    padding: 10px 15px 10px 40px;
+    position: relative;
+    color: #374151;
+    background-color: #f9fafb;
+    border-radius: 6px;
+    line-height: 1.6;
+    font-size: 15px;
+    border-left: 3px solid #e5e7eb;
+    transition: all 0.2s;
+  }
 
+  .recommendations-box li:hover {
+    background-color: #f3f4f6;
+    border-left-color: #5ca1d3;
+  }
 
-    /* Horizontal rules (separators between artists) */
-    .recommendations-box hr {
-      border: none;
-      border-top: 2px solid #e5e7eb;
-      margin: 30px 0;
-    }
+  /* Horizontal rules (separators between artists) */
+  .recommendations-box hr {
+    border: none;
+    border-top: 2px solid #e5e7eb;
+    margin: 30px 0;
+  }
 
-    /* Nested lists (for songs) */
-    .recommendations-box ul ul {
-      margin-top: 8px;
-      margin-bottom: 8px;
-    }
+  /* Nested lists (for songs) */
+  .recommendations-box ul ul {
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
 
-    .recommendations-box ul ul li {
-      background-color: #ffffff;
-      border-left: 3px solid #5ca1d3;
-      font-size: 14px;
-      padding: 8px 12px 8px 35px;
-    }
+  .recommendations-box ul ul li {
+    background-color: #ffffff;
+    border-left: 3px solid #5ca1d3;
+    font-size: 14px;
+    padding: 8px 12px 8px 35px;
+  }
 
-    .recommendations-box ul ul li:before {
-      content: "♪";
-      color: #5ca1d3;
-      font-size: 14px;
-    }
-  </style>
-</head>
+  .recommendations-box ul ul li:before {
+    content: "♪";
+    color: #5ca1d3;
+    font-size: 14px;
+  }
+</style>
+{% endblock %}
 
-<body>
-  <nav class="navbar">
-    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: inherit;">
-      <div class="logo">Harmonet</div>
-    </a>
-    <div class="auth-buttons">
-      <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+{% block content %}
+<main class="dashboard-container">
+  <div class="dashboard-box">
+    <div class="dashboard-header">
+      <h1>🤖 AI Music Recommendations</h1>
+      <p class="dashboard-subtitle">Discover new artists based on your unique taste</p>
     </div>
-  </nav>
 
-  <main class="dashboard-container">
-    <div class="dashboard-box">
-      <div class="dashboard-header">
-        <h1>🤖 AI Music Recommendations</h1>
-        <p class="dashboard-subtitle">Discover new artists based on your unique taste</p>
-      </div>
+    <div class="dashboard-wrapper">
+      <div class="card content-container">
+        
+        <!-- Info box -->
+        <div class="info-box">
+          <p>
+            <strong>✨ Powered by AI:</strong> Our recommendation engine analyzes your music taste 
+            to suggest artists you'll love. The more data you provide, the better the recommendations!
+          </p>
+        </div>
 
-      <div class="dashboard-wrapper">
-        <div class="card content-container">
-          
-          <!-- Info box -->
-          <div class="info-box">
-            <p>
-              <strong>✨ Powered by AI:</strong> Our recommendation engine analyzes your music taste 
-              to suggest artists you'll love. The more data you provide, the better the recommendations!
-            </p>
+        <!-- Error message -->
+        {% if error_message %}
+          <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #991b1b; border: 1px solid #fca5a5;">
+            <strong>⚠️</strong> {{ error_message }}
+            <div style="margin-top: 10px;">
+              <a href="{% url 'music_preferences' %}" style="color: #991b1b; text-decoration: underline; font-weight: 600;">
+                Add Music Preferences →
+              </a>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Generate button -->
+        {% if not recommendations %}
+          <form method="post" id="generate-form" class="generate-section">
+            {% csrf_token %}
+            <p>Ready to discover new music tailored just for you?</p>
+            <button 
+              type="submit" 
+              class="btn-primary"
+              style="padding: 16px 48px; font-size: 18px; box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);"
+            >
+              🎵 Generate Recommendations
+            </button>
+          </form>
+
+          <!-- Loading spinner (hidden by default) -->
+          <div class="loading-container" id="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">🎵 Analyzing your music taste...</div>
+            <div class="loading-subtext">This may take 5-10 seconds</div>
+          </div>
+        {% endif %}
+
+        <!-- Recommendations display -->
+        {% if recommendations %}
+          <div class="recommendations-box">
+            {{ recommendations }}
           </div>
 
-          <!-- Error message -->
-          {% if error_message %}
-            <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #991b1b; border: 1px solid #fca5a5;">
-              <strong>⚠️</strong> {{ error_message }}
-              <div style="margin-top: 10px;">
-                <a href="{% url 'music_preferences' %}" style="color: #991b1b; text-decoration: underline; font-weight: 600;">
-                  Add Music Preferences →
-                </a>
-              </div>
-            </div>
-          {% endif %}
+          <!-- Generate again button -->
+          <form method="post" id="regenerate-form" style="margin-top: 25px; text-align: center;">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">
+              🔄 Generate New Recommendations
+            </button>
+          </form>
+        {% endif %}
 
-          <!-- Generate button -->
-          {% if not recommendations %}
-            <form method="post" id="generate-form" class="generate-section">
-              {% csrf_token %}
-              <p>Ready to discover new music tailored just for you?</p>
-              <button 
-                type="submit" 
-                class="btn-primary"
-                style="padding: 16px 48px; font-size: 18px; box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);"
-              >
-                🎵 Generate Recommendations
-              </button>
-            </form>
-
-            <!-- Loading spinner (hidden by default) -->
-            <div class="loading-container" id="loading-container">
-              <div class="spinner"></div>
-              <div class="loading-text">🎵 Analyzing your music taste...</div>
-              <div class="loading-subtext">This may take 5-10 seconds</div>
-            </div>
-          {% endif %}
-
-          <!-- Recommendations display -->
-          {% if recommendations %}
-            <div class="recommendations-box">
-              {{ recommendations }}
-            </div>
-
-            <!-- Generate again button -->
-            <form method="post" id="regenerate-form" style="margin-top: 25px; text-align: center;">
-              {% csrf_token %}
-              <button type="submit" class="btn-primary">
-                🔄 Generate New Recommendations
-              </button>
-            </form>
-          {% endif %}
-
-        </div>
       </div>
     </div>
-  </main>
+  </div>
+</main>
+{% endblock %}
 
-  <footer class="footer">
-    <p>&copy; 2025 Harmonet. All rights reserved.</p>
-  </footer>
+{% block extra_js %}
+<script>
+  // Show loading spinner when form is submitted
+  document.getElementById('generate-form')?.addEventListener('submit', function() {
+    document.getElementById('generate-form').classList.add('hidden');
+    document.getElementById('loading-container').classList.add('active');
+  });
 
-  <script>
-    // Show loading spinner when form is submitted
-    document.getElementById('generate-form')?.addEventListener('submit', function() {
-      document.getElementById('generate-form').classList.add('hidden');
-      document.getElementById('loading-container').classList.add('active');
-    });
-
-    // Also handle regenerate form if it exists
-    document.getElementById('regenerate-form')?.addEventListener('submit', function(e) {
-      // Show loading overlay
-      const loadingOverlay = document.createElement('div');
-      loadingOverlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.95);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-      `;
-      loadingOverlay.innerHTML = `
-        <div class="spinner"></div>
-        <div class="loading-text">🎵 Generating new recommendations...</div>
-        <div class="loading-subtext">This may take 5-10 seconds</div>
-      `;
-      document.body.appendChild(loadingOverlay);
-    });
-  </script>
-</body>
-</html>
+  // Also handle regenerate form if it exists
+  document.getElementById('regenerate-form')?.addEventListener('submit', function(e) {
+    // Show loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    `;
+    loadingOverlay.innerHTML = `
+      <div class="spinner"></div>
+      <div class="loading-text">🎵 Generating new recommendations...</div>
+      <div class="loading-subtext">This may take 5-10 seconds</div>
+    `;
+    document.body.appendChild(loadingOverlay);
+  });
+</script>
+{% endblock %}
