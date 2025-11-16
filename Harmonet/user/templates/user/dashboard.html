@@ -18,7 +18,7 @@
 
           <div class="card">
             <h3>👤 Friends</h3>
-            <p>Conncet and Manage your Harmonet Friends</p>
+            <p>Connect and Manage your HarmoNet Friends</p>
             <a href="{% url 'friends_dashboard' %}">Go to Profile →</a>
           </div>
 
@@ -91,48 +91,6 @@
           </div>
         {% endif %}
       </section>
-
-      <hr class="section-divider" />
-
-      <div class="album-discovery-section"
-           style="margin: 30px 0; padding: 20px; background: #f5f5f5; border-radius: 8px;">
-        <h2>🎵 Discover Albums</h2>
-
-        <form method="post" style="margin: 20px 0;">
-          {% csrf_token %}
-          <input type="text"
-                 name="artist_name"
-                 placeholder="Enter artist name (e.g., Taylor Swift)"
-                 style="padding: 10px; width: 300px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px;"
-                 required>
-          <button type="submit"
-                  style="padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; margin-left: 10px;">
-            Search Albums
-          </button>
-        </form>
-
-        {% if album_error %}
-          <p style="color: red; margin: 10px 0;">❌ {{ album_error }}</p>
-        {% endif %}
-
-        {% if albums %}
-          <div style="margin-top: 20px;">
-            <h3>Albums by {{ searched_artist_name }} ({{ albums|length }} found)</h3>
-            <ul style="list-style: none; padding: 0; max-height: 400px; overflow-y: auto;">
-              {% for album in albums %}
-                <li style="padding: 10px; border-bottom: 1px solid #ddd; background: white; margin: 5px 0;">
-                  <strong>{{ album.title }}</strong>
-                  {% if album.date %}
-                    <span style="color: #666;"> - {{ album.date }}</span>
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% elif searched_artist_name %}
-          <p>No albums found for "{{ searched_artist_name }}"</p>
-        {% endif %}
-      </div>
     </div>
 
     <div class="friend-box">
