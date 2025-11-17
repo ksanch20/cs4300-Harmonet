@@ -725,7 +725,9 @@ class AIServiceUnitTests(TestCase):
             'has_data': True,
             'manual_artists': ['Muse'],
             'manual_genres': ['Rock'],
-            'manual_tracks': ['Uprising']
+            'manual_tracks': ['Uprising'],
+            'spotify_top_artists': [],
+            'spotify_top_tracks': []
         }
         mock_response = Mock()
         mock_response.choices = [Mock(message=Mock(content='Recommended artists...'))]
@@ -742,7 +744,8 @@ class AIServiceUnitTests(TestCase):
             'manual_artists': [],
             'manual_genres': [],
             'manual_tracks': [],
-            'spotify_artists': []
+            'spotify_top_artists': [],
+            'spotify_top_tracks': []
         }
 
         with patch('user.ai_service.gather_user_music_data', return_value=mock_data), \
@@ -756,20 +759,35 @@ class AIServiceUnitTests(TestCase):
     # gather_user_music_data()
     # -------------------------------
 
-    def test_gather_user_music_data_with_preferences(self):
-        mock_prefs = Mock()
-        mock_prefs.get_artists_list.return_value = ['Muse']
-        mock_prefs.get_genres_list.return_value = ['Rock']
-        mock_prefs.get_tracks_list.return_value = ['Uprising']
-        self.mock_user.music_preferences = mock_prefs
+def test_gather_user_music_data_with_preferences(self):
+    # Create a proper mock user with music_preferences
+    mock_user = Mock()
+    mock_user.id = 1
+    
+    mock_prefs = Mock()
+    mock_prefs.get_artists_list.return_value = ['Muse']
+    mock_prefs.get_genres_list.return_value = ['Rock']
+    mock_prefs.get_tracks_list.return_value = ['Uprising']
+    mock_user.music_preferences = mock_prefs
 
-        data = gather_user_music_data(self.mock_user)
+    # Mock is_spotify_connected to return False so we only test manual preferences
+    with patch('user.spotify_service.is_spotify_connected', return_value=False):
+        data = gather_user_music_data(mock_user)
         self.assertTrue(data['has_data'])
         self.assertEqual(data['manual_artists'], ['Muse'])
+        self.assertEqual(data['manual_genres'], ['Rock'])
+        self.assertEqual(data['manual_tracks'], ['Uprising'])
 
-    def test_gather_user_music_data_no_preferences(self):
-        del self.mock_user.music_preferences  # Simulate missing attribute
-        data = gather_user_music_data(self.mock_user)
+def test_gather_user_music_data_no_preferences(self):
+    # Simulate user with no music_preferences attribute and no spotify connection
+    mock_user = Mock()
+    mock_user.id = 1
+    
+    # When accessing music_preferences, raise AttributeError (simulating no preferences)
+    type(mock_user).music_preferences = PropertyMock(side_effect=AttributeError)
+    
+    with patch('user.spotify_service.is_spotify_connected', return_value=False):
+        data = gather_user_music_data(mock_user)
         self.assertFalse(data['has_data'])
 
     # -------------------------------
@@ -781,14 +799,14 @@ class AIServiceUnitTests(TestCase):
             'manual_artists': ['Radiohead'],
             'manual_genres': ['Alternative'],
             'manual_tracks': ['Karma Police', 'No Surprises'],
-            'spotify_artists': ['Muse']
+            'spotify_top_artists': [{'name': 'Muse', 'genres': 'Rock, Alternative'}],
+            'spotify_top_tracks': [{'name': 'Uprising', 'artist': 'Muse'}]
         }
         prompt = build_recommendation_prompt(music_data)
-        self.assertIn('**Favorite Artists:**', prompt)
+        self.assertIn('**Additional Favorite Artists:**', prompt)
         self.assertIn('Radiohead', prompt)
         self.assertIn('Muse', prompt)
         self.assertIn('Karma Police', prompt)
-
 
 class AddFriendByCodeViewTest(TestCase):
     """Test the add_friend_by_code view."""

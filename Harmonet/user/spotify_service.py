@@ -12,7 +12,8 @@ def get_spotify_oauth():
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
         redirect_uri=settings.SPOTIPY_REDIRECT_URI,
         scope="user-top-read user-read-email user-read-private",
-        cache_path=None
+        cache_path=None,
+        show_dialog=True  # ← ADD THIS LINE - Forces Spotify to show login dialog
     )
 
 
@@ -27,15 +28,37 @@ def save_spotify_connection(user, token_info):
     # Get Spotify user info
     sp = spotipy.Spotify(auth=token_info['access_token'])
     spotify_user = sp.current_user()
+    spotify_id = spotify_user['id']
+    
+    # DEBUG: Print what we got from Spotify
+    #print(f"=== SPOTIFY USER DATA ===")
+    #print(f"Harmonets user trying to connect: {user.username} (ID: {user.id})")
+    #print(f"Spotify ID returned: {spotify_id}")
+    #print(f"Spotify display name: {spotify_user.get('display_name', 'N/A')}")
+    #print(f"Spotify email: {spotify_user.get('email', 'N/A')}")
+    #print(f"========================")
     
     # Calculate token expiration time
     expires_at = datetime.fromtimestamp(token_info['expires_at'])
+    
+    # Check if this Spotify account is already connected to a DIFFERENT user
+    existing_connection = SpotifyAccount.objects.filter(
+        spotify_id=spotify_id
+    ).exclude(user=user).first()
+    
+    if existing_connection:
+        print(f"❌ ERROR: Spotify ID '{spotify_id}' is already connected to harmonets user: {existing_connection.user.username} (ID: {existing_connection.user.id})")
+        raise Exception(
+            f"This Spotify account ({spotify_user.get('display_name', spotify_id)}) is already "
+            f"connected to another harmonets.org account. Each Spotify account can only be "
+            f"connected to one harmonets user account."
+        )
     
     # Save or update SpotifyAccount
     spotify_account, created = SpotifyAccount.objects.update_or_create(
         user=user,
         defaults={
-            'spotify_id': spotify_user['id'],
+            'spotify_id': spotify_id,
             'display_name': spotify_user.get('display_name', ''),
             'email': spotify_user.get('email', ''),
             'access_token': token_info['access_token'],
@@ -44,8 +67,10 @@ def save_spotify_connection(user, token_info):
         }
     )
     
+    action = "Created" if created else "Updated"
+    print(f"✅ {action} Spotify connection for {user.username}")
+    
     return spotify_account
-
 
 def get_valid_token(user):
     """
