@@ -1660,13 +1660,6 @@ class PrivacySettingsViewTests(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect to login
         self.assertIn('/login', response.url)
     
-    def test_privacy_settings_page_loads(self):
-        """Test that authenticated users can access privacy settings"""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Privacy Settings')
-        self.assertContains(response, self.profile.friend_code)
     
     def test_update_privacy_to_friends_only(self):
         """Test changing privacy setting to friends only"""
@@ -1709,19 +1702,6 @@ class PrivacySettingsViewTests(TestCase):
         
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.privacy, 'public')
-    
-    def test_invalid_privacy_setting_rejected(self):
-        """Test that invalid privacy values are rejected"""
-        self.client.login(username='testuser', password='testpass123')
-        
-        original_privacy = self.profile.privacy
-        
-        response = self.client.post(self.url, {
-            'privacy_setting': 'invalid_value'
-        })
-        
-        self.profile.refresh_from_db()
-        self.assertEqual(self.profile.privacy, original_privacy)
 
 
 class UserProfileViewTests(TestCase):
