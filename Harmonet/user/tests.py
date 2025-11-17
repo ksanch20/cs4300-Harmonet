@@ -1644,3 +1644,138 @@ class ArtistModelTests(TestCase):
                 name='Test Artist',
                 musicbrainz_id='same-id'
             )
+class PrivacySettingsViewTests(TestCase):
+    """Test the privacy settings view"""
+    
+    def setUp(self):
+        """Set up test client and user"""
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpass123')
+        self.profile = self.user.profile
+        self.url = reverse('privacy_settings')
+    
+    def test_privacy_settings_requires_login(self):
+        """Test that privacy settings page requires authentication"""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+        self.assertIn('/login', response.url)
+    
+    
+    def test_update_privacy_to_friends_only(self):
+        """Test changing privacy setting to friends only"""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.post(self.url, {
+            'privacy_setting': 'friends'
+        })
+        
+        # Should redirect back to privacy settings
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.url)
+        
+        # Check database was updated
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.privacy, 'friends')
+    
+    def test_update_privacy_to_private(self):
+        """Test changing privacy setting to private"""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.post(self.url, {
+            'privacy_setting': 'private'
+        })
+        
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.privacy, 'private')
+    
+    def test_update_privacy_to_public(self):
+        """Test changing privacy setting to public"""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Start with private
+        self.profile.privacy = 'private'
+        self.profile.save()
+        
+        response = self.client.post(self.url, {
+            'privacy_setting': 'public'
+        })
+        
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.privacy, 'public')
+
+
+class UserProfileViewTests(TestCase):
+    """Test the user profile view with privacy enforcement"""
+    
+    def setUp(self):
+        """Set up test users and client"""
+        self.client = Client()
+        self.user = User.objects.create_user(username='user', password='testpass123')
+        self.user2 = User.objects.create_user(username='user2', password='testpass123')
+        self.user3 = User.objects.create_user(username='user3', password='testpass123')
+    
+    def test_can_view_public_profile(self):
+        """Test viewing a public profile"""
+        self.user.profile.privacy = 'public'
+        self.user.profile.save()
+        
+        self.client.login(username='user2', password='testpass123')
+        response = self.client.get(reverse('user_profile', args=['user']))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'user')
+    
+        
+    
+    def test_can_view_friends_only_profile_as_friend(self):
+        """Test that friends can view friends-only profiles"""
+        self.user.profile.privacy = 'friends'
+        self.user.profile.save()
+        
+        # Create friendship
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=self.user2,
+            status='accepted'
+        )
+        
+        self.client.login(username='user2', password='testpass123')
+        response = self.client.get(reverse('user_profile', args=['user']))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'user')
+            
+
+    
+    def test_can_always_view_own_profile(self):
+        """Test that users can always view their own profile"""
+        self.user.profile.privacy = 'private'
+        self.user.profile.save()
+        
+        self.client.login(username='user', password='testpass123')
+        response = self.client.get(reverse('user_profile', args=['user']))
+        
+        self.assertEqual(response.status_code, 200)
+
+
+class ProfileViewTests(TestCase):
+    """Test the profile settings page"""
+    
+    def setUp(self):
+        """Set up test client and user"""
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpass123')
+        self.url = reverse('profile')
+    
+    
+    def test_profile_page_loads_for_authenticated_user(self):
+        """Test that authenticated users can access their profile"""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(self.url)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'testuser')
+        self.assertContains(response, self.user.email)
+    
+ 
+

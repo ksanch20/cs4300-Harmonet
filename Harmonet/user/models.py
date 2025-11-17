@@ -204,9 +204,20 @@ class SpotifyTopTrack(models.Model):
 
 class UserProfile(models.Model):
     """Extended user profile with friend code."""
+    
+    PRIVACY_CHOICES = [
+        ('public', 'Public'),
+        ('friends', 'Friends Only'),
+        ('private', 'Private'),
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     friend_code = models.CharField(max_length=20, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    privacy = models.CharField(
+        max_length=10, 
+        choices=PRIVACY_CHOICES, 
+        default='public',
+        help_text="Control who can see your profile and music data")
     
     def save(self, *args, **kwargs):
         if not self.friend_code:
@@ -225,10 +236,31 @@ class UserProfile(models.Model):
             # Check if code already exists
             if not UserProfile.objects.filter(friend_code=code).exists():
                 return code
-    
+            
+    def can_view_profile(self, viewer):
+        """Check if a user can view this profile based on privacy settings."""
+        # User can always view their own profile
+        if viewer == self.user:
+            return True
+        
+        # Public profiles can be viewed by anyone
+        if self.privacy == 'public':
+            return True
+        
+        # Private profiles can only be viewed by the owner
+        if self.privacy == 'private':
+            return False
+        
+        # Friends-only: check if viewer is a friend
+        if self.privacy == 'friends':
+            return FriendRequest.objects.are_friends(self.user, viewer)
+        
+        return False
+    def get_privacy_display(self):
+        privacy_dict = dict(self.PRIVACY_CHOICES)
+        return privacy_dict.get(self.privacy, self.privacy)
     def __str__(self):
         return f"{self.user.username} ({self.friend_code})"
-
 
 # Signal to auto-create profile when user is created
 @receiver(post_save, sender=User)

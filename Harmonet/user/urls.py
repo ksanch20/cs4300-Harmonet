@@ -35,6 +35,9 @@ urlpatterns = [
 
     #Music preferences
     path('music-preferences/', views.music_preferences, name='music_preferences'),
+
+    #privacy
+    path('privacy_settings/', views.privacy_settings, name='privacy_settings'),
     
     path('friends_dashboard/', views.friends_dashboard, name='friends_dashboard'),
     path('send-request/<int:user_id>/', views.send_friend_request, name='send_friend_request'),
