@@ -160,7 +160,7 @@ def privacy_settings(request):
             # Refresh the user profile from database to get updated display value
             user_profile.refresh_from_db()
             
-            messages.success(request, f'Privacy settings updated from {old_privacy} to {user_profile.get_privacy_display()}!')
+            
             return redirect('privacy_settings')
         else:
             messages.error(request, 'Invalid privacy setting selected.')
