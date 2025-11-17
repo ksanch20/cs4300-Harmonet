@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth.models import User
 from django.urls import reverse
 from .models import FriendRequest, FriendRequestManager, Artist, Album
@@ -6,6 +6,7 @@ from user.models import MusicPreferences, UserProfile, FriendRequest, SpotifyAcc
 from django.contrib.messages import get_messages
 from unittest.mock import patch, Mock, MagicMock, PropertyMock, call
 from datetime import datetime, timedelta
+from django.utils import timezone
 import json
 
 
