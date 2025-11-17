@@ -2,13 +2,11 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from .models import FriendRequest, FriendRequestManager, Artist, Album
-from user.models import MusicPreferences, UserProfile, FriendRequest
+from user.models import MusicPreferences, UserProfile, FriendRequest, SpotifyAccount, SpotifyTopArtist, SpotifyTopTrack
 from django.contrib.messages import get_messages
-from unittest.mock import patch
+from unittest.mock import patch, Mock, MagicMock, PropertyMock, call
+from datetime import datetime, timedelta
 import json
-
-
-
 
 
 #Used ChatGPT to help write tests
@@ -1776,6 +1774,602 @@ class ProfileViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'testuser')
         self.assertContains(response, self.user.email)
+
+# ========================================
+# SPOTIFY SERVICE TESTS
+# ========================================
+
+class SpotifyServiceTests(TestCase):
+    """Comprehensive tests for spotify_service.py"""
     
- 
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='spotifyuser',
+            password='testpass123'
+        )
+    
+    def test_get_spotify_oauth_configuration(self):
+        """Test SpotifyOAuth object creation"""
+        from user.spotify_service import get_spotify_oauth
+        
+        sp_oauth = get_spotify_oauth()
+        
+        self.assertIsNotNone(sp_oauth)
+        self.assertEqual(sp_oauth.show_dialog, True)
+    
+    @patch('user.spotify_service.spotipy.Spotify')
+    def test_save_spotify_connection_new_user(self, mock_spotify):
+        """Test saving new Spotify connection"""
+        from user.spotify_service import save_spotify_connection
+        
+        # Mock Spotify API response
+        mock_sp_instance = Mock()
+        mock_sp_instance.current_user.return_value = {
+            'id': 'spotify123',
+            'display_name': 'Test User',
+            'email': 'test@spotify.com'
+        }
+        mock_spotify.return_value = mock_sp_instance
+        
+        # Create token info
+        token_info = {
+            'access_token': 'access123',
+            'refresh_token': 'refresh123',
+            'expires_at': (datetime.now() + timedelta(hours=1)).timestamp()
+        }
+        
+        # Save connection
+        account = save_spotify_connection(self.user, token_info)
+        
+        # Verify
+        self.assertEqual(account.spotify_id, 'spotify123')
+        self.assertEqual(account.display_name, 'Test User')
+        self.assertTrue(SpotifyAccount.objects.filter(user=self.user).exists())
+    
+    @patch('user.spotify_service.spotipy.Spotify')
+    def test_save_spotify_connection_duplicate_error(self, mock_spotify):
+        """Test error when Spotify account already connected to different user"""
+        from user.spotify_service import save_spotify_connection
+        
+        other_user = User.objects.create_user('otheruser', password='test123')
+        
+        # Create existing connection for other user
+        SpotifyAccount.objects.create(
+            user=other_user,
+            spotify_id='spotify123',
+            access_token='token',
+            refresh_token='refresh',
+            token_expires_at=datetime.now() + timedelta(hours=1)
+        )
+        
+        # Mock Spotify API
+        mock_sp_instance = Mock()
+        mock_sp_instance.current_user.return_value = {
+            'id': 'spotify123',  # Same Spotify ID
+            'display_name': 'Test',
+            'email': 'test@test.com'
+        }
+        mock_spotify.return_value = mock_sp_instance
+        
+        token_info = {
+            'access_token': 'access',
+            'refresh_token': 'refresh',
+            'expires_at': (datetime.now() + timedelta(hours=1)).timestamp()
+        }
+        
+        # Should raise exception
+        with self.assertRaises(Exception) as context:
+            save_spotify_connection(self.user, token_info)
+        
+        self.assertIn('already connected', str(context.exception))
+    
+    def test_get_valid_token_no_account(self):
+        """Test get_valid_token when user has no Spotify account"""
+        from user.spotify_service import get_valid_token
+        
+        token = get_valid_token(self.user)
+        self.assertIsNone(token)
+    
+    def test_get_valid_token_valid(self):
+        """Test get_valid_token with valid non-expired token"""
+        from user.spotify_service import get_valid_token
+        
+        # Create valid account
+        SpotifyAccount.objects.create(
+            user=self.user,
+            spotify_id='test123',
+            access_token='valid_token',
+            refresh_token='refresh',
+            token_expires_at=datetime.now() + timedelta(hours=1)
+        )
+        
+        token = get_valid_token(self.user)
+        self.assertEqual(token, 'valid_token')
+    
+    @patch('user.spotify_service.get_spotify_oauth')
+    def test_get_valid_token_expired_refreshes(self, mock_oauth):
+        """Test that expired token gets refreshed"""
+        from user.spotify_service import get_valid_token
+        
+        # Create expired account
+        account = SpotifyAccount.objects.create(
+            user=self.user,
+            spotify_id='test123',
+            access_token='old_token',
+            refresh_token='refresh123',
+            token_expires_at=datetime.now() - timedelta(hours=1)  # Expired
+        )
+        
+        # Mock OAuth refresh
+        mock_oauth_instance = Mock()
+        mock_oauth_instance.refresh_access_token.return_value = {
+            'access_token': 'new_token',
+            'refresh_token': 'new_refresh',
+            'expires_at': (datetime.now() + timedelta(hours=1)).timestamp()
+        }
+        mock_oauth.return_value = mock_oauth_instance
+        
+        token = get_valid_token(self.user)
+        
+        # Verify token was refreshed
+        account.refresh_from_db()
+        self.assertEqual(account.access_token, 'new_token')
+        self.assertEqual(token, 'new_token')
+    
+    @patch('user.spotify_service.get_valid_token')
+    @patch('user.spotify_service.spotipy.Spotify')
+    def test_fetch_and_save_top_artists_success(self, mock_spotify, mock_token):
+        """Test successfully fetching top artists"""
+        from user.spotify_service import fetch_and_save_top_artists
+        
+        mock_token.return_value = 'valid_token'
+        
+        # Mock Spotify API response
+        mock_sp = Mock()
+        mock_sp.current_user_top_artists.return_value = {
+            'items': [
+                {
+                    'id': 'artist1',
+                    'name': 'Artist One',
+                    'images': [{'url': 'http://image1.jpg'}],
+                    'genres': ['rock', 'alternative'],
+                    'popularity': 85,
+                    'followers': {'total': 10000}
+                }
+            ]
+        }
+        mock_spotify.return_value = mock_sp
+        
+        result = fetch_and_save_top_artists(self.user)
+        
+        # Check that it returns a dict with success and count keys
+        self.assertIsInstance(result, dict)
+        self.assertIn('success', result)
+        self.assertIn('count', result)
+        if result['success']:
+            self.assertEqual(result['count'], 1)
+            self.assertTrue(SpotifyTopArtist.objects.filter(user=self.user).exists())
+    
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_and_save_top_artists_no_token(self, mock_token):
+        """Test fetch_and_save_top_artists with no valid token"""
+        from user.spotify_service import fetch_and_save_top_artists
+        
+        mock_token.return_value = None
+        
+        result = fetch_and_save_top_artists(self.user)
+        
+        # Should return a dict with success=False
+        self.assertIsInstance(result, dict)
+        self.assertIn('success', result)
+        self.assertFalse(result['success'])
+    
+    @patch('user.spotify_service.get_valid_token')
+    @patch('user.spotify_service.spotipy.Spotify')
+    def test_fetch_and_save_top_tracks_success(self, mock_spotify, mock_token):
+        """Test successfully fetching top tracks"""
+        from user.spotify_service import fetch_and_save_top_tracks
+        
+        mock_token.return_value = 'valid_token'
+        
+        mock_sp = Mock()
+        mock_sp.current_user_top_tracks.return_value = {
+            'items': [
+                {
+                    'id': 'track1',
+                    'name': 'Track One',
+                    'artists': [{'name': 'Artist One'}],
+                    'album': {
+                        'name': 'Album One',
+                        'images': [{'url': 'http://album1.jpg'}]
+                    },
+                    'popularity': 90
+                }
+            ]
+        }
+        mock_spotify.return_value = mock_sp
+        
+        result = fetch_and_save_top_tracks(self.user)
+        
+        # Check that it returns a dict with success and count keys
+        self.assertIsInstance(result, dict)
+        self.assertIn('success', result)
+        self.assertIn('count', result)
+        if result['success']:
+            self.assertEqual(result['count'], 1)
+            self.assertTrue(SpotifyTopTrack.objects.filter(user=self.user).exists())
+    
+    def test_is_spotify_connected_true(self):
+        """Test is_spotify_connected returns True when connected"""
+        from user.spotify_service import is_spotify_connected
+        
+        SpotifyAccount.objects.create(
+            user=self.user,
+            spotify_id='test123',
+            access_token='token',
+            refresh_token='refresh',
+            token_expires_at=datetime.now() + timedelta(hours=1)
+        )
+        
+        self.assertTrue(is_spotify_connected(self.user))
+    
+    def test_is_spotify_connected_false(self):
+        """Test is_spotify_connected returns False when not connected"""
+        from user.spotify_service import is_spotify_connected
+        
+        self.assertFalse(is_spotify_connected(self.user))
+    
+    def test_disconnect_spotify(self):
+        """Test disconnecting Spotify account"""
+        from user.spotify_service import disconnect_spotify
+        
+        # Create account and data
+        SpotifyAccount.objects.create(
+            user=self.user,
+            spotify_id='test123',
+            access_token='token',
+            refresh_token='refresh',
+            token_expires_at=datetime.now() + timedelta(hours=1)
+        )
+        SpotifyTopArtist.objects.create(
+            user=self.user,
+            spotify_artist_id='artist1',
+            name='Test Artist',
+            rank=1
+        )
+        
+        # Disconnect
+        disconnect_spotify(self.user)
+        
+        # Verify everything deleted
+        self.assertFalse(SpotifyAccount.objects.filter(user=self.user).exists())
+        self.assertFalse(SpotifyTopArtist.objects.filter(user=self.user).exists())
+
+
+# ========================================
+# SPOTIFY VIEW TESTS
+# ========================================
+
+class SpotifyViewTests(TestCase):
+    """Tests for Spotify-related views"""
+    
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
+        self.client.login(username='testuser', password='testpass123')
+    
+    @patch('user.views.get_spotify_oauth')
+    def test_spotify_login_view(self, mock_oauth):
+        """Test spotify_login view"""
+        mock_oauth_instance = Mock()
+        mock_oauth_instance.get_authorize_url.return_value = 'https://spotify.com/auth'
+        mock_oauth.return_value = mock_oauth_instance
+        
+        response = self.client.get(reverse('spotify_login'))
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('spotify.com', response.url)
+    
+    @patch('user.views.save_spotify_connection')
+    @patch('user.views.fetch_and_save_top_artists')
+    @patch('user.views.fetch_and_save_top_tracks')
+    @patch('user.views.get_spotify_oauth')
+    def test_spotify_callback_success(self, mock_oauth, mock_tracks, mock_artists, mock_save):
+        """Test successful Spotify callback"""
+        # Set up session
+        session = self.client.session
+        session['spotify_auth_user_id'] = self.user.id
+        session.save()
+        
+        # Mock OAuth
+        mock_oauth_instance = Mock()
+        mock_oauth_instance.get_access_token.return_value = {
+            'access_token': 'token',
+            'refresh_token': 'refresh',
+            'expires_at': (datetime.now() + timedelta(hours=1)).timestamp()
+        }
+        mock_oauth.return_value = mock_oauth_instance
+        
+        # Mock save connection
+        mock_account = Mock()
+        mock_account.display_name = 'Test User'
+        mock_account.spotify_id = 'spotify123'
+        mock_save.return_value = mock_account
+        
+        # Mock data fetch - return dict format that views.py expects
+        mock_artists.return_value = {'success': True, 'count': 5, 'message': 'Success'}
+        mock_tracks.return_value = {'success': True, 'count': 5, 'message': 'Success'}
+        
+        response = self.client.get(
+            reverse('spotify_callback'),
+            {'code': 'auth_code_123'}
+        )
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('dashboard'))
+    
+    def test_spotify_callback_no_code(self):
+        """Test Spotify callback without authorization code"""
+        session = self.client.session
+        session['spotify_auth_user_id'] = self.user.id
+        session.save()
+        
+        response = self.client.get(reverse('spotify_callback'))
+        
+        self.assertEqual(response.status_code, 302)
+    
+    @patch('user.views.disconnect_spotify')
+    def test_spotify_disconnect_post(self, mock_disconnect):
+        """Test disconnecting Spotify via POST"""
+        response = self.client.post(reverse('spotify_disconnect'))
+        
+        mock_disconnect.assert_called_once_with(self.user)
+        self.assertRedirects(response, reverse('dashboard'))
+    
+    def test_spotify_disconnect_get_no_action(self):
+        """Test GET request to disconnect does nothing"""
+        response = self.client.get(reverse('spotify_disconnect'))
+        
+        self.assertRedirects(response, reverse('dashboard'))
+    
+    @patch('user.views.fetch_and_save_top_artists')
+    @patch('user.views.fetch_and_save_top_tracks')
+    @patch('user.views.is_spotify_connected')
+    def test_spotify_refresh_data_success(self, mock_connected, mock_tracks, mock_artists):
+        """Test refreshing Spotify data"""
+        mock_connected.return_value = True
+        mock_artists.return_value = {'success': True, 'count': 5, 'message': 'Success'}
+        mock_tracks.return_value = {'success': True, 'count': 5, 'message': 'Success'}
+        
+        response = self.client.post(reverse('spotify_refresh'))
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('dashboard'))
+    
+    @patch('user.views.is_spotify_connected')
+    def test_spotify_refresh_data_not_connected(self, mock_connected):
+        """Test refresh when Spotify not connected"""
+        mock_connected.return_value = False
+        
+        response = self.client.post(reverse('spotify_refresh'))
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('dashboard'))
+
+
+# ========================================
+# AI SERVICE ADDITIONAL TESTS
+# ========================================
+
+class AIServiceAdditionalTests(TestCase):
+    """Additional tests for ai_service.py uncovered areas"""
+    
+    def setUp(self):
+        self.user = User.objects.create_user('aiuser', password='test123')
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    @patch('user.ai_service.gather_user_music_data')
+    def test_get_music_recommendations_with_spotify_data(self, mock_gather, mock_api):
+        """Test recommendations with Spotify data included"""
+        from user.ai_service import get_music_recommendations
+        
+        mock_gather.return_value = {
+            'has_data': True,
+            'spotify_connected': True,
+            'spotify_top_artists': [
+                {'name': 'Artist 1', 'genres': 'rock', 'popularity': 85}
+            ],
+            'spotify_top_tracks': [
+                {'name': 'Track 1', 'artist': 'Artist 1', 'popularity': 90}
+            ],
+            'manual_artists': ['Manual Artist'],
+            'manual_genres': ['indie'],
+            'manual_tracks': ['Manual Track']
+        }
+        
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content='Recommendations here'))]
+        mock_api.return_value = mock_response
+        
+        result = get_music_recommendations(self.user)
+        
+        self.assertTrue(result['success'])
+        self.assertIn('Recommendations', result['recommendations'])
+    
+    @patch('user.ai_service.is_spotify_connected')
+    def test_gather_music_data_with_spotify(self, mock_connected):
+        """Test gathering data when Spotify is connected"""
+        from user.ai_service import gather_user_music_data
+        from user.models import SpotifyTopArtist, SpotifyTopTrack
+        
+        mock_connected.return_value = True
+        
+        # Create Spotify data
+        SpotifyTopArtist.objects.create(
+            user=self.user,
+            spotify_artist_id='artist1',
+            name='Spotify Artist',
+            genres='rock, alternative',
+            popularity=85,
+            rank=1
+        )
+        
+        SpotifyTopTrack.objects.create(
+            user=self.user,
+            spotify_track_id='track1',
+            name='Spotify Track',
+            artist_name='Spotify Artist',
+            album_name='Album',
+            popularity=90,
+            rank=1
+        )
+        
+        data = gather_user_music_data(self.user)
+        
+        self.assertTrue(data['spotify_connected'])
+        self.assertEqual(len(data['spotify_top_artists']), 1)
+        self.assertEqual(len(data['spotify_top_tracks']), 1)
+    
+    def test_build_recommendation_prompt_all_data(self):
+        """Test prompt building with all types of data"""
+        from user.ai_service import build_recommendation_prompt
+        
+        music_data = {
+            'spotify_top_artists': [
+                {'name': 'Spotify Artist', 'genres': 'rock, pop', 'popularity': 85}
+            ],
+            'spotify_top_tracks': [
+                {'name': 'Track', 'artist': 'Artist', 'popularity': 90}
+            ],
+            'manual_artists': ['Manual Artist 1', 'Manual Artist 2'],
+            'manual_genres': ['Genre 1', 'Genre 2'],
+            'manual_tracks': ['Track 1', 'Track 2']
+        }
+        
+        prompt = build_recommendation_prompt(music_data)
+        
+        self.assertIn('Spotify Artist', prompt)
+        self.assertIn('Manual Artist', prompt)
+        self.assertIn('Genre 1', prompt)
+        self.assertIn('Track 1', prompt)
+
+
+# ========================================
+# VIEW TESTS FOR UNCOVERED AREAS
+# ========================================
+
+class MiscViewTests(TestCase):
+    """Tests for various uncovered view areas"""
+    
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user('testuser', password='test123')
+    
+    def test_index_view_accessible(self):
+        """Test index page loads"""
+        response = self.client.get(reverse('index'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_profile_view_requires_login(self):
+        """Test profile requires authentication"""
+        response = self.client.get(reverse('profile'))
+        self.assertEqual(response.status_code, 302)
+    
+    def test_profile_view_accessible_when_logged_in(self):
+        """Test profile accessible when logged in"""
+        self.client.login(username='testuser', password='test123')
+        response = self.client.get(reverse('profile'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_analytics_view_requires_login(self):
+        """Test analytics requires authentication"""
+        response = self.client.get(reverse('analytics'))
+        self.assertEqual(response.status_code, 302)
+    
+    def test_analytics_view_accessible_when_logged_in(self):
+        """Test analytics accessible when logged in"""
+        self.client.login(username='testuser', password='test123')
+        response = self.client.get(reverse('analytics'))
+        self.assertEqual(response.status_code, 200)
+    
+    @patch('user.views.spotipy.Spotify')
+    def test_account_link_with_spotify_token(self, mock_spotify):
+        """Test account_link view with Spotify token in session"""
+        self.client.login(username='testuser', password='test123')
+        
+        # Add Spotify token to session
+        session = self.client.session
+        session['spotify_token'] = {
+            'access_token': 'test_token',
+            'refresh_token': 'refresh',
+            'expires_at': (datetime.now() + timedelta(hours=1)).timestamp()
+        }
+        session.save()
+        
+        # Mock Spotify API
+        mock_sp_instance = Mock()
+        mock_sp_instance.current_user.return_value = {
+            'display_name': 'Test User',
+            'email': 'test@test.com',
+            'id': 'spotify123'
+        }
+        mock_spotify.return_value = mock_sp_instance
+        
+        response = self.client.get(reverse('account_link'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('spotify_data', response.context)
+    
+    def test_dashboard_with_friends(self):
+        """Test dashboard displays friends correctly"""
+        self.client.login(username='testuser', password='test123')
+        
+        # Create a friend
+        friend = User.objects.create_user('friend', password='test123')
+        from user.models import FriendRequest
+        FriendRequest.objects.create(
+            from_user=self.user,
+            to_user=friend,
+            status='accepted'
+        )
+        
+        response = self.client.get(reverse('dashboard'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('friends', response.context)
+
+
+# ========================================
+# FORMAT AI RECOMMENDATIONS TEST
+# ========================================
+
+class FormatRecommendationsTest(TestCase):
+    """Test the format_ai_recommendations function"""
+    
+    def test_format_ai_recommendations_basic(self):
+        """Test basic HTML formatting"""
+        from user.views import format_ai_recommendations
+        
+        raw_text = "### **1. Artist Name**\n- **Genre:** Rock\n---\n### **2. Another Artist**"
+        
+        result = format_ai_recommendations(raw_text)
+        
+        self.assertIn('<h3>', str(result))
+        self.assertIn('<strong>', str(result))
+        self.assertIn('<hr>', str(result))
+    
+    def test_format_ai_recommendations_with_lists(self):
+        """Test list formatting"""
+        from user.views import format_ai_recommendations
+        
+        raw_text = "- First item\n- Second item\n- Third item"
+        
+        result = format_ai_recommendations(raw_text)
+        
+        self.assertIn('<ul>', str(result))
+        self.assertIn('<li>', str(result))
+        self.assertIn('</ul>', str(result))
 
