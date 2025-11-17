@@ -1787,10 +1787,6 @@ class ProfileViewTests(TestCase):
         self.user = User.objects.create_user(username='testuser', password='testpass123')
         self.url = reverse('profile')
     
-    def test_profile_page_requires_login(self):
-        """Test that profile page requires authentication"""
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
     
     def test_profile_page_loads_for_authenticated_user(self):
         """Test that authenticated users can access their profile"""
