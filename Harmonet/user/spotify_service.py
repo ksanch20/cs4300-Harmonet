@@ -2,6 +2,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from django.conf import settings
 from datetime import datetime, timedelta
+from django.utils import timezone
 from .models import SpotifyAccount, SpotifyTopArtist, SpotifyTopTrack
 
 
@@ -39,7 +40,7 @@ def save_spotify_connection(user, token_info):
     #print(f"========================")
     
     # Calculate token expiration time
-    expires_at = datetime.fromtimestamp(token_info['expires_at'])
+    expires_at = timezone.make_aware(datetime.fromtimestamp(token_info['expires_at']))
     
     # Check if this Spotify account is already connected to a DIFFERENT user
     existing_connection = SpotifyAccount.objects.filter(
@@ -97,7 +98,7 @@ def get_valid_token(user):
         # Update stored token
         spotify_account.access_token = token_info['access_token']
         spotify_account.refresh_token = token_info['refresh_token']
-        spotify_account.token_expires_at = datetime.fromtimestamp(token_info['expires_at'])
+        spotify_account.token_expires_at = timezone.make_aware(datetime.fromtimestamp(token_info['expires_at']))
         spotify_account.save()
     
     return spotify_account.access_token
@@ -209,3 +210,6 @@ def disconnect_spotify(user):
         SpotifyTopTrack.objects.filter(user=user).delete()
     except SpotifyAccount.DoesNotExist:
         pass
+
+def aware_timestamp(ts):
+    return timezone.make_aware(datetime.fromtimestamp(ts))
