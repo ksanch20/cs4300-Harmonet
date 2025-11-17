@@ -1,249 +1,578 @@
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: #f7f9fc;
-  color: #000000;
-}
-
-
-.auth-buttons a {
-  color: white;
-  text-decoration: none;
-  background-color: #1e4ed8;
-  padding: 0.5rem 1rem;
-  border-radius: 5px;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
-}
-
-.auth-buttons a:hover {
-  background-color: #1a3fc5;
-}
+/* Artist Wallet Styles */
 
 .dashboard-container {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
-  flex: 1; 
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
 }
 
 .dashboard-box {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  max-width: 900px;
-  width: 100%;
-  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
 }
-
 
 .section-divider {
   border: none;
-  border-top: 2px solid #5ca1d3;
-  margin: 2rem 0 1.5rem;
+  border-top: 2px solid #f0f0f0;
+  margin: 2rem 0;
 }
 
 .artist-section h2 {
-  font-size: 1.5rem;
-  color: #5ca1d3;
+  color: #333;
   margin-bottom: 0.5rem;
-  font-weight: 600;
 }
 
-.artist-section p {
+.artist-section > p {
+  color: #666;
   margin-bottom: 1.5rem;
-  color: #555;
 }
 
+/* Messages */
+.messages {
+  margin-bottom: 1rem;
+}
 
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Search Section */
+.search-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.search-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.search-container {
+  position: relative;
+  margin-top: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.search-loading {
+  margin-top: 1rem;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: none;
+}
+
+.search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.search-result-item:hover {
+  background-color: #f8f9fa;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.result-info {
+  flex: 1;
+}
+
+.result-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.result-disambiguation {
+  color: #666;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.result-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.result-country,
+.result-genre {
+  display: inline-block;
+}
+
+.btn-add-from-search {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-add-from-search:hover {
+  background-color: #059669;
+}
+
+.no-results,
+.search-error {
+  padding: 1.5rem;
+  text-align: center;
+  color: #666;
+}
+
+.search-error {
+  color: #dc3545;
+}
+
+/* Manual Add Section */
+.manual-add-section {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.manual-add-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #333;
+  padding: 0.5rem;
+  user-select: none;
+}
+
+.manual-add-section summary:hover {
+  color: #6366f1;
+}
+
+.manual-add-section[open] summary {
+  margin-bottom: 1rem;
+}
+
+/* Artist Form */
 .artist-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; 
-  margin-bottom: 2rem;
 }
 
-.artist-form label {
-  font-weight: 600;
-  margin-bottom: 0.2rem; 
+.form-group label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
 }
 
-
-.artist-form input[type="text"],
-.artist-form input[type="url"],
-.artist-form input[type="number"],
-.artist-form select {
-  width: 100%;              
-  padding: 10px 14px;        
-  border: 2px solid #ddd;
-  border-radius: 8px;
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
   font-size: 1rem;
-  font-family: 'Inter', sans-serif;
-  background-color: white;
-  transition: all 0.3s ease;
-  appearance: none;         
+  transition: border-color 0.2s ease;
 }
 
-.artist-form input[type="text"]:focus,
-.artist-form input[type="url"]:focus,
-.artist-form input[type="number"]:focus,
-.artist-form select:focus {
-  border-color: #ff6b6b;
-  box-shadow: 0 4px 8px rgba(255,107,107,0.2);
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
+  border-color: #6366f1;
 }
 
-.artist-form select {
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px;
+.select-wrapper {
+  position: relative;
 }
-
-.artist-form .form-group {
-  margin-bottom: 0.5rem; /* smaller vertical space */
-}
-
-.artist-form .select-wrapper {
-  margin-top: 0.2rem; /* slight spacing from label */
-}
-
 
 .btn-add-artist {
-  background: #5ca1d3;
-  color: #ffffff;
-  font-size: 1rem;
-  padding: 12px 25px;
+  background-color: #6366f1;
+  color: white;
   border: none;
+  padding: 0.875rem 1.5rem;
   border-radius: 8px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease;
+  margin-top: 0.5rem;
 }
 
 .btn-add-artist:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(51, 0, 255, 0.3);
+  background-color: #4f46e5;
 }
 
-.artist-list-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.divider {
+  border: none;
+  border-top: 1px solid #dee2e6;
+  margin: 2rem 0;
+}
+
+/* Artist List */
+.artist-list-section h3 {
+  margin-bottom: 1rem;
+  color: #333;
 }
 
 .artist-card {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.2rem;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  align-items: flex-start;
+  padding: 1.25rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .artist-card:hover {
   transform: translateY(-2px);
-  background-color: #f0f4ff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .artist-info {
-  display: flex;           
-  flex-direction: row;    
-  align-items: center;    
-  gap: 1rem;               
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex: 1;
 }
 
 .artist-avatar {
-  width: 50px;
-  height: 50px;
-  background: #5ca1d3;
-  color: white;
-  font-weight: bold;
-  font-size: 1.2rem;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
-.artist-link, .artist-name {
+.artist-avatar-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.artist-details {
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+
+.artist-link {
+  font-size: 1.125rem;
   font-weight: 600;
-  text-decoration: none;
   color: #333;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: inline-block;
 }
 
 .artist-link:hover {
-  color: #ff5500;
+  color: #6366f1;
+}
+
+.artist-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+  display: inline-block;
+}
+
+.artist-disambiguation {
+  color: #666;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.artist-genre,
+.artist-time,
+.artist-rating,
+.artist-country {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0.25rem 0;
+}
+
+.delete-form {
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .btn-remove-artist {
-  background-color: #e74c3c;
+  background-color: #dc3545;
   color: white;
   border: none;
-  padding: 6px 12px;
+  padding: 0.5rem 1rem;
   border-radius: 6px;
-  font-weight: 600;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
 }
 
 .btn-remove-artist:hover {
-  background-color: #c0392b;
-  transform: translateY(-1px);
+  background-color: #c82333;
 }
 
+.no-artists-msg {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  font-size: 1.125rem;
+}
+
+/* Albums Section */
+.albums-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  width: 100%;
+}
+
+.albums-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.albums-grid {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  scroll-behavior: smooth;
+  align-items: flex-start;
+}
+
+.albums-grid::-webkit-scrollbar {
+  height: 6px;
+}
+
+.albums-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.albums-grid::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.albums-grid::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.album-item {
+  flex: 0 0 auto !important;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  text-align: center;
+  width: 100px !important;
+  min-width: 100px !important;
+  max-width: 100px !important;
+}
+
+.album-item:hover {
+  transform: translateY(-3px);
+}
+
+.album-item:hover .album-info-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.album-cover {
+  width: 100px !important;
+  height: 100px !important;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.2s ease;
+}
+
+.album-item:hover .album-cover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.album-cover-placeholder {
+  width: 100px !important;
+  height: 100px !important;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.album-info-tooltip {
+  position: absolute;
+  bottom: -70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  min-width: 120px;
+  max-width: 180px;
+  white-space: normal;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.album-info-tooltip strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.album-info-tooltip small {
+  color: #ccc;
+  font-size: 0.65rem;
+}
+
+/* Pagination */
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
 }
 
 .page-btn {
-  padding: 0.4rem 1rem;
-  background-color: #5ca1d3;
+  padding: 0.5rem 1rem;
+  background-color: #6366f1;
   color: white;
-  border-radius: 6px;
   text-decoration: none;
-  font-weight: 600;
-  transition: background-color 0.3s ease;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
 }
 
 .page-btn:hover {
-  background-color: #4a8bc1;
+  background-color: #4f46e5;
 }
 
 .current-page {
-  font-weight: 600;
-  color: #555;
+  color: #666;
+  font-weight: 500;
 }
 
-.no-artists-msg {
-  color: #777;
-  font-style: italic;
-  margin-top: 10px;
-}
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-box {
+    padding: 1rem;
+  }
 
-.footer {
-  background: #1e2a38;
-  color: white;
-  text-align: center;
-  padding: 1rem;
+  .artist-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .artist-info {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .delete-form {
+    width: 100%;
+  }
+
+  .btn-remove-artist {
+    width: 100%;
+  }
+
+  .result-meta {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .album-cover,
+  .album-cover-placeholder {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .album-item {
+    max-width: 80px;
+  }
 }

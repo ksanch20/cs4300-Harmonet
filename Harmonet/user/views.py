@@ -13,7 +13,8 @@ from django.contrib.auth.models import User
 from .ai_service import get_music_recommendations
 from django.conf import settings
 from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager, SpotifyTopArtist, SpotifyTopTrack
-
+from django.http import JsonResponse
+from .models import Artist, Album
 
 from django.core.paginator import Paginator
 from .models import SoundCloudArtist
@@ -29,6 +30,12 @@ from .spotify_service import (
     is_spotify_connected,
     disconnect_spotify
 )
+
+
+from django.http import JsonResponse
+from .models import Artist, Album 
+from .forms import ArtistForm
+import logging
 
 #################### index ####################################### 
 def index(request):
@@ -67,21 +74,45 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard view with Spotify integration"""
+    """Dashboard view with Spotify integration and detailed debugging"""
     # Check if Spotify is connected
     spotify_connected = is_spotify_connected(request.user)
     
+    # Get top artists and tracks if connected
     top_artists = []
+    top_tracks = []
+    spotify_account = None
+    
     if spotify_connected:
-        top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
-        print(f"Found {len(top_artists)} top artists for {request.user.username}")
+        try:
+            spotify_account = request.user.spotify_account
+            top_artists = SpotifyTopArtist.objects.filter(user=request.user).order_by('rank')[:5]
+            top_tracks = SpotifyTopTrack.objects.filter(user=request.user).order_by('rank')[:5]
+            
+            # Debug: Show if data exists but isn't loading
+            if len(top_artists) == 0:
+                total_artists = SpotifyTopArtist.objects.filter(user=request.user).count()
+                print(f"⚠️ WARNING: No artists in top 5, but {total_artists} total artists in database")
+            
+            if len(top_tracks) == 0:
+                total_tracks = SpotifyTopTrack.objects.filter(user=request.user).count()
+                print(f"⚠️ WARNING: No tracks in top 5, but {total_tracks} total tracks in database")
+            
+        except Exception as e:
+            print(f"❌ Error loading Spotify data for {request.user.username}: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print(f"Dashboard load for {request.user.username}: Spotify NOT connected")
     
     friends = FriendRequest.objects.friends(request.user)
     
     return render(request, 'user/dashboard.html', {
         'title': 'Dashboard',
         'spotify_connected': spotify_connected,
+        'spotify_account': spotify_account,
         'top_artists': top_artists,
+        'top_tracks': top_tracks,
         'friends': friends
     })
 
@@ -152,8 +183,24 @@ def password_change(request):
 @login_required
 def spotify_login(request):
     """Start the Spotify OAuth flow"""
+    # COMPREHENSIVE SESSION CLEARING
+    keys_to_clear = ['spotify_token', 'spotify_auth_user_id']
+    for key in keys_to_clear:
+        if key in request.session:
+            del request.session[key]
+    
+    # Force session save
+    request.session.modified = True
+    
+    # Store the user ID in the session to verify after the callback
+    request.session['spotify_auth_user_id'] = request.user.id
+    
     sp_oauth = get_spotify_oauth()
-    auth_url = sp_oauth.get_authorize_url()
+    
+    # Add state parameter for security and debugging
+    state = f"{request.user.id}"
+    auth_url = sp_oauth.get_authorize_url(state=state)
+    
     return redirect(auth_url)
 
 @login_required
@@ -162,69 +209,127 @@ def spotify_callback(request):
     Handle Spotify OAuth callback
     Save connection and fetch user's top artists/tracks
     """
+    # Verify this is the same user who started the OAuth flow
+    auth_user_id = request.session.get('spotify_auth_user_id')
+    if auth_user_id != request.user.id:
+        messages.error(request, 'Session mismatch. Please try connecting again.')
+        return redirect('dashboard')
+    
     sp_oauth = get_spotify_oauth()
     code = request.GET.get('code')
     
     if code:
         try:
+            print(f"=== SPOTIFY CALLBACK START ===")
+            print(f"Harmonets user: {request.user.username} (ID: {request.user.id})")
+            
             # Get access token
             token_info = sp_oauth.get_access_token(code)
             print(f"Got token for user: {request.user.username}")
             
-            # Save Spotify connection to database
+            # Save Spotify connection to database (this will print debug info)
             spotify_account = save_spotify_connection(request.user, token_info)
-            print(f"Saved Spotify account: {spotify_account.spotify_id}")
+            print(f"Successfully saved Spotify account: {spotify_account.spotify_id}")
+            print(f"==============================")
             
-            # Fetch and save top artists and tracks
-            artists_success = fetch_and_save_top_artists(request.user)
-            tracks_success = fetch_and_save_top_tracks(request.user)
+            # Clean up session
+            if 'spotify_auth_user_id' in request.session:
+                del request.session['spotify_auth_user_id']
             
-            print(f"Artists fetch: {artists_success}, Tracks fetch: {tracks_success}")
+            # Fetch and save top artists and tracks with detailed error handling
+            print(f"\n=== STARTING DATA FETCH FOR {request.user.username} ===")
+            artists_result = fetch_and_save_top_artists(request.user)
+            tracks_result = fetch_and_save_top_tracks(request.user)
+            print(f"=== DATA FETCH COMPLETE ===\n")
             
-            if artists_success and tracks_success:
-                messages.success(request, 'Spotify account connected successfully! Your top music has been loaded.')
-            elif artists_success or tracks_success:
-                messages.warning(request, 'Spotify connected but some data could not be loaded.')
+            # Check results and show appropriate message
+            if artists_result['success'] and tracks_result['success']:
+                messages.success(
+                    request, 
+                    f'✅ Spotify connected as {spotify_account.display_name}! '
+                    f'Loaded {artists_result["count"]} artists and {tracks_result["count"]} tracks.'
+                )
+            elif artists_result['success'] or tracks_result['success']:
+                messages.warning(
+                    request,
+                    f'⚠️ Spotify connected but only partial data loaded. '
+                    f'Artists: {artists_result["count"]}, Tracks: {tracks_result["count"]}. '
+                    f'Try refreshing your data from the dashboard.'
+                )
             else:
-                messages.error(request, 'Spotify connected but could not load your music data.')
+                messages.warning(
+                    request,
+                    f'⚠️ Spotify connected as {spotify_account.display_name}, but could not load your music data. '
+                    f'Error: {artists_result.get("message", "Unknown error")}. '
+                    f'Please try the "Refresh Data" button on your dashboard.'
+                )
                 
         except Exception as e:
-            print(f"Error in spotify_callback: {str(e)}")
+            error_str = str(e)
+            print(f"=== SPOTIFY CALLBACK ERROR ===")
+            print(f"Error in spotify_callback: {error_str}")
+            print(f"Harmonets user: {request.user.username}")
             import traceback
             traceback.print_exc()
-            messages.error(request, f'Error connecting Spotify: {str(e)}')
+            print(f"==============================")
+            
+            # User-friendly error message
+            if "already connected" in error_str.lower():
+                messages.error(
+                    request, 
+                    f'❌ {error_str} Please disconnect from the other account first, '
+                    f'or use a different Spotify account.'
+                )
+            else:
+                messages.error(request, f'❌ Error connecting Spotify: {error_str}')
     else:
         messages.error(request, 'No authorization code received from Spotify.')
     
-    # Redirect to dashboard instead of account_link
     return redirect('dashboard')
 
 @login_required
 def spotify_disconnect(request):
     """Disconnect user's Spotify account"""
     if request.method == 'POST':
+        print(f"Disconnecting Spotify for user: {request.user.username}")
         disconnect_spotify(request.user)
         messages.success(request, 'Spotify account disconnected successfully.')
-    return redirect('account_link')
+    return redirect('dashboard')
 
 
 @login_required
 def spotify_refresh_data(request):
-    """Manually refresh Spotify top artists and tracks"""
+    """Manually refresh Spotify top artists and tracks with detailed feedback"""
     if request.method == 'POST':
         if is_spotify_connected(request.user):
-            success_artists = fetch_and_save_top_artists(request.user)
-            success_tracks = fetch_and_save_top_tracks(request.user)
+            print(f"\n=== MANUAL REFRESH FOR {request.user.username} ===")
             
-            if success_artists and success_tracks:
-                messages.success(request, 'Your Spotify data has been refreshed!')
+            artists_result = fetch_and_save_top_artists(request.user)
+            tracks_result = fetch_and_save_top_tracks(request.user)
+            
+            if artists_result['success'] and tracks_result['success']:
+                messages.success(
+                    request, 
+                    f'✅ Data refreshed! Loaded {artists_result["count"]} artists and {tracks_result["count"]} tracks.'
+                )
+            elif artists_result['success'] or tracks_result['success']:
+                messages.warning(
+                    request,
+                    f'⚠️ Partial refresh. Artists: {artists_result["count"]}, Tracks: {tracks_result["count"]}. '
+                    f'Errors: {artists_result.get("message", "N/A")} / {tracks_result.get("message", "N/A")}'
+                )
             else:
-                messages.error(request, 'Error refreshing Spotify data.')
+                messages.error(
+                    request,
+                    f'❌ Could not refresh data. '
+                    f'Artists error: {artists_result.get("message", "Unknown")}. '
+                    f'Tracks error: {tracks_result.get("message", "Unknown")}. '
+                    f'Your Spotify connection may have expired - try disconnecting and reconnecting.'
+                )
         else:
             messages.error(request, 'Please connect your Spotify account first.')
     
     return redirect('dashboard')
-
 #########################SoundCloud Form################################################
 
 @login_required
@@ -472,6 +577,21 @@ def ai_recommendations(request):
     recommendations = None
     error_message = None
     
+    # Check Spotify connection status
+    spotify_connected = is_spotify_connected(request.user)
+    
+    # Check if user has manual preferences
+    has_manual_prefs = False
+    try:
+        prefs = request.user.music_preferences
+        has_manual_prefs = bool(
+            prefs.get_artists_list() or 
+            prefs.get_genres_list() or 
+            prefs.get_tracks_list()
+        )
+    except:
+        pass
+    
     # Check if user clicked "Generate Recommendations" button
     if request.method == 'POST':
         result = get_music_recommendations(request.user)
@@ -485,6 +605,8 @@ def ai_recommendations(request):
     return render(request, 'user/ai_recommendations.html', {
         'recommendations': recommendations,
         'error_message': error_message,
+        'spotify_connected': spotify_connected,
+        'has_manual_prefs': has_manual_prefs,
         'title': 'AI Recommendations'
     })
 
@@ -545,6 +667,10 @@ def add_friend_by_code(request):
     return redirect('friends_dashboard')
 
 
+from django.db.models import Q
+from .models import Artist, FriendRequest
+
+
 @login_required
 def user_profile(request, username):
     """View another user's public profile."""
@@ -572,9 +698,10 @@ def user_profile(request, username):
     show_artists = False
     
     if can_view_artists:
-        user_artists = SoundCloudArtist.objects.filter(
+        # Changed from SoundCloudArtist to Artist
+        user_artists = Artist.objects.filter(
             user=profile_user
-        ).order_by('-rating', 'name')[:6]
+        ).order_by('-created_at')[:6]  # Show 6 most recent artists
         show_artists = True
     
     context = {
@@ -587,3 +714,193 @@ def user_profile(request, username):
     }
     
     return render(request, 'user/user_profile.html', context)
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from .models import Artist, Album  # Update this in views.py
+from .forms import ArtistForm
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    from .services.musicbrainz import MusicBrainzAPI
+except ImportError as e:
+    logger.error(f"Failed to import MusicBrainzAPI: {e}")
+    MusicBrainzAPI = None
+
+@login_required
+def artist_wallet(request):
+    """Main artist wallet view"""
+    # Handle artist deletion
+    if request.method == 'POST' and 'delete_artist_id' in request.POST:
+        artist_id = request.POST.get('delete_artist_id')
+        try:
+            artist = Artist.objects.get(id=artist_id, user=request.user)
+            artist_name = artist.name
+            artist.delete()
+            messages.success(request, f'Artist "{artist_name}" removed successfully!')
+        except Artist.DoesNotExist:
+            messages.error(request, 'Artist not found.')
+        return redirect('user_artist')
+    
+    # Handle manual artist addition
+    if request.method == 'POST' and 'name' in request.POST:
+        form = ArtistForm(request.POST)
+        if form.is_valid():
+            artist = form.save(commit=False)
+            artist.user = request.user
+            artist.save()
+            messages.success(request, f'Artist "{artist.name}" added successfully!')
+            return redirect('user_artist')
+    else:
+        form = ArtistForm()
+    
+    # Get user's artists with their albums
+    artists_list = Artist.objects.filter(user=request.user).prefetch_related('albums').order_by('-created_at')
+    
+    paginator = Paginator(artists_list, 10)
+    page_number = request.GET.get('page', 1)
+    artists = paginator.get_page(page_number)
+    
+    context = {
+        'form': form,
+        'artists': artists,
+    }
+    return render(request, 'user/user_artist.html', context)
+
+
+@login_required
+def search_artists_api(request):
+    """AJAX endpoint to search for artists using MusicBrainz API"""
+    try:
+        query = request.GET.get('query', '').strip()
+        
+        if not query or len(query) < 2:
+            return JsonResponse({'artists': []})
+        
+        if MusicBrainzAPI is None:
+            return JsonResponse({
+                'error': 'API service not configured properly',
+                'artists': []
+            }, status=500)
+        
+        api = MusicBrainzAPI()
+        artists = api.search_artists(query, limit=15)
+        
+        return JsonResponse({'artists': artists})
+        
+    except Exception as e:
+        logger.error(f"Error in search_artists_api: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'error': f'Search failed: {str(e)}',
+            'artists': []
+        }, status=500)
+
+
+@login_required
+def add_artist_from_api(request):
+    """Add an artist from MusicBrainz API search results"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=400)
+    
+    try:
+        artist_id = request.POST.get('artist_id')
+        artist_name = request.POST.get('artist_name')
+        country = request.POST.get('country', '')
+        disambiguation = request.POST.get('disambiguation', '')
+        genres = request.POST.get('genres', '')
+        
+        logger.info(f"User {request.user.username} adding artist: {artist_name}")
+        
+        if not artist_id or not artist_name:
+            return JsonResponse({'error': 'Missing required fields', 'success': False}, status=400)
+        
+        # Check if artist already exists for this user
+        if Artist.objects.filter(user=request.user, musicbrainz_id=artist_id).exists():
+            return JsonResponse({
+                'error': 'You already have this artist in your wallet',
+                'success': False
+            }, status=400)
+        
+        if MusicBrainzAPI is None:
+            return JsonResponse({
+                'error': 'API service not configured properly',
+                'success': False
+            }, status=500)
+        
+        # Get additional details from API
+        api = MusicBrainzAPI()
+        details = api.get_artist_details(artist_id)
+        
+        # Try to get artist image
+        image_url = None
+        if details:
+            image_url = api.get_artist_image(artist_id)
+        
+        # Extract profile URL from relationships
+        profile_url = ''
+        if details and 'relations' in details:
+            for relation in details.get('relations', []):
+                if relation.get('type') in ['official homepage', 'social network']:
+                    profile_url = relation.get('url', {}).get('resource', '')
+                    break
+        
+# Create artist first
+        artist = Artist.objects.create(
+            user=request.user,
+            name=artist_name,
+            musicbrainz_id=artist_id,
+            profile_url=profile_url,
+            genre=genres or 'Not specified',
+            country=country,
+            disambiguation=disambiguation,
+            artist_image=image_url,
+            rating=5
+        )
+        
+        logger.info(f"Created artist {artist_name} (ID: {artist.id})")
+        
+        # Fetch and save albums - with better error handling
+        albums_created = 0
+        try:
+            logger.info(f"Attempting to fetch albums for MusicBrainz ID: {artist_id}")
+            albums_data = api.get_artist_albums(artist_id, limit=5)
+            logger.info(f"API returned {len(albums_data)} albums")
+            
+            for album_data in albums_data:
+                try:
+                    album = Album.objects.create(
+                        artist=artist,
+                        title=album_data.get('title', 'Unknown Title'),
+                        release_date=album_data.get('release_date', ''),
+                        album_type=album_data.get('type', 'Album'),
+                        musicbrainz_id=album_data.get('id', ''),
+                        cover_art_url=album_data.get('cover_art', '')
+                    )
+                    albums_created += 1
+                    logger.info(f"Created album: {album.title}")
+                except Exception as album_error:
+                    logger.error(f"Error creating album: {album_error}")
+                    continue
+            
+            logger.info(f"Successfully created {albums_created} albums for {artist_name}")
+        except Exception as albums_error:
+            logger.error(f"Error fetching albums: {albums_error}", exc_info=True)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Artist "{artist_name}" added with {albums_created} albums!',
+            'artist_id': artist.id,
+            'albums_count': albums_created
+        })
+        
+    except Exception as e:
+        logger.error(f"Error adding artist: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'error': f'Failed to add artist: {str(e)}',
+            'success': False
+        }, status=500)
