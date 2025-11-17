@@ -175,6 +175,7 @@ def privacy_settings(request):
         'title': 'Privacy Settings',
         'user_profile': user_profile,
     }
+    return render(request, 'user/privacy_settings.html', context)
 
 
 def analytics(request):
