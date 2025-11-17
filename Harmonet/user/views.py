@@ -145,6 +145,37 @@ def account_link(request):
 
 def profile(request):
     return render(request, 'user/profile.html', {'title': 'profile'})
+@login_required
+def privacy_settings(request):
+
+    # Handle privacy settings update
+    if request.method == 'POST':
+        new_privacy = request.POST.get('privacy_setting')
+        if new_privacy in ['public', 'friends', 'private']:
+            user_profile = request.user.profile
+            old_privacy = user_profile.get_privacy_display()
+            user_profile.privacy = new_privacy
+            user_profile.save()
+            
+            # Refresh the user profile from database to get updated display value
+            user_profile.refresh_from_db()
+            
+            messages.success(request, f'Privacy settings updated from {old_privacy} to {user_profile.get_privacy_display()}!')
+            return redirect('privacy_settings')
+        else:
+            messages.error(request, 'Invalid privacy setting selected.')
+    
+    # Fetch fresh profile data for display
+    user_profile = request.user.profile
+    user_profile.refresh_from_db()
+    
+    
+    
+    context = {
+        'title': 'Privacy Settings',
+        'user_profile': user_profile,
+    }
+
 
 def analytics(request):
     return render(request, 'user/analytics.html', {'title': 'analytics'})
@@ -672,15 +703,16 @@ from .models import Artist, FriendRequest
 
 
 @login_required
+@login_required
 def user_profile(request, username):
     """View another user's public profile."""
     
     # Get the user or 404
     profile_user = get_object_or_404(User, username=username)
-    
+    user_profile = profile_user.profile
     # Check if they're friends
     are_friends = FriendRequest.objects.are_friends(request.user, profile_user)
-    
+    can_view = user_profile.can_view_profile(request.user)
     # Check for existing friend request
     existing_request = None
     if request.user != profile_user:
@@ -691,17 +723,16 @@ def user_profile(request, username):
     
     # Determine if own profile or friends
     is_own_profile = request.user == profile_user
-    can_view_artists = is_own_profile or are_friends
+    can_view_artists = can_view
     
     # Get user's artists based on privacy settings
     user_artists = []
     show_artists = False
     
     if can_view_artists:
-        # Changed from SoundCloudArtist to Artist
-        user_artists = Artist.objects.filter(
+        user_artists = SoundCloudArtist.objects.filter(
             user=profile_user
-        ).order_by('-created_at')[:6]  # Show 6 most recent artists
+        ).order_by('-rating', 'name')[:6]
         show_artists = True
     
     context = {
