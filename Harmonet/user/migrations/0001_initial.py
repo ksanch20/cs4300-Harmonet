@@ -69,8 +69,10 @@ class Migration(migrations.Migration):
                 ('friend_code', models.CharField(db_index=True, max_length=20, unique=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL)),
+                ('privacy', models.CharField(choices=[('public', 'Public'), ('friends', 'Friends Only'), ('private', 'Private')], default='public', help_text='Control who can see your profile and music data', max_length=10)),
             ],
         ),
+
         migrations.CreateModel(
             name='FriendRequest',
             fields=[
