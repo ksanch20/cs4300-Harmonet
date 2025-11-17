@@ -2,11 +2,11 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from .models import FriendRequest, FriendRequestManager, Artist, Album
-from user.models import MusicPreferences, UserProfile, FriendRequest
+from user.models import MusicPreferences, UserProfile, FriendRequest, SpotifyAccount, SpotifyTopArtist, SpotifyTopTrack
 from django.contrib.messages import get_messages
-from unittest.mock import patch
+from unittest.mock import patch, Mock
+from datetime import datetime, timedelta
 import json
-
 
 
 
@@ -1777,5 +1777,74 @@ class ProfileViewTests(TestCase):
         self.assertContains(response, 'testuser')
         self.assertContains(response, self.user.email)
     
- 
+class SpotifyServiceTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='spotifyuser', password='testpass123')
 
+    def test_get_valid_token_no_account(self):
+        from user.spotify_service import get_valid_token
+        token = get_valid_token(self.user)
+        self.assertIsNone(token)
+
+    def test_is_spotify_connected_false(self):
+        from user.spotify_service import is_spotify_connected
+        self.assertFalse(is_spotify_connected(self.user))
+
+    def test_disconnect_spotify(self):
+        from user.spotify_service import disconnect_spotify
+        SpotifyAccount.objects.create(
+            user=self.user,
+            spotify_id='test123',
+            access_token='token',
+            refresh_token='refresh',
+            token_expires_at=datetime.now() + timedelta(hours=1)
+        )
+        SpotifyTopArtist.objects.create(
+            user=self.user,
+            spotify_artist_id='artist1',
+            name='Test Artist',
+            rank=1
+        )
+        disconnect_spotify(self.user)
+        self.assertFalse(SpotifyAccount.objects.filter(user=self.user).exists())
+        self.assertFalse(SpotifyTopArtist.objects.filter(user=self.user).exists())
+
+class AIServiceAdditionalTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('aiuser', password='test123')
+
+    def test_build_recommendation_prompt_all_data(self):
+        from user.ai_service import build_recommendation_prompt
+        music_data = {
+            'spotify_top_artists': [
+                {'name': 'Spotify Artist', 'genres': 'rock, pop', 'popularity': 85}
+            ],
+            'spotify_top_tracks': [
+                {'name': 'Track', 'artist': 'Artist', 'popularity': 90}
+            ],
+            'manual_artists': ['Manual Artist 1', 'Manual Artist 2'],
+            'manual_genres': ['Genre 1', 'Genre 2'],
+            'manual_tracks': ['Track 1', 'Track 2']
+        }
+        prompt = build_recommendation_prompt(music_data)
+        self.assertIn('Spotify Artist', prompt)
+        self.assertIn('Manual Artist', prompt)
+        self.assertIn('Genre 1', prompt)
+        self.assertIn('Track 1', prompt)
+
+class FormatRecommendationsTest(TestCase):
+    def test_format_ai_recommendations_basic(self):
+        from user.views import format_ai_recommendations
+        raw_text = "### **1. Artist Name**\n- **Genre:** Rock\n---\n### **2. Another Artist**"
+        result = format_ai_recommendations(raw_text)
+        self.assertIn('<h3>', str(result))
+        self.assertIn('<strong>', str(result))
+        self.assertIn('<hr>', str(result))
+
+    def test_format_ai_recommendations_with_lists(self):
+        from user.views import format_ai_recommendations
+        raw_text = "- First item\n- Second item\n- Third item"
+        result = format_ai_recommendations(raw_text)
+        self.assertIn('<ul>', str(result))
+        self.assertIn('<li>', str(result))
+        self.assertIn('</ul>', str(result))
