@@ -1,0 +1,461 @@
+{% extends 'user/base.html' %}
+{% load static %}
+
+{% block title %}My Music Profile - Harmonet{% endblock %}
+{% block nav_extra %}{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header" style="text-align: center; margin-bottom: 2rem;">
+        <h1>🎵 Your Music Profile</h1>
+        <p class="subtitle">A quick snapshot of your music identity</p>
+    </div>
+
+    <div class="dashboard-content">
+        {% if profile_generated %}
+            <!-- Show Generated Profile -->
+            <div class="profile-card">
+                <div class="profile-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                    </svg>
+                </div>
+                
+                <div class="profile-content">
+                    {{ profile|linebreaks }}
+                </div>
+                
+                <div class="profile-actions">
+                    <form method="post" style="display: inline;" id="regenerate-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary" style="background: #673AB7; color: white; border: none; cursor: pointer;" id="regenerate-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            <span class="spinner" style="display: none;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+                                </svg>
+                            </span>
+                            <span class="btn-text">Generate New Profile</span>
+                        </button>
+                    </form>
+                    <a href="{% url 'music_preferences' %}" class="btn btn-secondary">
+                        Edit Preferences
+                    </a>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-icon">ℹ️</div>
+                <div class="info-text">
+                    <strong>How it works:</strong> Your music profile is a quick AI-generated snapshot based on your 
+                    {% if user.spotifytoken %}Spotify listening history and {% endif %}
+                    music preferences. Click "Generate New Profile" for a fresh take on your music identity!
+                </div>
+            </div>
+
+        {% else %}
+            <!-- Show Generate Button (Initial State) -->
+            <div class="generate-card">
+                <div class="generate-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                    </svg>
+                </div>
+                
+                <h2>Generate Your Music Profile</h2>
+                <p class="generate-description">
+                    Let AI analyze your listening habits and create a personalized snapshot of who you are as a music listener.
+                </p>
+
+                <form method="post" id="generate-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-generate" id="generate-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                        <span class="spinner" style="display: none;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span class="btn-text">Generate Music Profile</span>
+                    </button>
+                </form>
+
+                <div class="requirements-box">
+                    <p class="requirements-text">
+                        <strong>Note:</strong> You need 
+                        {% if user.spotifytoken %}
+                            Spotify data or music preferences
+                        {% else %}
+                            to <a href="{% url 'account_link' %}" style="color: #673AB7; text-decoration: underline;">connect Spotify</a> or add <a href="{% url 'music_preferences' %}" style="color: #673AB7; text-decoration: underline;">music preferences</a>
+                        {% endif %}
+                        to generate your profile.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Display any error messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message-box message-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 2rem;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .dashboard-header .subtitle {
+        font-size: 1.1rem;
+        color: #666;
+    }
+
+    .dashboard-content {
+        width: 100%;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .profile-icon {
+        text-align: center;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+    }
+
+    .profile-content {
+        font-size: 1.15rem;
+        line-height: 1.8;
+        color: #333;
+        margin-bottom: 2rem;
+        text-align: center;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .profile-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--primary-color, #673AB7);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-hover, #5E35B1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
+    }
+
+    .btn-primary svg {
+        stroke: white;
+    }
+
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+
+    .generate-card {
+        background: white;
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .generate-icon {
+        color: var(--primary-color, #673AB7);
+        margin-bottom: 1.5rem;
+    }
+
+    .generate-card h2 {
+        color: #333;
+        margin-bottom: 1rem;
+        font-size: 1.8rem;
+    }
+
+    .generate-description {
+        color: #666;
+        font-size: 1.05rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    .btn-generate {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 2.5rem;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn-generate:active {
+        transform: translateY(0);
+    }
+
+    .requirements-box {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid var(--primary-color, #673AB7);
+    }
+
+    .requirements-text {
+        color: #666;
+        font-size: 0.95rem;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .message-box {
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin-top: 1.5rem;
+        font-size: 0.95rem;
+    }
+
+    .message-error {
+        background: #fee;
+        border-left: 4px solid #c33;
+        color: #c33;
+    }
+
+    .profile-actions form {
+        display: inline;
+    }
+
+    .profile-actions button.btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+        background: #673AB7;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+
+    .profile-actions button.btn:hover {
+        background: #5E35B1;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
+    }
+
+    .profile-actions button.btn svg {
+        stroke: white;
+    }
+
+    .info-box {
+        display: flex;
+        gap: 1rem;
+        background: #e8f4ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .info-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .info-text {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #0066cc;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h2 {
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+
+    .empty-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .profile-card {
+            padding: 1.5rem;
+        }
+
+        .profile-content {
+            font-size: 1rem;
+        }
+
+        .profile-actions,
+        .empty-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Spinner animation */
+    .spinner svg {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    button[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed !important;
+    }
+</style>
+
+<script>
+    // Handle form submission with loading state
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle generate form
+        const generateForm = document.getElementById('generate-form');
+        if (generateForm) {
+            generateForm.addEventListener('submit', function(e) {
+                const btn = document.getElementById('generate-btn');
+                const icon = btn.querySelector('.btn-icon');
+                const spinner = btn.querySelector('.spinner');
+                const text = btn.querySelector('.btn-text');
+                
+                // Show spinner, hide icon, update text
+                icon.style.display = 'none';
+                spinner.style.display = 'inline-block';
+                text.textContent = 'Generating...';
+                btn.disabled = true;
+            });
+        }
+
+        // Handle regenerate form
+        const regenerateForm = document.getElementById('regenerate-form');
+        if (regenerateForm) {
+            regenerateForm.addEventListener('submit', function(e) {
+                const btn = document.getElementById('regenerate-btn');
+                const icon = btn.querySelector('.btn-icon');
+                const spinner = btn.querySelector('.spinner');
+                const text = btn.querySelector('.btn-text');
+                
+                // Show spinner, hide icon, update text
+                icon.style.display = 'none';
+                spinner.style.display = 'inline-block';
+                text.textContent = 'Generating...';
+                btn.disabled = true;
+            });
+        }
+    });
+</script>
+{% endblock %}

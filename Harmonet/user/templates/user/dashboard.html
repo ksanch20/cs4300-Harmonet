@@ -31,7 +31,13 @@
           <div class="card">
             <h3>🤖 AI-Recommendation</h3>
             <p>Check your recommendation via AI</p>
-            <a href="{% url 'ai_recommendations' %}">Open Messages →</a>
+            <a href="{% url 'ai_recommendations' %}">View Recommendations →</a>
+          </div>
+
+          <div class="card">
+            <h3>🎵 Music Profile</h3>
+            <p>Get a quick AI snapshot of your music identity</p>
+            <a href="{% url 'music_profile' %}">View Profile →</a>
           </div>
 
           <div class="card">
@@ -41,9 +47,21 @@
           </div>
 
           <div class="card">
+            <h3>🎼 Music Preferences</h3>
+            <p>Manage your favorite artists, genres, and tracks</p>
+            <a href="{% url 'music_preferences' %}">Edit Preferences →</a>
+          </div>
+
+          <div class="card">
             <h3>🎧 Connect Accounts</h3>
             <p>Link your Spotify and YouTube to view your listening stats</p>
             <a href="{% url 'account_link' %}">Connect Accounts →</a>
+          </div>
+
+          <div class="card">
+            <h3>⭐ Ratings</h3>
+            <p>Rate and review your favorite songs and albums</p>
+            <a href="{% url 'ratings' %}">View Ratings →</a>
           </div>
 
           <div class="card">

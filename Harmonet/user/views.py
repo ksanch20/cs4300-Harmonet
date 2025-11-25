@@ -10,7 +10,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
-from .ai_service import get_music_recommendations
+from .ai_service import get_music_recommendations, get_music_profile
 from django.conf import settings
 from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager, SpotifyTopArtist, SpotifyTopTrack
 from django.http import JsonResponse
@@ -21,6 +21,8 @@ from .models import SoundCloudArtist
 from .forms import SoundCloudArtistForm
 import re
 from django.utils.safestring import mark_safe
+
+
 
 from .spotify_service import (
     get_spotify_oauth, 
@@ -936,3 +938,40 @@ def add_artist_from_api(request):
             'error': f'Failed to add artist: {str(e)}',
             'success': False
         }, status=500)
+
+
+@login_required
+def music_profile_view(request):
+    """
+    Display the user's AI-generated music profile.
+    Only generates when user clicks the "Generate Profile" button.
+    """
+    
+    context = {
+        'profile_generated': False,
+    }
+    
+    # Only generate profile if user submitted the form
+    if request.method == 'POST':
+        result = get_music_profile(request.user)
+        
+        if result['success']:
+            context['profile_generated'] = True
+            context['profile'] = result['profile']
+        else:
+            messages.error(request, result['message'])
+    
+    return render(request, 'user/music_profile.html', context)
+
+@login_required
+def ratings_view(request):
+    """
+    Display the user's song and album ratings.
+    """
+    
+    context = {
+        # You can add ratings data here when you implement the rating system
+        # For now, we'll show a placeholder
+    }
+    
+    return render(request, 'user/ratings.html', context)
