@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#z%-s1%bi6fkcnbl1x4r-0jsenlqt-4x$jyrp^4x_%2-!8hjxu'
 database_url = os.environ.get('DATABASE_URL')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # Spotify variables and client ID
 SPOTIPY_CLIENT_ID = config('SPOTIPY_CLIENT_ID', default='')
