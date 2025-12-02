@@ -107,6 +107,9 @@ def dashboard(request):
     else:
         print(f"Dashboard load for {request.user.username}: Spotify NOT connected")
     
+    # Get music profile from session (if exists)
+    user_profile = request.session.get('music_profile', None)
+
     friends = FriendRequest.objects.friends(request.user)
     
     return render(request, 'user/dashboard.html', {
@@ -115,6 +118,7 @@ def dashboard(request):
         'spotify_account': spotify_account,
         'top_artists': top_artists,
         'top_tracks': top_tracks,
+        'user_profile': user_profile,
         'friends': friends
     })
 
@@ -122,6 +126,24 @@ def dashboard(request):
 def user_logout(request):
     auth_logout(request)
     return redirect('index')
+
+
+@login_required
+def generate_music_profile_inline(request):
+    """
+    Generate music profile from dashboard and redirect back
+    """
+    if request.method == 'POST':
+        result = get_music_profile(request.user)
+        if result['success']:
+            # Store in session
+            request.session['music_profile'] = result['profile']
+            messages.success(request, 'Music profile generated!')
+        else:
+            messages.error(request, result['message'])
+    
+    return redirect('dashboard')
+
 
 @login_required
 def account_link(request):
@@ -958,6 +980,8 @@ def music_profile_view(request):
         if result['success']:
             context['profile_generated'] = True
             context['profile'] = result['profile']
+            # Save to session so it shows on dashboard
+            request.session['music_profile'] = result['profile']
         else:
             messages.error(request, result['message'])
     

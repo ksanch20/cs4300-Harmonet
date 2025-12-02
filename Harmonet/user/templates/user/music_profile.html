@@ -8,6 +8,8 @@
 {% endblock %}
 
 {% block content %}
+
+
 <div class="dashboard-container">
     <div class="dashboard-header" style="text-align: center; margin-bottom: 2rem;">
         <h1>🎵 Your Music Profile</h1>
@@ -108,15 +110,6 @@
                     </p>
                 </div>
             </div>
-        {% endif %}
-
-        <!-- Display any error messages -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="message-box message-{{ message.tags }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
         {% endif %}
     </div>
 </div>
