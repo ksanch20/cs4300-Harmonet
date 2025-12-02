@@ -7,8 +7,7 @@ from django.contrib.messages import get_messages
 from unittest.mock import patch, Mock
 from datetime import datetime, timedelta
 import json
-
-
+from django.contrib.auth import get_user_model
 
 
 #Used ChatGPT to help write tests
@@ -1848,3 +1847,432 @@ class FormatRecommendationsTest(TestCase):
         self.assertIn('<ul>', str(result))
         self.assertIn('<li>', str(result))
         self.assertIn('</ul>', str(result))
+
+
+
+User = get_user_model()
+
+
+class MusicProfileViewTests(TestCase):
+    """Test cases for the music profile view"""
+    
+    def setUp(self):
+        """Set up test user and client"""
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.client.login(username='testuser', password='testpass123')
+        self.url = reverse('music_profile')
+    
+    def test_music_profile_requires_login(self):
+        """Test that music profile view requires authentication"""
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+        self.assertIn('/login/', response.url) 
+    
+    def test_music_profile_get_initial_state(self):
+        """Test GET request shows generate button (initial state)"""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['profile_generated'])
+        self.assertContains(response, 'Generate Your Music Profile')
+        self.assertContains(response, 'Generate Music Profile')
+    
+    def test_music_profile_no_data(self):
+        """Test profile generation fails when user has no music data"""
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['profile_generated'])
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_music_profile_generation_success(self, mock_openai):
+        """Test successful music profile generation with manual preferences"""
+        # Create music preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Taylor Swift, The Beatles, Queen',
+            favorite_genres='Pop, Rock',
+            favorite_tracks='Shake It Off, Hey Jude'
+        )
+        
+        # Mock OpenAI response
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = (
+            "You're the type of listener who appreciates timeless pop melodies "
+            "with strong lyrical content. Your taste spans decades, showing "
+            "an appreciation for both classic rock anthems and modern pop production."
+        )
+        mock_openai.return_value = mock_response
+        
+        # Test the view
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['profile_generated'])
+        self.assertIn('profile', response.context)
+        self.assertIn("You're the type of listener", response.context['profile'])
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_music_profile_saves_to_session(self, mock_openai):
+        """Test that generated profile is saved to session"""
+        # Create music preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Taylor Swift',
+            favorite_genres='Pop'
+        )
+        
+        # Mock OpenAI response
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Test profile description"
+        mock_openai.return_value = mock_response
+        
+        # Generate profile
+        response = self.client.post(self.url)
+        
+        # Check session
+        self.assertEqual(self.client.session.get('music_profile'), "Test profile description")
+    
+    def test_music_profile_template_used(self):
+        """Test that correct template is used"""
+        response = self.client.get(self.url)
+        self.assertTemplateUsed(response, 'user/music_profile.html')
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_music_profile_regenerates(self, mock_openai):
+        """Test that profile can be regenerated"""
+        # Create music preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Coldplay',
+            favorite_genres='Alternative'
+        )
+        
+        # Mock different responses
+        responses = [
+            "First profile description",
+            "Second profile description"
+        ]
+        
+        mock_openai.side_effect = [
+            self._create_mock_response(text) for text in responses
+        ]
+        
+        # First generation
+        response1 = self.client.post(self.url)
+        profile1 = response1.context['profile']
+        
+        # Second generation (regenerate)
+        response2 = self.client.post(self.url)
+        profile2 = response2.context['profile']
+        
+        # Both should succeed but potentially be different
+        self.assertTrue(response1.context['profile_generated'])
+        self.assertTrue(response2.context['profile_generated'])
+        self.assertEqual(mock_openai.call_count, 2)
+    
+    def _create_mock_response(self, text):
+        """Helper to create mock OpenAI response"""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = text
+        return mock_response
+
+
+class DashboardMusicProfileTests(TestCase):
+    """Test cases for music profile on dashboard"""
+    
+    def setUp(self):
+        """Set up test user and client"""
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.client.login(username='testuser', password='testpass123')
+        self.dashboard_url = reverse('dashboard')
+        self.generate_url = reverse('generate_music_profile')
+    
+    def test_dashboard_shows_empty_state(self):
+        """Test dashboard shows generate prompt when no profile exists"""
+        response = self.client.get(self.dashboard_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context.get('user_profile'))
+        self.assertContains(response, 'Discover Your Music Identity')
+    
+    def test_dashboard_shows_profile_from_session(self):
+        """Test dashboard displays profile stored in session"""
+        # Manually set session
+        session = self.client.session
+        session['music_profile'] = "Test profile from session"
+        session.save()
+        
+        response = self.client.get(self.dashboard_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['user_profile'], "Test profile from session")
+        self.assertContains(response, "Test profile from session")
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_dashboard_inline_generation(self, mock_openai):
+        """Test generating profile inline from dashboard"""
+        # Create music preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Test Artist',
+            favorite_genres='Test Genre'
+        )
+        
+        # Mock OpenAI response
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Dashboard generated profile"
+        mock_openai.return_value = mock_response
+        
+        # Generate from dashboard
+        response = self.client.post(self.generate_url, follow=True)
+        
+        # Should redirect to dashboard
+        self.assertRedirects(response, self.dashboard_url)
+        
+        # Should show success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Music profile generated', str(messages[0]))
+        
+        # Should save to session
+        self.assertEqual(self.client.session.get('music_profile'), "Dashboard generated profile")
+    
+    def test_inline_generation_requires_login(self):
+        """Test that inline generation requires authentication"""
+        self.client.logout()
+        response = self.client.post(self.generate_url)
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+    
+    def test_inline_generation_only_post(self):
+        """Test that inline generation only accepts POST requests"""
+        response = self.client.get(self.generate_url)
+        # Should redirect to dashboard without generating
+        self.assertRedirects(response, self.dashboard_url)
+
+
+class MusicProfileAIServiceTests(TestCase):
+    """Test cases for AI service functions"""
+    
+    def setUp(self):
+        """Set up test user"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+    
+    def test_gather_user_music_data_no_data(self):
+        """Test gathering music data when user has none"""
+        from user.ai_service import gather_user_music_data
+        
+        data = gather_user_music_data(self.user)
+        
+        self.assertFalse(data['has_data'])
+        self.assertFalse(data['spotify_connected'])
+        self.assertEqual(len(data['manual_artists']), 0)
+        self.assertEqual(len(data['manual_genres']), 0)
+    
+    def test_gather_user_music_data_with_preferences(self):
+        """Test gathering music data with manual preferences"""
+        from user.ai_service import gather_user_music_data
+        
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Artist1, Artist2, Artist3',
+            favorite_genres='Rock, Pop',
+            favorite_tracks='Track1, Track2'
+        )
+        
+        data = gather_user_music_data(self.user)
+        
+        self.assertTrue(data['has_data'])
+        self.assertEqual(len(data['manual_artists']), 3)
+        self.assertEqual(len(data['manual_genres']), 2)
+        self.assertIn('Artist1', data['manual_artists'])
+        self.assertIn('Rock', data['manual_genres'])
+    
+    def test_build_profile_prompt_with_manual_data(self):
+        """Test profile prompt building with manual preferences"""
+        from user.ai_service import build_profile_prompt
+        
+        music_data = {
+            'has_data': True,
+            'spotify_connected': False,
+            'spotify_top_artists': [],
+            'spotify_top_tracks': [],
+            'manual_artists': ['Artist1', 'Artist2'],
+            'manual_genres': ['Rock', 'Pop'],
+            'manual_tracks': ['Track1', 'Track2']
+        }
+        
+        prompt = build_profile_prompt(music_data)
+        
+        self.assertIn('Artist1', prompt)
+        self.assertIn('Artist2', prompt)
+        self.assertIn('Rock', prompt)
+        self.assertIn('Pop', prompt)
+        self.assertIn('Track1', prompt)
+        self.assertIn('personalized listener profile', prompt.lower())
+    
+    def test_build_profile_prompt_with_spotify_data(self):
+        """Test profile prompt building with Spotify data"""
+        from user.ai_service import build_profile_prompt
+        
+        music_data = {
+            'has_data': True,
+            'spotify_connected': True,
+            'spotify_top_artists': [
+                {'name': 'SpotifyArtist1', 'genres': 'rock, indie', 'popularity': 80}
+            ],
+            'spotify_top_tracks': [
+                {'name': 'SpotifyTrack1', 'artist': 'SpotifyArtist1', 'popularity': 75}
+            ],
+            'manual_artists': [],
+            'manual_genres': [],
+            'manual_tracks': []
+        }
+        
+        prompt = build_profile_prompt(music_data)
+        
+        self.assertIn('SpotifyArtist1', prompt)
+        self.assertIn('SpotifyTrack1', prompt)
+        self.assertIn('rock', prompt)
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_get_music_profile_success(self, mock_openai):
+        """Test successful music profile generation"""
+        from user.ai_service import get_music_profile
+        
+        # Create music preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Test Artist',
+            favorite_genres='Test Genre'
+        )
+        
+        # Mock OpenAI response
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Test profile description"
+        mock_openai.return_value = mock_response
+        
+        # Call function
+        result = get_music_profile(self.user)
+        
+        self.assertTrue(result['success'])
+        self.assertEqual(result['profile'], "Test profile description")
+        mock_openai.assert_called_once()
+        
+        # Check that correct model and parameters were used
+        call_args = mock_openai.call_args
+        self.assertEqual(call_args.kwargs['model'], 'gpt-4o-mini')
+        self.assertEqual(call_args.kwargs['max_tokens'], 150)
+        self.assertEqual(call_args.kwargs['temperature'], 0.7)
+    
+    def test_get_music_profile_no_data(self):
+        """Test music profile generation with no user data"""
+        from user.ai_service import get_music_profile
+        
+        result = get_music_profile(self.user)
+        
+        self.assertFalse(result['success'])
+        self.assertIn('message', result)
+        self.assertIn('connect Spotify or add your music preferences', result['message'])
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_get_music_profile_api_error(self, mock_openai):
+        """Test music profile generation with API error"""
+        from user.ai_service import get_music_profile
+        
+        # Create music preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Test Artist'
+        )
+        
+        # Mock API error
+        mock_openai.side_effect = Exception("API connection failed")
+        
+        result = get_music_profile(self.user)
+        
+        self.assertFalse(result['success'])
+        self.assertIn('Error generating profile', result['message'])
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_profile_length_constraint(self, mock_openai):
+        """Test that profile generation respects length constraints"""
+        from user.ai_service import get_music_profile
+        
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Test Artist'
+        )
+        
+        # Mock OpenAI response
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Short profile"
+        mock_openai.return_value = mock_response
+        
+        get_music_profile(self.user)
+        
+        # Verify max_tokens is set to 150 for concise output
+        call_args = mock_openai.call_args
+        self.assertEqual(call_args.kwargs['max_tokens'], 150)
+
+
+class MusicProfileIntegrationTests(TestCase):
+    """Integration tests for complete music profile workflow"""
+    
+    def setUp(self):
+        """Set up test user and client"""
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.client.login(username='testuser', password='testpass123')
+    
+    @patch('user.ai_service.client.chat.completions.create')
+    def test_complete_workflow(self, mock_openai):
+        """Test complete workflow from dashboard to profile generation"""
+        # Mock OpenAI response
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Complete workflow profile"
+        mock_openai.return_value = mock_response
+        
+        # 1. Visit dashboard - should show empty state
+        response = self.client.get(reverse('dashboard'))
+        self.assertIsNone(response.context.get('user_profile'))
+        
+        # 2. Add music preferences
+        MusicPreferences.objects.create(
+            user=self.user,
+            favorite_artists='Test Artist',
+            favorite_genres='Test Genre'
+        )
+        
+        # 3. Generate profile from music profile page
+        response = self.client.post(reverse('music_profile'))
+        self.assertTrue(response.context['profile_generated'])
+        
+        # 4. Visit dashboard - should now show profile
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.context['user_profile'], "Complete workflow profile")
+        
+        # 5. Regenerate from dashboard
+        response = self.client.post(reverse('generate_music_profile'), follow=True)
+        self.assertContains(response, "Complete workflow profile")
