@@ -202,8 +202,49 @@ def privacy_settings(request):
     return render(request, 'user/privacy_settings.html', context)
 
 
+# Replace the analytics view in user/views.py
+
+@login_required
 def analytics(request):
-    return render(request, 'user/analytics.html', {'title': 'analytics'})
+    """Display Spotify analytics including wrapped stats and playlists"""
+    
+    # Check if Spotify is connected
+    spotify_connected = is_spotify_connected(request.user)
+    
+    if not spotify_connected:
+        messages.warning(request, 'Please connect your Spotify account to view analytics.')
+        return redirect('account_link')
+    
+    # Import the new functions
+    from .spotify_service import get_user_stats, get_user_playlists, get_recently_played
+    
+    # Get Spotify account info
+    spotify_account = request.user.spotify_account
+    
+    # Get comprehensive stats
+    stats = get_user_stats(request.user)
+    
+    # Get playlists
+    playlists = get_user_playlists(request.user)
+    
+    # Get recently played
+    recently_played = get_recently_played(request.user, limit=10)
+    
+    # If stats loading failed
+    if stats is None:
+        messages.error(request, 'Unable to load Spotify data. Please try disconnecting and reconnecting your account.')
+        return redirect('dashboard')
+    
+    context = {
+        'title': 'Spotify Analytics',
+        'spotify_account': spotify_account,
+        'stats': stats,
+        'playlists': playlists,
+        'recently_played': recently_played,
+        'spotify_connected': spotify_connected
+    }
+    
+    return render(request, 'user/analytics.html', context)
 
 def AI_Recommendation(request):
     return render(request, 'user/AI_Recommendation.html', {'title': 'AI_Recommendation'})
