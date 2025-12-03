@@ -209,3 +209,138 @@ def disconnect_spotify(user):
         SpotifyTopTrack.objects.filter(user=user).delete()
     except SpotifyAccount.DoesNotExist:
         pass
+
+# Add these functions to user/spotify_service.py
+
+def get_user_playlists(user):
+    """
+    Get user's Spotify playlists
+    
+    Args:
+        user: Django User object
+    
+    Returns:
+        list: List of playlist dictionaries or empty list if error
+    """
+    access_token = get_valid_token(user)
+    if not access_token:
+        return []
+    
+    try:
+        sp = spotipy.Spotify(auth=access_token)
+        playlists = sp.current_user_playlists(limit=50)
+        
+        playlist_data = []
+        for playlist in playlists['items']:
+            playlist_data.append({
+                'id': playlist['id'],
+                'name': playlist['name'],
+                'tracks_total': playlist['tracks']['total'],
+                'public': playlist['public'],
+                'image_url': playlist['images'][0]['url'] if playlist['images'] else '',
+                'external_url': playlist['external_urls']['spotify']
+            })
+        
+        return playlist_data
+    except Exception as e:
+        print(f"Error fetching playlists: {e}")
+        return []
+
+
+def get_user_stats(user):
+    """
+    Get comprehensive user statistics from Spotify
+    
+    Args:
+        user: Django User object
+    
+    Returns:
+        dict: Dictionary containing various user statistics
+    """
+    access_token = get_valid_token(user)
+    if not access_token:
+        return None
+    
+    try:
+        sp = spotipy.Spotify(auth=access_token)
+        
+        # Get top artists (different time ranges)
+        top_artists_short = sp.current_user_top_artists(limit=10, time_range='short_term')
+        top_artists_medium = sp.current_user_top_artists(limit=10, time_range='medium_term')
+        top_artists_long = sp.current_user_top_artists(limit=10, time_range='long_term')
+        
+        # Get top tracks (different time ranges)
+        top_tracks_short = sp.current_user_top_tracks(limit=10, time_range='short_term')
+        top_tracks_medium = sp.current_user_top_tracks(limit=10, time_range='medium_term')
+        top_tracks_long = sp.current_user_top_tracks(limit=10, time_range='long_term')
+        
+        # Get user's saved tracks count
+        saved_tracks = sp.current_user_saved_tracks(limit=1)
+        
+        # Get user's followed artists
+        followed_artists = sp.current_user_followed_artists(limit=1)
+        
+        # Extract top genres from top artists
+        all_genres = []
+        for artist in top_artists_medium['items']:
+            all_genres.extend(artist['genres'])
+        
+        # Count genre occurrences
+        from collections import Counter
+        genre_counts = Counter(all_genres)
+        top_genres = [{'name': genre, 'count': count} for genre, count in genre_counts.most_common(5)]
+        
+        stats = {
+            'top_artists_short': top_artists_short['items'][:5],
+            'top_artists_medium': top_artists_medium['items'][:5],
+            'top_artists_long': top_artists_long['items'][:5],
+            'top_tracks_short': top_tracks_short['items'][:5],
+            'top_tracks_medium': top_tracks_medium['items'][:5],
+            'top_tracks_long': top_tracks_long['items'][:5],
+            'total_saved_tracks': saved_tracks['total'],
+            'total_followed_artists': followed_artists['artists']['total'],
+            'top_genres': top_genres
+        }
+        
+        return stats
+        
+    except Exception as e:
+        print(f"Error fetching user stats: {e}")
+        return None
+
+
+def get_recently_played(user, limit=20):
+    """
+    Get user's recently played tracks
+    
+    Args:
+        user: Django User object
+        limit: Number of tracks to retrieve (max 50)
+    
+    Returns:
+        list: List of recently played tracks or empty list if error
+    """
+    access_token = get_valid_token(user)
+    if not access_token:
+        return []
+    
+    try:
+        sp = spotipy.Spotify(auth=access_token)
+        results = sp.current_user_recently_played(limit=limit)
+        
+        recent_tracks = []
+        for item in results['items']:
+            track = item['track']
+            recent_tracks.append({
+                'name': track['name'],
+                'artist': track['artists'][0]['name'],
+                'album': track['album']['name'],
+                'image_url': track['album']['images'][0]['url'] if track['album']['images'] else '',
+                'played_at': item['played_at'],
+                'external_url': track['external_urls']['spotify']
+            })
+        
+        return recent_tracks
+    except Exception as e:
+        print(f"Error fetching recently played: {e}")
+        return []
