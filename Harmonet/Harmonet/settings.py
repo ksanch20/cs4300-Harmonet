@@ -40,6 +40,7 @@ ALLOWED_HOSTS = [
     'app-cs4300sanchez-19.devedu.io',
     'localhost',
     'editor-cs4300sanchez-19.devedu.io',
+    'cs4300-harmonet-accj.onrender.com',
     '*', 
 ]
 # '*' is a catch all for hosts, good to remove when done testing.
