@@ -12,6 +12,6 @@ spotipy==2.23.0
 openai==2.8.0
 requests>=2.31.0
 django-sendgrid-v5==1.3.0
-pylint==3.3.9
+pylint==4.0.4
 pylint-django==2.6.1
 pylint-plugin-utils==0.8.2
