@@ -1,135 +1,578 @@
 {% extends 'user/base.html' %}
 {% load static %}
 
-{% block title %}Spotify Analytics Preview | HarmoNet{% endblock %}
+{% block title %}Spotify Analytics | HarmoNet{% endblock %}
+
+{% block extra_css %}
+<style>
+  .analytics-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+  }
+
+  .analytics-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .analytics-header h1 {
+    font-size: 2.5rem;
+    color: #1e2a38;
+    margin-bottom: 0.5rem;
+  }
+
+  .analytics-header .subtitle {
+    color: #6b7280;
+    font-size: 1.1rem;
+  }
+
+  .profile-banner {
+    background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+    padding: 2rem;
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .profile-info h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+  }
+
+  .profile-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e5e7eb;
+    overflow-x: auto;
+  }
+
+  .tab {
+    padding: 1rem 2rem;
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+
+  .tab:hover {
+    color: #1DB954;
+  }
+
+  .tab.active {
+    color: #1DB954;
+    border-bottom-color: #1DB954;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  .section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    color: #1e2a38;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+  }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .item-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 10px;
+    transition: all 0.3s;
+  }
+
+  .item-card:hover {
+    background: #f3f4f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .item-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-name {
+    font-weight: 600;
+    color: #1e2a38;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-details {
+    color: #6b7280;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-rank {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1DB954;
+    margin-right: 0.5rem;
+  }
+
+  .playlists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .playlist-card {
+    background: #f9fafb;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .playlist-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  }
+
+  .playlist-image {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+
+  .playlist-info {
+    padding: 1rem;
+  }
+
+  .playlist-name {
+    font-weight: 600;
+    color: #1e2a38;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .playlist-tracks {
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .genres-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .genre-badge {
+    background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .recent-track {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .recent-track:last-child {
+    border-bottom: none;
+  }
+
+  .recent-track-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+
+  .recent-track-info {
+    flex: 1;
+  }
+
+  .recent-track-name {
+    font-weight: 600;
+    color: #1e2a38;
+  }
+
+  .recent-track-artist {
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .recent-track-time {
+    color: #9ca3af;
+    font-size: 0.85rem;
+  }
+
+  .external-link {
+    color: #1DB954;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .external-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    .profile-banner {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .profile-stats {
+      justify-content: center;
+    }
+
+    .items-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .playlists-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/analytics_spotify_preview.css' %}">
+<div class="analytics-container">
+  <div class="analytics-header">
+    <h1>🎵 Your Spotify Wrapped</h1>
+    <p class="subtitle">Discover your music journey</p>
+  </div>
 
-<div class="main-layout spotify-analytics">
-  <main class="analytics-container">
-    <header class="analytics-header">
-      <div class="header-left">
-        <h1>Spotify Analytics (Preview)</h1>
-        <p class="subtitle">Personalized insights from your connected Spotify account — preview mode</p>
-      </div>
-      <div class="header-actions">
-        <a href="#" class="btn small">Manage Connections</a>
-        <a href="#" class="btn ghost small">Back to Dashboard</a>
-      </div>
-    </header>
-
-    <section class="profile-summary card">
-      <div class="profile-left">
-        <img class="profile-image" src="{% static 'images/default-artist.jpg' %}" alt="Preview avatar" width="96" height="96" loading="lazy">
-        <div class="profile-meta">
-          <h2 class="profile-name">Preview User</h2>
-          <p class="profile-sub">Spotify ID: <span class="muted">preview_user_123</span></p>
-          <p class="profile-sub">Country: <span class="muted">US</span></p>
-        </div>
-      </div>
-
+  <!-- Profile Banner -->
+  <div class="profile-banner">
+    <div class="profile-info">
+      <h2>{{ spotify_account.display_name }}</h2>
+      <p>Spotify ID: {{ spotify_account.spotify_id }}</p>
       <div class="profile-stats">
-        <div class="stat">
-          <div class="stat-value">12,482</div>
-          <div class="stat-label">Total Plays</div>
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.total_saved_tracks }}</div>
+          <div class="stat-label">Saved Tracks</div>
         </div>
-        <div class="stat">
-          <div class="stat-value">214</div>
-          <div class="stat-label">Unique Artists</div>
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.total_followed_artists }}</div>
+          <div class="stat-label">Following</div>
         </div>
-        <div class="stat">
-          <div class="stat-value">Indie Pop</div>
-          <div class="stat-label">Top Genre</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">1,204</div>
-          <div class="stat-label">Followers</div>
+        <div class="stat-item">
+          <div class="stat-value">{{ playlists|length }}</div>
+          <div class="stat-label">Playlists</div>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <section class="overview-grid">
-      <div class="card plays-over-time">
-        <div class="card-header">
-          <h3>Plays Over Time</h3>
-          <form class="range-form" method="get">
-            <label for="range-select" class="sr-only">Range</label>
-            <select id="range-select" name="range">
-              <option value="30">30d</option>
-              <option value="90" selected>90d</option>
-              <option value="365">1yr</option>
-            </select>
-          </form>
-        </div>
-        <div class="chart-placeholder">[Chart Placeholder — Plays Over Time]</div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('overview')">Overview</button>
+    <button class="tab" onclick="showTab('artists')">Top Artists</button>
+    <button class="tab" onclick="showTab('tracks')">Top Tracks</button>
+    <button class="tab" onclick="showTab('playlists')">Playlists</button>
+    <button class="tab" onclick="showTab('recent')">Recent</button>
+  </div>
+
+  <!-- Overview Tab -->
+  <div id="overview" class="tab-content active">
+    <!-- Top Genres -->
+    <div class="section">
+      <h2 class="section-title">🎸 Your Top Genres</h2>
+      <div class="genres-list">
+        {% for genre in stats.top_genres %}
+          <div class="genre-badge">{{ genre.name|title }}</div>
+        {% endfor %}
       </div>
+    </div>
 
-      <div class="right-column">
-        <div class="card top-artists">
-          <div class="card-header"><h3>Top Artists</h3></div>
-          <ol class="top-list">
-            <li class="top-item">
-              <img src="{% static 'images/default-artist.jpg' %}" alt="Artist 1" loading="lazy" width="56" height="56">
-              <div class="top-meta">
-                <div class="top-name">Artist One</div>
-                <div class="top-sub muted">Pop; Indie</div>
-              </div>
-              <div class="top-value">3,210</div>
-            </li>
-            <li class="top-item">
-              <img src="{% static 'images/default-artist.jpg' %}" alt="Artist 2" loading="lazy" width="56" height="56">
-              <div class="top-meta">
-                <div class="top-name">Artist Two</div>
-                <div class="top-sub muted">Alternative</div>
-              </div>
-              <div class="top-value">2,876</div>
-            </li>
-            <li class="top-item"> <div class="empty">More artists shown in live view</div> </li>
-          </ol>
-        </div>
-
-        <div class="card top-tracks">
-          <div class="card-header"><h3>Top Tracks</h3></div>
-          <ol class="top-list">
-            <li class="top-item">
-              <div class="top-meta">
-                <div class="top-name">Track A</div>
-                <div class="top-sub muted">Artist One</div>
-              </div>
-              <div class="top-value">1,502</div>
-            </li>
-            <li class="top-item">
-              <div class="top-meta">
-                <div class="top-name">Track B</div>
-                <div class="top-sub muted">Artist Two</div>
-              </div>
-              <div class="top-value">1,210</div>
-            </li>
-            <li class="top-item"> <div class="empty">More tracks shown in live view</div> </li>
-          </ol>
-        </div>
-
-        <div class="card devices-breakdown">
-          <div class="card-header"><h3>Devices / Platforms</h3></div>
-          <ul class="device-list">
-            <li><strong>Mobile</strong><span class="muted"> — 8,432 plays</span></li>
-            <li><strong>Desktop</strong><span class="muted"> — 3,120 plays</span></li>
-            <li class="empty">Device breakdown available in live view</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="recent-activity card">
-      <div class="card-header"><h3>Recent Spotify Activity</h3></div>
-      <ul class="recent-list">
-        <li>
-          <img src="{% static 'images/default-artist.jpg' %}" alt="Track" loading="lazy" width="56" height="56">
-          <div class="recent-meta">
-            <div class="recent-track">Sample Track 1</div>
-            <div class="recent-sub muted">Artist One • 2025-11-14 20:03</div>
+    <!-- Top 5 Artists (Last 6 Months) -->
+    <div class="section">
+      <h2 class="section-title">⭐ Top Artists (Last 6 Months)</h2>
+      <div class="items-grid">
+        {% for artist in stats.top_artists_medium %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ artist.images.0.url }}" alt="{{ artist.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ artist.name }}</div>
+              <div class="item-details">{{ artist.followers.total|floatformat:0 }} followers</div>
+            </div>
           </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Top 5 Tracks (Last 6 Months) -->
+    <div class="section">
+      <h2 class="section-title">🎧 Top Tracks (Last 6 Months)</h2>
+      <div class="items-grid">
+        {% for track in stats.top_tracks_medium %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ track.album.images.0.url }}" alt="{{ track.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ track.name }}</div>
+              <div class="item-details">{{ track.artists.0.name }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Artists Tab -->
+  <div id="artists" class="tab-content">
+    <div class="section">
+      <h2 class="section-title">🔥 Last 4 Weeks</h2>
+      <div class="items-grid">
+        {% for artist in stats.top_artists_short %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ artist.images.0.url }}" alt="{{ artist.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ artist.name }}</div>
+              <div class="item-details">
+                {% if artist.genres %}
+                  {{ artist.genres.0|title }}
+                {% else %}
+                  Artist
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">📅 Last 6 Months</h2>
+      <div class="items-grid">
+        {% for artist in stats.top_artists_medium %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ artist.images.0.url }}" alt="{{ artist.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ artist.name }}</div>
+              <div class="item-details">
+                {% if artist.genres %}
+                  {{ artist.genres.0|title }}
+                {% else %}
+                  Artist
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">🏆 All Time</h2>
+      <div class="items-grid">
+        {% for artist in stats.top_artists_long %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ artist.images.0.url }}" alt="{{ artist.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ artist.name }}</div>
+              <div class="item-details">
+                {% if artist.genres %}
+                  {{ artist.genres.0|title }}
+                {% else %}
+                  Artist
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Tracks Tab -->
+  <div id="tracks" class="tab-content">
+    <div class="section">
+      <h2 class="section-title">🔥 Last 4 Weeks</h2>
+      <div class="items-grid">
+        {% for track in stats.top_tracks_short %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ track.album.images.0.url }}" alt="{{ track.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ track.name }}</div>
+              <div class="item-details">{{ track.artists.0.name }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">📅 Last 6 Months</h2>
+      <div class="items-grid">
+        {% for track in stats.top_tracks_medium %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ track.album.images.0.url }}" alt="{{ track.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ track.name }}</div>
+              <div class="item-details">{{ track.artists.0.name }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">🏆 All Time</h2>
+      <div class="items-grid">
+        {% for track in stats.top_tracks_long %}
+          <div class="item-card">
+            <span class="item-rank">{{ forloop.counter }}</span>
+            <img src="{{ track.album.images.0.url }}" alt="{{ track.name }}" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ track.name }}</div>
+              <div class="item-details">{{ track.artists.0.name }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Playlists Tab -->
+  <div id="playlists" class="tab-content">
+    <div class="section">
+      <h2 class="section-title">🎵 Your Playlists</h2>
+      <div class="playlists-grid">
+        {% for playlist in playlists %}
+          <a href="{{ playlist.external_url }}" target="_blank" class="playlist-card">
+            {% if playlist.image_url %}
+              <img src="{{ playlist.image_url }}" alt="{{ playlist.name }}" class="playlist-image">
+            {% else %}
+              <div class="playlist-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            {% endif %}
+            <div class="playlist-info">
+              <div class="playlist-name">{{ playlist.name }}</div>
+              <div class="playlist-tracks">{{ playlist.tracks_total }} tracks</div>
+            </div>
+          </a>
+        {% empty %}
+          <p>No playlists found.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Tab -->
+  <div id="recent" class="tab-content">
+    <div class="section">
+      <h2 class="section-title">🕐 Recently Played</h2>
+      {% for track in recently_played %}
+        <div class="recent-track">
+          <img src="{{ track.image_url }}" alt="{{ track.name }}" class="recent-track-image">
+          <div class="recent-track-info">
+            <div class="recent-track-name">{{ track.name }}</div>
+            <div class="recent-track-artist">{{ track.artist }} • {{ track.album }}</div>
+            <div class="recent-track-time">{{ track.played_at|date:"M d, Y g:i A" }}</div>
+          </div>
+          <a href="{{ track.external_url }}" target="_blank" class="external-link">Open in Spotify →</a>
+        </div>
+      {% empty %}
+        <p>No recent listening history available.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName).classList.add('active');
+    
+    // Add active class to clicked tab
+    event.target.classList.add('active');
+  }
+</script>
+{% endblock %}
           <div class="recent-actions">
             <a class="btn ghost tiny" href="#">Open</a>
           </div>
