@@ -172,7 +172,10 @@ LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
 
 OPENAI_API_KEY=config('OPENAI_API_KEY', default='')
 
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://cs4300-harmonet-accj.onrender.com',
+    'https://harmonets.org',
+]
 
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'
