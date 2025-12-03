@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import os, sys
+import os
+import sys
 import dj_database_url
 from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,7 +30,10 @@ DEBUG = False
 # Spotify variables and client ID
 SPOTIPY_CLIENT_ID = config('SPOTIPY_CLIENT_ID', default='')
 SPOTIPY_CLIENT_SECRET = config('SPOTIPY_CLIENT_SECRET', default='')
-#for testing use: https://cs4300-harmonet-accj.onrender.com  || https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/ || https://harmonets.org/user/spotify/callback/ || https://cs4300-harmonet-accj.onrender.com
+#for testing use: https://cs4300-harmonet-accj.onrender.com  
+#|| https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/ 
+#|| https://harmonets.org/user/spotify/callback/ 
+#|| https://cs4300-harmonet-accj.onrender.com
 SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/spotify/callback/"
 
 ALLOWED_HOSTS = [

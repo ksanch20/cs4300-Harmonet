@@ -91,6 +91,48 @@
           </div>
         {% endif %}
       </section>
+
+      <hr class="section-divider" />
+
+      <section class="music-profile-section">
+        <h2>🎵 Your Music Profile</h2>
+        
+        {% if user_profile %}
+          <!-- Show Generated Profile -->
+          <div class="profile-display-card">
+            <p class="profile-text">{{ user_profile }}</p>
+            <div class="profile-actions-inline">
+              <form method="post" action="{% url 'generate_music_profile' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="profile-action-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
+                  Regenerate
+                </button>
+              </form>
+              <a href="{% url 'music_profile' %}" class="profile-action-btn secondary">View Full Page</a>
+            </div>
+          </div>
+        {% else %}
+          <!-- Show Generate Prompt -->
+          <div class="profile-generate-prompt">
+            <div class="profile-icon-small">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+            </div>
+            <div class="profile-prompt-content">
+              <h3>Discover Your Music Identity</h3>
+              <p>Let AI create a personalized snapshot of who you are as a music listener</p>
+            </div>
+            <a href="{% url 'music_profile' %}" class="profile-generate-btn">Generate Profile →</a>
+          </div>
+        {% endif %}
+      </section>
     </div>
 
     <div class="friend-box">

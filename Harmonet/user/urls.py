@@ -48,5 +48,8 @@ urlpatterns = [
 
     path('ai-recommendations/', views.ai_recommendations, name='ai_recommendations'),
     path('user/<str:username>/', views.user_profile, name='user_profile'),
+    path('music-profile/', views.music_profile_view, name='music_profile'),
+    path('generate-music-profile/', views.generate_music_profile_inline, name='generate_music_profile'),
+    path('ratings/', views.ratings_view, name='ratings'),
 ]
 
