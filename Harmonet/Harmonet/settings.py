@@ -94,8 +94,22 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 #Testdatabase: postgresql://testdatabase_hhx7_user:9aWdqjNOLHfxUI1P1XETkbuvD9kGWoNe@dpg-d4aitdeuk2gs739g4ekg-a.oregon-postgres.render.com/testdatabase_hhx7
 #realDatabase: postgresql://harmonet_database_user:qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/harmonet_database
-DATABASES = {'default': dj_database_url.parse('postgresql://testdatabase_hhx7_user:9aWdqjNOLHfxUI1P1XETkbuvD9kGWoNe@dpg-d4aitdeuk2gs739g4ekg-a.oregon-postgres.render.com/testdatabase_hhx7')}
+#DATABASES = {'default': dj_database_url.parse('postgresql://testdatabase_hhx7_user:9aWdqjNOLHfxUI1P1XETkbuvD9kGWoNe@dpg-d4aitdeuk2gs739g4ekg-a.oregon-postgres.render.com/testdatabase_hhx7')}
+database_url = os.environ.get('DATABASE_URL')
 
+if database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(database_url, conn_max_age=600)
+    }
+else:
+    # Fallback for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    
 # Override for tests - use SQLite in-memory
 if 'test' in sys.argv:
     DATABASES = {
