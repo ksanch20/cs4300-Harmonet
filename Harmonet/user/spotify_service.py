@@ -11,9 +11,9 @@ def get_spotify_oauth():
         client_id=settings.SPOTIPY_CLIENT_ID,
         client_secret=settings.SPOTIPY_CLIENT_SECRET,
         redirect_uri=settings.SPOTIPY_REDIRECT_URI,
-        scope="user-top-read user-read-email user-read-private",
+        scope="user-top-read user-read-email user-read-private user-read-recently-played playlist-read-private playlist-read-collaborative",
         cache_path=None,
-        show_dialog=True  # ← ADD THIS LINE - Forces Spotify to show login dialog
+        show_dialog=True
     )
 
 
