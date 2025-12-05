@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#z%-s1%bi6fkcnbl1x4r-0jsenlqt-4x$jyrp^4x_%2-!8hjxu'
 database_url = os.environ.get('DATABASE_URL')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # Spotify variables and client ID
 SPOTIPY_CLIENT_ID = config('SPOTIPY_CLIENT_ID', default='')
@@ -34,7 +34,7 @@ SPOTIPY_CLIENT_SECRET = config('SPOTIPY_CLIENT_SECRET', default='')
 #|| https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/ 
 #|| https://harmonets.org/user/spotify/callback/ 
 #|| https://cs4300-harmonet-accj.onrender.com
-SPOTIPY_REDIRECT_URI = "https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/"
+SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/spotify/callback/"
 
 ALLOWED_HOSTS = [
     'app-cs4300sanchez-19.devedu.io',
@@ -94,7 +94,7 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 
 #Test Database: postgresql://newtestdatabase_user:5zzH9yLPg6Ya6V9bgryYaBp09OXzENzv@dpg-d4p4lgumcj7s73frub2g-a.oregon-postgres.render.com/newtestdatabase
 #Prod Database: postgresql://harmonet_database_user:qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/harmonet_database
-DATABASES = {'default': dj_database_url.parse('postgresql://newtestdatabase_user:5zzH9yLPg6Ya6V9bgryYaBp09OXzENzv@dpg-d4p4lgumcj7s73frub2g-a.oregon-postgres.render.com/newtestdatabase')}
+DATABASES = {'default': dj_database_url.parse('postgresql://harmonet_database_user:qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/harmonet_database')}
 
 # Override for tests - use SQLite in-memory
 if 'test' in sys.argv:
