@@ -2540,9 +2540,9 @@ class SpotifyAnalyticsViewTests(TestCase):
         mock_fetch.return_value = {
             'success': True,
             'genres': [
-                ('Rock', 15),
-                ('Pop', 12),
-                ('Indie', 8)
+                ('rock', 15),
+                ('pop', 12),
+                ('indie', 8)
             ]
         }
         
@@ -3068,9 +3068,9 @@ class SpotifyAnalyticsDisplayTests(TestCase):
         mock_fetch.return_value = {
             'success': True,
             'genres': [
-                ('Rock', 15),
-                ('Pop', 12),
-                ('Indie', 8)
+                ('rock', 15),
+                ('pop', 12),
+                ('indie', 8)
             ]
         }
         
