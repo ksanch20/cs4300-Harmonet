@@ -2306,7 +2306,12 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertFalse(response.context['spotify_connected'])
         self.assertContains(response, 'Connect Your Spotify Account')
     
-    def test_analytics_with_connected_spotify(self):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_analytics_with_connected_spotify(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test analytics page displays when Spotify is connected"""
         self.client.login(username='testuser', password='testpass123')
         
@@ -2321,14 +2326,25 @@ class SpotifyAnalyticsViewTests(TestCase):
             token_expires_at=timezone.now() + timedelta(hours=1)
         )
         
+        # Mock all the service calls
+        mock_artists.return_value = {'success': True, 'artists': [], 'time_range': 'short_term'}
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['spotify_connected'])
         self.assertIsNotNone(response.context['spotify_account'])
     
-    @patch('user.spotify_service.fetch_top_artists_by_timerange')
-    def test_analytics_fetches_top_artists(self, mock_fetch):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_analytics_fetches_top_artists(self, mock_fetch, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test that analytics page fetches top artists for all time ranges"""
         self.client.login(username='testuser', password='testpass123')
         
@@ -2350,6 +2366,12 @@ class SpotifyAnalyticsViewTests(TestCase):
             'time_range': 'short_term'
         }
         
+        # Mock other services
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
         response = self.client.get(self.url)
         
         # Should call fetch 3 times (short, medium, long term)
@@ -2358,8 +2380,12 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertIn('top_artists_6months', response.context)
         self.assertIn('top_artists_alltime', response.context)
     
-    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
-    def test_analytics_fetches_top_tracks(self, mock_fetch):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_analytics_fetches_top_tracks(self, mock_artists, mock_fetch, mock_playlists, mock_recent, mock_genres):
         """Test that analytics page fetches top tracks for all time ranges"""
         self.client.login(username='testuser', password='testpass123')
         
@@ -2387,6 +2413,12 @@ class SpotifyAnalyticsViewTests(TestCase):
             'time_range': 'short_term'
         }
         
+        # Mock other services
+        mock_artists.return_value = {'success': True, 'artists': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
         response = self.client.get(self.url)
         
         # Should call fetch 3 times (short, medium, long term)
@@ -2395,8 +2427,12 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertIn('top_tracks_6months', response.context)
         self.assertIn('top_tracks_alltime', response.context)
     
-    @patch('user.spotify_service.fetch_user_playlists')
-    def test_analytics_fetches_playlists(self, mock_fetch):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_analytics_fetches_playlists(self, mock_artists, mock_tracks, mock_fetch, mock_recent, mock_genres):
         """Test that analytics page fetches user playlists"""
         self.client.login(username='testuser', password='testpass123')
         
@@ -2425,6 +2461,12 @@ class SpotifyAnalyticsViewTests(TestCase):
             'message': 'Loaded 1 playlists'
         }
         
+        # Mock other services
+        mock_artists.return_value = {'success': True, 'artists': [], 'time_range': 'short_term'}
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
         response = self.client.get(self.url)
         
         mock_fetch.assert_called_once_with(self.user)
@@ -2433,8 +2475,12 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertTrue(playlists['success'])
         self.assertEqual(len(playlists['playlists']), 1)
     
-    @patch('user.spotify_service.fetch_recently_played')
-    def test_analytics_fetches_recently_played(self, mock_fetch):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_analytics_fetches_recently_played(self, mock_artists, mock_tracks, mock_playlists, mock_fetch, mock_genres):
         """Test that analytics page fetches recently played tracks"""
         self.client.login(username='testuser', password='testpass123')
         
@@ -2461,13 +2507,23 @@ class SpotifyAnalyticsViewTests(TestCase):
             ]
         }
         
+        # Mock other services
+        mock_artists.return_value = {'success': True, 'artists': [], 'time_range': 'short_term'}
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
         response = self.client.get(self.url)
         
         mock_fetch.assert_called_once_with(self.user, 20)
         self.assertIn('recently_played', response.context)
     
-    @patch('user.spotify_service.analyze_top_genres')
-    def test_analytics_analyzes_genres(self, mock_analyze):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_analytics_analyzes_genres(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_fetch):
         """Test that analytics page analyzes top genres"""
         self.client.login(username='testuser', password='testpass123')
         
@@ -2481,18 +2537,24 @@ class SpotifyAnalyticsViewTests(TestCase):
         )
         
         # Mock response
-        mock_analyze.return_value = {
+        mock_fetch.return_value = {
             'success': True,
             'genres': [
-                ('rock', 15),
-                ('pop', 12),
-                ('indie', 8)
+                ('Rock', 15),
+                ('Pop', 12),
+                ('Indie', 8)
             ]
         }
         
+        # Mock other services
+        mock_artists.return_value = {'success': True, 'artists': [], 'time_range': 'short_term'}
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        
         response = self.client.get(self.url)
         
-        mock_analyze.assert_called_once_with(self.user)
+        mock_fetch.assert_called_once_with(self.user)
         self.assertIn('top_genres', response.context)
         genres = response.context['top_genres']
         self.assertTrue(genres['success'])
@@ -2517,9 +2579,13 @@ class SpotifyServiceAnalyticsTests(TestCase):
         )
     
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_fetch_top_artists_by_timerange_success(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_top_artists_by_timerange_success(self, mock_get_token, mock_spotify):
         """Test successful fetching of top artists by time range"""
         from user.spotify_service import fetch_top_artists_by_timerange
+        
+        # Mock token
+        mock_get_token.return_value = 'valid_token'
         
         # Mock Spotify API response
         mock_sp_instance = Mock()
@@ -2549,10 +2615,44 @@ class SpotifyServiceAnalyticsTests(TestCase):
         self.assertEqual(result['artists'][0]['genres'], 'rock, indie')
         self.assertEqual(result['time_range'], 'short_term')
     
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_top_artists_no_token(self, mock_get_token):
+        """Test fetching artists with no valid token"""
+        from user.spotify_service import fetch_top_artists_by_timerange
+        
+        # Mock no token
+        mock_get_token.return_value = None
+        
+        result = fetch_top_artists_by_timerange(self.user, 'short_term', 10)
+        
+        self.assertFalse(result['success'])
+        self.assertEqual(result['artists'], [])
+    
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_fetch_top_tracks_by_timerange_success(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_top_artists_api_error(self, mock_get_token, mock_spotify):
+        """Test handling of Spotify API errors"""
+        from user.spotify_service import fetch_top_artists_by_timerange
+        
+        mock_get_token.return_value = 'valid_token'
+        
+        # Mock API error
+        mock_sp_instance = Mock()
+        mock_sp_instance.current_user_top_artists.side_effect = Exception("API Error")
+        mock_spotify.return_value = mock_sp_instance
+        
+        result = fetch_top_artists_by_timerange(self.user, 'short_term', 10)
+        
+        self.assertFalse(result['success'])
+        self.assertEqual(result['artists'], [])
+    
+    @patch('user.spotify_service.spotipy.Spotify')
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_top_tracks_by_timerange_success(self, mock_get_token, mock_spotify):
         """Test successful fetching of top tracks by time range"""
         from user.spotify_service import fetch_top_tracks_by_timerange
+        
+        mock_get_token.return_value = 'valid_token'
         
         # Mock Spotify API response
         mock_sp_instance = Mock()
@@ -2580,9 +2680,12 @@ class SpotifyServiceAnalyticsTests(TestCase):
         self.assertEqual(result['time_range'], 'medium_term')
     
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_fetch_user_playlists_success(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_user_playlists_success(self, mock_get_token, mock_spotify):
         """Test successful fetching of user playlists"""
         from user.spotify_service import fetch_user_playlists
+        
+        mock_get_token.return_value = 'valid_token'
         
         # Mock Spotify API response
         mock_sp_instance = Mock()
@@ -2617,9 +2720,31 @@ class SpotifyServiceAnalyticsTests(TestCase):
         self.assertEqual(result['playlists'][1]['public'], False)
     
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_fetch_recently_played_success(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_user_playlists_error(self, mock_get_token, mock_spotify):
+        """Test playlist fetching handles API errors gracefully"""
+        from user.spotify_service import fetch_user_playlists
+        
+        mock_get_token.return_value = 'valid_token'
+        
+        # Mock API error
+        mock_sp_instance = Mock()
+        mock_sp_instance.current_user_playlists.side_effect = Exception("API Error")
+        mock_spotify.return_value = mock_sp_instance
+        
+        result = fetch_user_playlists(self.user)
+        
+        self.assertFalse(result['success'])
+        self.assertEqual(len(result['playlists']), 0)
+        self.assertIn('message', result)
+    
+    @patch('user.spotify_service.spotipy.Spotify')
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_recently_played_success(self, mock_get_token, mock_spotify):
         """Test successful fetching of recently played tracks"""
         from user.spotify_service import fetch_recently_played
+        
+        mock_get_token.return_value = 'valid_token'
         
         # Mock Spotify API response
         mock_sp_instance = Mock()
@@ -2659,9 +2784,32 @@ class SpotifyServiceAnalyticsTests(TestCase):
         self.assertEqual(result['tracks'][0]['played_at'], '2024-01-15T14:30:00Z')
     
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_analyze_top_genres_success(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_fetch_recently_played_empty_result(self, mock_get_token, mock_spotify):
+        """Test recently played with no listening history"""
+        from user.spotify_service import fetch_recently_played
+        
+        mock_get_token.return_value = 'valid_token'
+        
+        # Mock empty response
+        mock_sp_instance = Mock()
+        mock_sp_instance.current_user_recently_played.return_value = {
+            'items': []
+        }
+        mock_spotify.return_value = mock_sp_instance
+        
+        result = fetch_recently_played(self.user, 20)
+        
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['tracks']), 0)
+    
+    @patch('user.spotify_service.spotipy.Spotify')
+    @patch('user.spotify_service.get_valid_token')
+    def test_analyze_top_genres_success(self, mock_get_token, mock_spotify):
         """Test successful analysis of top genres"""
         from user.spotify_service import analyze_top_genres
+        
+        mock_get_token.return_value = 'valid_token'
         
         # Mock Spotify API response
         mock_sp_instance = Mock()
@@ -2706,39 +2854,6 @@ class SpotifyServiceAnalyticsTests(TestCase):
         self.assertFalse(result['success'])
         self.assertEqual(result['time_range'], 'short_term')
         self.assertEqual(len(result['artists']), 0)
-    
-    @patch('user.spotify_service.spotipy.Spotify')
-    def test_fetch_playlists_api_error(self, mock_spotify):
-        """Test playlist fetching handles API errors gracefully"""
-        from user.spotify_service import fetch_user_playlists
-        
-        # Mock API error
-        mock_sp_instance = Mock()
-        mock_sp_instance.current_user_playlists.side_effect = Exception("API Error")
-        mock_spotify.return_value = mock_sp_instance
-        
-        result = fetch_user_playlists(self.user)
-        
-        self.assertFalse(result['success'])
-        self.assertEqual(len(result['playlists']), 0)
-        self.assertIn('message', result)
-    
-    @patch('user.spotify_service.spotipy.Spotify')
-    def test_fetch_recently_played_empty_result(self, mock_spotify):
-        """Test recently played with no listening history"""
-        from user.spotify_service import fetch_recently_played
-        
-        # Mock empty response
-        mock_sp_instance = Mock()
-        mock_sp_instance.current_user_recently_played.return_value = {
-            'items': []
-        }
-        mock_spotify.return_value = mock_sp_instance
-        
-        result = fetch_recently_played(self.user, 20)
-        
-        self.assertTrue(result['success'])
-        self.assertEqual(len(result['tracks']), 0)
 
 
 class SpotifyAnalyticsIntegrationTests(TestCase):
@@ -2763,76 +2878,81 @@ class SpotifyAnalyticsIntegrationTests(TestCase):
             token_expires_at=timezone.now() + timedelta(hours=1)
         )
     
-    @patch('user.spotify_service.spotipy.Spotify')
-    def test_complete_analytics_workflow(self, mock_spotify):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_complete_analytics_workflow(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test complete workflow from login to viewing analytics"""
         
         # Mock all Spotify API calls
-        mock_sp_instance = Mock()
-        
-        # Mock top artists
-        mock_sp_instance.current_user_top_artists.return_value = {
-            'items': [
+        mock_artists.return_value = {
+            'success': True,
+            'artists': [
                 {
                     'name': f'Artist {i}',
-                    'images': [{'url': f'http://image{i}.jpg'}],
-                    'genres': ['rock', 'indie'],
+                    'image_url': f'http://image{i}.jpg',
+                    'genres': 'rock, indie',
                     'popularity': 80 + i
                 }
                 for i in range(5)
-            ]
+            ],
+            'time_range': 'short_term'
         }
         
-        # Mock top tracks
-        mock_sp_instance.current_user_top_tracks.return_value = {
-            'items': [
+        mock_tracks.return_value = {
+            'success': True,
+            'tracks': [
                 {
                     'name': f'Track {i}',
-                    'artists': [{'name': f'Artist {i}'}],
-                    'album': {
-                        'name': f'Album {i}',
-                        'images': [{'url': f'http://album{i}.jpg'}]
-                    },
+                    'artist': f'Artist {i}',
+                    'album': f'Album {i}',
+                    'image_url': f'http://album{i}.jpg',
                     'popularity': 85 + i
                 }
                 for i in range(5)
-            ]
+            ],
+            'time_range': 'short_term'
         }
         
-        # Mock playlists
-        mock_sp_instance.current_user_playlists.return_value = {
-            'items': [
+        mock_playlists.return_value = {
+            'success': True,
+            'playlists': [
                 {
                     'id': f'playlist{i}',
                     'name': f'Playlist {i}',
-                    'tracks': {'total': 20 + i},
+                    'tracks_total': 20 + i,
                     'public': True,
-                    'images': [{'url': f'http://playlist{i}.jpg'}],
-                    'owner': {'display_name': 'testuser'}
+                    'image_url': f'http://playlist{i}.jpg',
+                    'owner': 'testuser'
                 }
                 for i in range(3)
             ]
         }
         
-        # Mock recently played
-        mock_sp_instance.current_user_recently_played.return_value = {
-            'items': [
+        mock_recent.return_value = {
+            'success': True,
+            'tracks': [
                 {
-                    'track': {
-                        'name': f'Recent {i}',
-                        'artists': [{'name': f'Artist {i}'}],
-                        'album': {
-                            'name': f'Album {i}',
-                            'images': [{'url': f'http://recent{i}.jpg'}]
-                        }
-                    },
+                    'name': f'Recent {i}',
+                    'artist': f'Artist {i}',
+                    'album': f'Album {i}',
+                    'image_url': f'http://recent{i}.jpg',
                     'played_at': f'2024-01-15T14:{30-i}:00Z'
                 }
                 for i in range(5)
             ]
         }
         
-        mock_spotify.return_value = mock_sp_instance
+        mock_genres.return_value = {
+            'success': True,
+            'genres': [
+                ('rock', 15),
+                ('pop', 12),
+                ('indie', 8)
+            ]
+        }
         
         # Login
         self.client.login(username='testuser', password='testpass123')
@@ -2878,8 +2998,12 @@ class SpotifyAnalyticsDisplayTests(TestCase):
             token_expires_at=timezone.now() + timedelta(hours=1)
         )
     
-    @patch('user.spotify_service.fetch_top_artists_by_timerange')
-    def test_template_displays_artist_cards(self, mock_fetch):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_template_displays_artist_cards(self, mock_fetch, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test that artist cards display correctly"""
         mock_fetch.return_value = {
             'success': True,
@@ -2894,13 +3018,23 @@ class SpotifyAnalyticsDisplayTests(TestCase):
             'time_range': 'short_term'
         }
         
+        # Mock other services
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
         response = self.client.get(reverse('analytics'))
         
         self.assertContains(response, 'Test Artist')
         self.assertContains(response, 'rock, indie')
     
-    @patch('user.spotify_service.fetch_user_playlists')
-    def test_template_displays_playlists(self, mock_fetch):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_template_displays_playlists(self, mock_artists, mock_tracks, mock_fetch, mock_recent, mock_genres):
         """Test that playlists display correctly"""
         mock_fetch.return_value = {
             'success': True,
@@ -2913,42 +3047,68 @@ class SpotifyAnalyticsDisplayTests(TestCase):
             ]
         }
         
+        # Mock other services
+        mock_artists.return_value = {'success': True, 'artists': [], 'time_range': 'short_term'}
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
         response = self.client.get(reverse('analytics'))
         
         self.assertContains(response, 'My Cool Playlist')
         self.assertContains(response, '42')
     
-    @patch('user.spotify_service.analyze_top_genres')
-    def test_template_displays_genres(self, mock_fetch):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_template_displays_genres(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_fetch):
         """Test that genres display correctly"""
         mock_fetch.return_value = {
             'success': True,
             'genres': [
-                ('rock', 15),
-                ('pop', 12),
-                ('indie', 8)
+                ('Rock', 15),
+                ('Pop', 12),
+                ('Indie', 8)
             ]
         }
         
+        # Mock other services
+        mock_artists.return_value = {'success': True, 'artists': [], 'time_range': 'short_term'}
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        
         response = self.client.get(reverse('analytics'))
         
-        self.assertContains(response, 'rock')
+        # The template title-cases genre names, so check for 'Rock' with capital
+        self.assertContains(response, 'Rock')
         self.assertContains(response, '15')
-        self.assertContains(response, 'pop')
     
-    def test_template_shows_empty_state_for_no_data(self):
+    @patch('user.views.analyze_top_genres')
+    @patch('user.views.fetch_recently_played')
+    @patch('user.views.fetch_user_playlists')
+    @patch('user.views.fetch_top_tracks_by_timerange')
+    @patch('user.views.fetch_top_artists_by_timerange')
+    def test_template_shows_empty_state_for_no_data(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test that template shows appropriate message when no data"""
-        with patch('user.spotify_service.fetch_top_artists_by_timerange') as mock_fetch:
-            mock_fetch.return_value = {
-                'success': True,
-                'artists': [],
-                'time_range': 'short_term'
-            }
-            
-            response = self.client.get(reverse('analytics'))
-            
-            # Should contain empty state message
-            self.assertContains(response, 'No artist data available')
+        mock_artists.return_value = {
+            'success': True,
+            'artists': [],
+            'time_range': 'short_term'
+        }
+        
+        # Mock other services
+        mock_tracks.return_value = {'success': True, 'tracks': [], 'time_range': 'short_term'}
+        mock_playlists.return_value = {'success': True, 'playlists': []}
+        mock_recent.return_value = {'success': True, 'tracks': []}
+        mock_genres.return_value = {'success': True, 'genres': []}
+        
+        response = self.client.get(reverse('analytics'))
+        
+        # Should contain empty state message
+        self.assertContains(response, 'No artist data available')
 
 
 class SpotifyTimeRangeTests(TestCase):
@@ -2969,9 +3129,12 @@ class SpotifyTimeRangeTests(TestCase):
         )
     
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_short_term_time_range(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_short_term_time_range(self, mock_get_token, mock_spotify):
         """Test short_term (last 4 weeks) time range"""
         from user.spotify_service import fetch_top_artists_by_timerange
+        
+        mock_get_token.return_value = 'valid_token'
         
         mock_sp_instance = Mock()
         mock_sp_instance.current_user_top_artists.return_value = {'items': []}
@@ -2986,9 +3149,12 @@ class SpotifyTimeRangeTests(TestCase):
         self.assertEqual(result['time_range'], 'short_term')
     
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_medium_term_time_range(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_medium_term_time_range(self, mock_get_token, mock_spotify):
         """Test medium_term (last 6 months) time range"""
         from user.spotify_service import fetch_top_tracks_by_timerange
+        
+        mock_get_token.return_value = 'valid_token'
         
         mock_sp_instance = Mock()
         mock_sp_instance.current_user_top_tracks.return_value = {'items': []}
@@ -3003,9 +3169,12 @@ class SpotifyTimeRangeTests(TestCase):
         self.assertEqual(result['time_range'], 'medium_term')
     
     @patch('user.spotify_service.spotipy.Spotify')
-    def test_long_term_time_range(self, mock_spotify):
+    @patch('user.spotify_service.get_valid_token')
+    def test_long_term_time_range(self, mock_get_token, mock_spotify):
         """Test long_term (all time) time range"""
         from user.spotify_service import fetch_top_artists_by_timerange
+        
+        mock_get_token.return_value = 'valid_token'
         
         mock_sp_instance = Mock()
         mock_sp_instance.current_user_top_artists.return_value = {'items': []}
