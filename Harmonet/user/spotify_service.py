@@ -1,6 +1,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from django.conf import settings
+from django.utils import timezone as django_timezone
 from datetime import datetime, timedelta
 from .models import SpotifyAccount, SpotifyTopArtist, SpotifyTopTrack
 
@@ -38,8 +39,10 @@ def save_spotify_connection(user, token_info):
     #print(f"Spotify email: {spotify_user.get('email', 'N/A')}")
     #print(f"========================")
     
-    # Calculate token expiration time
-    expires_at = datetime.fromtimestamp(token_info['expires_at'])
+    # Calculate token expiration time - USE TIMEZONE-AWARE DATETIME
+    expires_at = django_timezone.make_aware(
+        datetime.fromtimestamp(token_info['expires_at'])
+    )
     
     # Check if this Spotify account is already connected to a DIFFERENT user
     existing_connection = SpotifyAccount.objects.filter(
@@ -87,17 +90,19 @@ def get_valid_token(user):
     except SpotifyAccount.DoesNotExist:
         return None
     
-    # Check if token is expired
-    now = datetime.now()
+    # Check if token is expired - USE TIMEZONE-AWARE NOW
+    now = django_timezone.now()
     if now >= spotify_account.token_expires_at:
         # Refresh the token
         sp_oauth = get_spotify_oauth()
         token_info = sp_oauth.refresh_access_token(spotify_account.refresh_token)
         
-        # Update stored token
+        # Update stored token - USE TIMEZONE-AWARE DATETIME
         spotify_account.access_token = token_info['access_token']
         spotify_account.refresh_token = token_info['refresh_token']
-        spotify_account.token_expires_at = datetime.fromtimestamp(token_info['expires_at'])
+        spotify_account.token_expires_at = django_timezone.make_aware(
+            datetime.fromtimestamp(token_info['expires_at'])
+        )
         spotify_account.save()
     
     return spotify_account.access_token
@@ -111,11 +116,11 @@ def fetch_and_save_top_artists(user):
         user: Django User object
     
     Returns:
-        bool: True if successful, False otherwise
+        dict: {'success': bool, 'count': int, 'message': str}
     """
     access_token = get_valid_token(user)
     if not access_token:
-        return False
+        return {'success': False, 'count': 0, 'message': 'Not connected to Spotify'}
     
     try:
         sp = spotipy.Spotify(auth=access_token)
@@ -137,10 +142,10 @@ def fetch_and_save_top_artists(user):
                 rank=rank
             )
         
-        return True
+        return {'success': True, 'count': len(top_artists['items']), 'message': 'Success'}
     except Exception as e:
         print(f"Error fetching top artists: {e}")
-        return False
+        return {'success': False, 'count': 0, 'message': str(e)}
 
 
 def fetch_and_save_top_tracks(user):
@@ -151,11 +156,11 @@ def fetch_and_save_top_tracks(user):
         user: Django User object
     
     Returns:
-        bool: True if successful, False otherwise
+        dict: {'success': bool, 'count': int, 'message': str}
     """
     access_token = get_valid_token(user)
     if not access_token:
-        return False
+        return {'success': False, 'count': 0, 'message': 'Not connected to Spotify'}
     
     try:
         sp = spotipy.Spotify(auth=access_token)
@@ -177,10 +182,10 @@ def fetch_and_save_top_tracks(user):
                 rank=rank
             )
         
-        return True
+        return {'success': True, 'count': len(top_tracks['items']), 'message': 'Success'}
     except Exception as e:
         print(f"Error fetching top tracks: {e}")
-        return False
+        return {'success': False, 'count': 0, 'message': str(e)}
 
 
 def is_spotify_connected(user):
