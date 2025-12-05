@@ -2306,11 +2306,11 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertFalse(response.context['spotify_connected'])
         self.assertContains(response, 'Connect Your Spotify Account')
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_analytics_with_connected_spotify(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test analytics page displays when Spotify is connected"""
         self.client.login(username='testuser', password='testpass123')
@@ -2339,11 +2339,11 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertTrue(response.context['spotify_connected'])
         self.assertIsNotNone(response.context['spotify_account'])
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_analytics_fetches_top_artists(self, mock_fetch, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test that analytics page fetches top artists for all time ranges"""
         self.client.login(username='testuser', password='testpass123')
@@ -2380,11 +2380,11 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertIn('top_artists_6months', response.context)
         self.assertIn('top_artists_alltime', response.context)
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_analytics_fetches_top_tracks(self, mock_artists, mock_fetch, mock_playlists, mock_recent, mock_genres):
         """Test that analytics page fetches top tracks for all time ranges"""
         self.client.login(username='testuser', password='testpass123')
@@ -2427,11 +2427,11 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertIn('top_tracks_6months', response.context)
         self.assertIn('top_tracks_alltime', response.context)
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_analytics_fetches_playlists(self, mock_artists, mock_tracks, mock_fetch, mock_recent, mock_genres):
         """Test that analytics page fetches user playlists"""
         self.client.login(username='testuser', password='testpass123')
@@ -2475,11 +2475,11 @@ class SpotifyAnalyticsViewTests(TestCase):
         self.assertTrue(playlists['success'])
         self.assertEqual(len(playlists['playlists']), 1)
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_analytics_fetches_recently_played(self, mock_artists, mock_tracks, mock_playlists, mock_fetch, mock_genres):
         """Test that analytics page fetches recently played tracks"""
         self.client.login(username='testuser', password='testpass123')
@@ -2518,11 +2518,11 @@ class SpotifyAnalyticsViewTests(TestCase):
         mock_fetch.assert_called_once_with(self.user, 20)
         self.assertIn('recently_played', response.context)
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_analytics_analyzes_genres(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_fetch):
         """Test that analytics page analyzes top genres"""
         self.client.login(username='testuser', password='testpass123')
@@ -2878,11 +2878,11 @@ class SpotifyAnalyticsIntegrationTests(TestCase):
             token_expires_at=timezone.now() + timedelta(hours=1)
         )
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_complete_analytics_workflow(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test complete workflow from login to viewing analytics"""
         
@@ -2998,11 +2998,11 @@ class SpotifyAnalyticsDisplayTests(TestCase):
             token_expires_at=timezone.now() + timedelta(hours=1)
         )
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_template_displays_artist_cards(self, mock_fetch, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test that artist cards display correctly"""
         mock_fetch.return_value = {
@@ -3029,11 +3029,11 @@ class SpotifyAnalyticsDisplayTests(TestCase):
         self.assertContains(response, 'Test Artist')
         self.assertContains(response, 'rock, indie')
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_template_displays_playlists(self, mock_artists, mock_tracks, mock_fetch, mock_recent, mock_genres):
         """Test that playlists display correctly"""
         mock_fetch.return_value = {
@@ -3058,11 +3058,11 @@ class SpotifyAnalyticsDisplayTests(TestCase):
         self.assertContains(response, 'My Cool Playlist')
         self.assertContains(response, '42')
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_template_displays_genres(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_fetch):
         """Test that genres display correctly"""
         mock_fetch.return_value = {
@@ -3086,11 +3086,11 @@ class SpotifyAnalyticsDisplayTests(TestCase):
         self.assertContains(response, 'Rock')
         self.assertContains(response, '15')
     
-    @patch('user.views.analyze_top_genres')
-    @patch('user.views.fetch_recently_played')
-    @patch('user.views.fetch_user_playlists')
-    @patch('user.views.fetch_top_tracks_by_timerange')
-    @patch('user.views.fetch_top_artists_by_timerange')
+    @patch('user.spotify_service.analyze_top_genres')
+    @patch('user.spotify_service.fetch_recently_played')
+    @patch('user.spotify_service.fetch_user_playlists')
+    @patch('user.spotify_service.fetch_top_tracks_by_timerange')
+    @patch('user.spotify_service.fetch_top_artists_by_timerange')
     def test_template_shows_empty_state_for_no_data(self, mock_artists, mock_tracks, mock_playlists, mock_recent, mock_genres):
         """Test that template shows appropriate message when no data"""
         mock_artists.return_value = {
