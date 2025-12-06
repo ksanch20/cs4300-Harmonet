@@ -389,6 +389,8 @@
   padding-top: 1rem;
   border-top: 1px solid #e0e0e0;
   width: 100%;
+  overflow: visible !important; /* CRITICAL: Allow tooltips to show */
+  padding-bottom: 80px; /* Add space for tooltips */
 }
 
 .albums-title {
@@ -398,33 +400,15 @@
   margin-bottom: 0.5rem;
 }
 
+/* Hide scrollbar, center albums */
 .albums-grid {
   display: flex !important;
   flex-direction: row !important;
-  gap: 0.75rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0.5rem 0;
-  scroll-behavior: smooth;
-  align-items: flex-start;
-}
-
-.albums-grid::-webkit-scrollbar {
-  height: 6px;
-}
-
-.albums-grid::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.albums-grid::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.albums-grid::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  gap: 1rem !important;
+  padding: 0.5rem 0 0.75rem 0 !important;
+  justify-content: center !important;
+  overflow: hidden !important; /* Hide scrollbar */
+  flex-wrap: wrap !important; /* Allow wrapping */
 }
 
 .album-item {
@@ -473,9 +457,10 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Album Info Tooltip - Shows above album on hover */
 .album-info-tooltip {
   position: absolute;
-  bottom: -70px;
+  bottom: 100%; /* Position above the album */
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.95);
@@ -493,6 +478,7 @@
   z-index: 1000;
   pointer-events: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  margin-bottom: 8px; /* Space between tooltip and album */
 }
 
 .album-info-tooltip strong {
@@ -568,11 +554,303 @@
 
   .album-cover,
   .album-cover-placeholder {
-    width: 80px;
-    height: 80px;
+    width: 80px !important;
+    height: 80px !important;
   }
   
   .album-item {
-    max-width: 80px;
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+  }
+}
+
+
+/* Song Section Styles */
+.song-section {
+  margin: 2rem 0;
+}
+
+.song-section h2 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.songs-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.song-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.song-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.song-info {
+  flex: 1;
+}
+
+.song-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.song-artist {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.song-album {
+  color: #888;
+  font-size: 0.875rem;
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+
+.song-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 0.75rem;
+}
+
+.song-rating-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.btn-remove-song {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.btn-remove-song:hover {
+  background-color: #c82333;
+}
+
+.no-songs-msg {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  font-size: 1.125rem;
+}
+
+.song-list-section h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.result-album,
+.result-year,
+.result-duration {
+  display: inline-block;
+}
+
+/* ==================== SONG SECTION STYLES ==================== */
+
+.song-section {
+  margin-top: 3rem;
+}
+
+.song-section h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1.5rem;
+}
+
+.song-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+/* Song List */
+.song-list-section {
+  margin-top: 2rem;
+}
+
+.songs-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.song-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: start;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.song-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.song-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.song-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.song-artist {
+  font-size: 0.95rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.song-album {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.song-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.song-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Song Rating */
+.song-rating-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.song-rating-container .rating-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.song-star-rating {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.song-star-rating .star {
+  font-size: 18px;
+  cursor: pointer;
+  color: #d1d5db;
+  transition: color 0.2s, transform 0.2s;
+  user-select: none;
+}
+
+.song-star-rating .star:hover {
+  transform: scale(1.15);
+}
+
+.song-star-rating .star.filled {
+  color: #fbbf24;
+}
+
+.song-star-rating .star.active {
+  color: #f59e0b;
+}
+
+/* Remove Button */
+.btn-remove-song {
+  padding: 0.625rem 1.25rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  align-self: start;
+}
+
+.btn-remove-song:hover {
+  background-color: #dc2626;
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-remove-song:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* No songs message */
+.no-songs-msg {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 1rem;
+  background: #f9fafb;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+}
+
+/* Responsive design for songs */
+@media (max-width: 768px) {
+  .song-card {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .btn-remove-song {
+    align-self: stretch;
+    width: 100%;
+  }
+  
+  .song-meta {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
