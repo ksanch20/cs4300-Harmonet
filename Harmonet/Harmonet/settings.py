@@ -92,15 +92,9 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-#Test Database: postgresql://newtestdatabase_user: \
-# 5zzH9yLPg6Ya6V9bgryYaBp09OXzENzv@dpg-d4p4lgumcj7s73frub2g-a.oregon-postgres.render.com/ \
-# newtestdatabase
-#Prod Database: postgresql://harmonet_database_user: \
-# qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/ \
-# harmonet_database
-DATABASES = {'default': dj_database_url.parse('postgresql://harmonet_database_user:' \
-'qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/' \
-'harmonet_database')}
+#Test Database: postgresql://newtestdatabase_user:5zzH9yLPg6Ya6V9bgryYaBp09OXzENzv@dpg-d4p4lgumcj7s73frub2g-a.oregon-postgres.render.com/newtestdatabase
+#Prod Database: postgresql://harmonet_database_user:qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/harmonet_database
+DATABASES = {'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))}
 
 # Override for tests - use SQLite in-memory
 if 'test' in sys.argv:
