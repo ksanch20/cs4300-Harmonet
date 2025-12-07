@@ -379,3 +379,37 @@ class Song(models.Model):
         minutes = seconds // 60
         remaining_seconds = seconds % 60
         return f"{minutes}:{remaining_seconds:02d}"
+
+
+class Album(models.Model):
+    # Make artist field optional (null=True, blank=True)
+    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='albums', null=True, blank=True)
+    
+    # Add user field for standalone albums
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_albums', null=True, blank=True)
+    
+    title = models.CharField(max_length=255)
+    artist_name = models.CharField(max_length=255, blank=True, null=True)  
+    release_date = models.CharField(max_length=100, blank=True, null=True)
+    album_type = models.CharField(max_length=100, default='Album')
+    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
+    cover_art_url = models.URLField(max_length=500, blank=True, null=True)
+    rating = models.IntegerField(
+        choices=[(i, i) for i in range(1, 6)],
+        null=True,
+        blank=True,
+        help_text="Rate this album from 1 to 5 stars"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        if self.artist:
+            return f"{self.title} - {self.artist.name}"
+        elif self.artist_name:
+            return f"{self.title} - {self.artist_name}"
+        return self.title
