@@ -3,7 +3,6 @@
 {% block title %}{{ profile_user.username }} - HarmoNet{% endblock %}
 
 {% block nav_extra %}
-  <!-- Remove "Welcome" text for this page -->
 {% endblock %}
 
 {% block extra_css %}
@@ -264,7 +263,6 @@
     margin-top: 0.25rem;
   }
 
-  /* ==================== SONGS SECTION ==================== */
   .songs-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -328,6 +326,83 @@
     gap: 0.5rem;
   }
 
+  /* ==================== ALBUMS SECTION ==================== */
+  .albums-grid-profile {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .album-mini-card {
+    background: #f9fafb;
+    padding: 1.25rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .album-mini-card:hover {
+    border-color: #5ca1d3;
+    box-shadow: 0 2px 8px rgba(92, 161, 211, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .album-mini-cover {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .album-mini-cover-placeholder {
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .album-mini-title {
+    font-weight: 700;
+    color: #1e2a38;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .album-mini-artist-name {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+  }
+
+  .album-mini-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    width: 100%;
+  }
+
+  .album-mini-detail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
   .no-artists-message {
     text-align: center;
     padding: 2rem;
@@ -378,6 +453,16 @@
     .songs-grid {
       grid-template-columns: 1fr;
     }
+
+    .albums-grid-profile {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .album-mini-cover,
+    .album-mini-cover-placeholder {
+      width: 120px;
+      height: 120px;
+    }
   }
 </style>
 {% endblock %}
@@ -386,14 +471,12 @@
 <main class="dashboard-container">
   <div class="dashboard-box">
     
-    <!-- Header -->
     <div class="dashboard-header">
       <h1>👤 User Profile</h1>
     </div>
 
     <div class="dashboard-wrapper">
       
-      <!-- Messages -->
       {% if messages %}
         <div style="margin-bottom: 1.5rem;">
           {% for message in messages %}
@@ -405,7 +488,6 @@
         </div>
       {% endif %}
 
-      <!-- Profile Header -->
       <div class="profile-header">
         <div class="profile-avatar-large">
           {{ profile_user.username|slice:":1"|upper }}
@@ -415,12 +497,10 @@
         <div class="profile-code">{{ profile_user.profile.friend_code }}</div>
       </div>
 
-      <!-- Friendship Status -->
       {% if not is_own_profile %}
         <div class="friendship-status-card">
           
           {% if are_friends %}
-            <!-- Already Friends -->
             <div class="status-badge status-friends">✓ Friends</div>
             <p style="color: #6b7280; margin-bottom: 1.5rem;">
               You are friends with {{ profile_user.username }}
@@ -435,14 +515,12 @@
           {% elif existing_request %}
             {% if existing_request.status == 'pending' %}
               {% if existing_request.from_user == request.user %}
-                <!-- Request Sent -->
                 <div class="status-badge status-pending">📤 Request Sent</div>
                 <p style="color: #6b7280;">
                   Waiting for {{ profile_user.username }} to respond
                 </p>
               
               {% else %}
-                <!-- Request Received -->
                 <div class="status-badge status-pending">📬 Request Received</div>
                 <p style="color: #6b7280; margin-bottom: 1.5rem;">
                   {{ profile_user.username }} wants to be friends
@@ -464,7 +542,6 @@
               {% endif %}
             
             {% elif existing_request.status == 'declined' %}
-              <!-- Previously Declined -->
               <div class="status-badge status-none">Not Friends</div>
               <p style="color: #6b7280; margin-bottom: 1.5rem;">
                 You can send a new friend request
@@ -478,7 +555,6 @@
             {% endif %}
           
           {% else %}
-            <!-- No Relationship -->
             <div class="status-badge status-none">Not Friends</div>
             <p style="color: #6b7280; margin-bottom: 1.5rem;">
               Connect with {{ profile_user.username }}
@@ -493,7 +569,6 @@
         </div>
       
       {% else %}
-        <!-- Own Profile -->
         <div class="friendship-status-card">
           <div class="status-badge" style="background: #f3f4f6; color: #1e2a38; border: 2px solid #e5e7eb;">
             👤 This is Your Profile
@@ -507,9 +582,8 @@
         </div>
       {% endif %}
 
-      <!-- Artist Wallet Section -->
       <div class="artists-section">
-        <h3>🎵 Favorite Artists</h3>
+        <h3>🎵 Featured Artist </h3>
         
         {% if show_artists %}
           {% if user_artists %}
@@ -519,7 +593,6 @@
               {% for artist in user_artists %}
                 <div class="artist-mini-card">
                   <div class="artist-mini-header">
-                    <!-- Show artist image if available, otherwise show letter avatar -->
                     {% if artist.artist_image %}
                       <img src="{{ artist.artist_image }}" alt="{{ artist.name }}" class="artist-mini-avatar-img">
                     {% else %}
@@ -535,7 +608,6 @@
                         <div class="artist-mini-name">{{ artist.name }}</div>
                       {% endif %}
                       
-                      <!-- Show disambiguation if available -->
                       {% if artist.disambiguation %}
                         <div class="artist-disambiguation">{{ artist.disambiguation }}</div>
                       {% endif %}
@@ -543,7 +615,6 @@
                   </div>
                   
                   <div class="artist-mini-details">
-                    <!-- Country -->
                     {% if artist.country %}
                       <div class="artist-mini-detail">
                         <span>🌍</span>
@@ -551,13 +622,11 @@
                       </div>
                     {% endif %}
                     
-                    <!-- Genre -->
                     <div class="artist-mini-detail">
                       <span>🎵</span>
                       <span>{{ artist.genre|default:"Genre not specified" }}</span>
                     </div>
                     
-                    <!-- Rating -->
                     {% if artist.rating %}
                       <div class="artist-mini-detail">
                         <span>⭐</span>
@@ -565,7 +634,6 @@
                       </div>
                     {% endif %}
                     
-                    <!-- Average listening time -->
                     {% if artist.average_time_listened %}
                       <div class="artist-mini-detail">
                         <span>⏱️</span>
@@ -597,7 +665,6 @@
           {% endif %}
 
         {% else %}
-          <!-- Not friends - locked -->
           <div class="locked-message">
             <div class="locked-icon">🔒</div>
             <p><strong>Artist collection is private</strong></p>
@@ -606,9 +673,8 @@
         {% endif %}
       </div>
 
-      <!-- Songs Section -->
       <div class="artists-section">
-        <h3>🎵 Favorite Songs</h3>
+        <h3>🎵 Featured Songs </h3>
         
         {% if show_artists %}
           {% if user_songs %}
@@ -674,11 +740,81 @@
           {% endif %}
 
         {% else %}
-          <!-- Not friends - locked -->
           <div class="locked-message">
             <div class="locked-icon">🔒</div>
             <p><strong>Song collection is private</strong></p>
             <p>Become friends with {{ profile_user.username }} to see their favorite songs</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="artists-section">
+        <h3>💿 Featured Albums </h3>
+        
+        {% if show_artists %}
+          {% if user_albums %}
+            <p class="subtitle">{{ profile_user.username }}'s top albums</p>
+            
+            <div class="albums-grid-profile">
+              {% for album in user_albums %}
+                <div class="album-mini-card">
+                  {% if album.cover_art_url %}
+                    <img src="{{ album.cover_art_url }}" alt="{{ album.title }}" class="album-mini-cover">
+                  {% else %}
+                    <div class="album-mini-cover-placeholder">💿</div>
+                  {% endif %}
+                  
+                  <div class="album-mini-title">{{ album.title }}</div>
+                  <div class="album-mini-artist-name">by {{ album.artist_name }}</div>
+                  
+                  <div class="album-mini-details">
+                    <div class="album-mini-detail">
+                      <span>📀</span>
+                      <span>{{ album.album_type }}</span>
+                    </div>
+                    
+                    {% if album.release_date %}
+                      <div class="album-mini-detail">
+                        <span>📅</span>
+                        <span>{{ album.release_date|slice:":4" }}</span>
+                      </div>
+                    {% endif %}
+                    
+                    {% if album.rating %}
+                      <div class="album-mini-detail">
+                        <span>⭐</span>
+                        <span>Rating: {{ album.rating }}/5</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            {% if is_own_profile %}
+              <div class="view-all-link">
+                <a href="{% url 'user_artist' %}">View & Manage All Albums →</a>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="no-artists-message">
+              {% if is_own_profile %}
+                <p>You haven't added any albums yet.</p>
+                <a href="{% url 'user_artist' %}" class="btn-primary" style="display: inline-block; margin-top: 1rem; text-decoration: none; padding: 0.75rem 1.5rem;">
+                  Add Your First Album
+                </a>
+              {% else %}
+                <p>{{ profile_user.username }} hasn't added any albums yet.</p>
+              {% endif %}
+            </div>
+          {% endif %}
+
+        {% else %}
+          <div class="locked-message">
+            <div class="locked-icon">🔒</div>
+            <p><strong>Album collection is private</strong></p>
+            <p>Become friends with {{ profile_user.username }} to see their favorite albums</p>
           </div>
         {% endif %}
       </div>

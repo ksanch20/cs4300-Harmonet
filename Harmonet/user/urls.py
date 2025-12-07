@@ -13,7 +13,6 @@ urlpatterns = [
     
     path('api/search-artists/', views.search_artists_api, name='search_artists_api'),
     path('api/add-artist/', views.add_artist_from_api, name='add_artist_from_api'),
-
     path('api/rate-artist/', views.rate_artist, name='rate_artist'),
     path('api/rate-album/', views.rate_album, name='rate_album'),
     path('api/update-listening-time/', views.update_listening_time, name='update_listening_time'),
@@ -23,6 +22,13 @@ urlpatterns = [
     path('api/rate-song/', views.rate_song, name='rate_song'),
     path('api/delete-song/', views.delete_song, name='delete_song'),
     path('add-song-manual/', views.add_song_manual, name='add_song_manual'),
+    
+    path('api/search-albums/', views.search_albums, name='search_albums'),
+    path('api/add-album/', views.add_album_standalone, name='add_album'),
+    path('api/rate-album-standalone/', views.rate_album_standalone, name='rate_album_standalone'),
+    path('api/delete-album/', views.delete_album_standalone, name='delete_album'),
+    path('add-album-manual/', views.add_album_manual, name='add_album_manual'),
+
 
     path('profile/', views.profile, name='profile'),
     path('analytics/', views.analytics, name='analytics'),
