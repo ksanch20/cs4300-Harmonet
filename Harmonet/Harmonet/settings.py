@@ -92,7 +92,16 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))}
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3')
+
+# Some libraries require the 'postgres://' scheme instead of 'postgresql://'
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgres://", 1)
+
+DATABASES = {
+    'default': dj_database_url.parse(db_url, conn_max_age=600)
+}
+
 
 # Override for tests - use SQLite in-memory
 if 'test' in sys.argv:
@@ -163,13 +172,12 @@ if 'test' in sys.argv:
     EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 
 
-
 LOGIN_URL = '/login/'                  # Where to redirect if user not logged in
 LOGIN_REDIRECT_URL = '/account_link/' # Where to redirect after login
 LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
 
-OPENAI_API_KEY=config('OPENAI_API_KEY', default='')
 
+OPENAI_API_KEY=config('OPENAI_API_KEY', default='')
 
 
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
