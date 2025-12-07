@@ -31,5 +31,6 @@ jobs:
 
       # Run pylint with Django plugin
       - name: Run Pylint
-        working-directory: ${{ github.workspace }}/Harmonet
-        run: pylint Harmonet --load-plugins=pylint_django --django-settings-module=Harmonet.settings --output-format=text
+        run: |
+          export PYTHONPATH="${{ github.workspace }}/Harmonet/Harmonet"
+          python -m pylint Harmonet --load-plugins=pylint_django --django-settings-module=Harmonet.settings --output-format=text
