@@ -10,17 +10,19 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
-from .ai_service import get_music_recommendations
+from .ai_service import get_music_recommendations, get_music_profile
 from django.conf import settings
 from .models import MusicPreferences, SoundCloudArtist, FriendRequest, FriendRequestManager, SpotifyTopArtist, SpotifyTopTrack
 from django.http import JsonResponse
 from .models import Artist, Album
-
+from .models import Artist, Album, Song, FriendRequest, UserProfile
 from django.core.paginator import Paginator
 from .models import SoundCloudArtist
 from .forms import SoundCloudArtistForm
 import re
 from django.utils.safestring import mark_safe
+
+
 
 from .spotify_service import (
     get_spotify_oauth, 
@@ -105,6 +107,9 @@ def dashboard(request):
     else:
         print(f"Dashboard load for {request.user.username}: Spotify NOT connected")
     
+    # Get music profile from session (if exists)
+    user_profile = request.session.get('music_profile', None)
+
     friends = FriendRequest.objects.friends(request.user)
     
     return render(request, 'user/dashboard.html', {
@@ -113,6 +118,7 @@ def dashboard(request):
         'spotify_account': spotify_account,
         'top_artists': top_artists,
         'top_tracks': top_tracks,
+        'user_profile': user_profile,
         'friends': friends
     })
 
@@ -120,6 +126,24 @@ def dashboard(request):
 def user_logout(request):
     auth_logout(request)
     return redirect('index')
+
+
+@login_required
+def generate_music_profile_inline(request):
+    """
+    Generate music profile from dashboard and redirect back
+    """
+    if request.method == 'POST':
+        result = get_music_profile(request.user)
+        if result['success']:
+            # Store in session
+            request.session['music_profile'] = result['profile']
+            messages.success(request, 'Music profile generated!')
+        else:
+            messages.error(request, result['message'])
+    
+    return redirect('dashboard')
+
 
 @login_required
 def account_link(request):
@@ -178,16 +202,77 @@ def privacy_settings(request):
     return render(request, 'user/privacy_settings.html', context)
 
 
+@login_required
 def analytics(request):
-    return render(request, 'user/analytics.html', {'title': 'analytics'})
+    """Display comprehensive Spotify analytics"""
+    
+    # Check if Spotify is connected
+    spotify_connected = is_spotify_connected(request.user)
+    
+    if not spotify_connected:
+        return render(request, 'user/analytics.html', {
+            'title': 'Analytics',
+            'spotify_connected': False
+        })
+    
+    # Import the new analytics functions
+    from .spotify_service import (
+        fetch_user_playlists,
+        fetch_top_artists_by_timerange,
+        fetch_top_tracks_by_timerange,
+        fetch_recently_played,
+        analyze_top_genres
+    )
+    
+    # Get Spotify account info
+    try:
+        spotify_account = request.user.spotify_account
+    except:
+        spotify_account = None
+    
+    # Fetch all analytics data
+    # Top artists by time range
+    top_artists_month = fetch_top_artists_by_timerange(request.user, 'short_term', 10)
+    top_artists_6months = fetch_top_artists_by_timerange(request.user, 'medium_term', 10)
+    top_artists_alltime = fetch_top_artists_by_timerange(request.user, 'long_term', 10)
+    
+    # Top tracks by time range
+    top_tracks_month = fetch_top_tracks_by_timerange(request.user, 'short_term', 10)
+    top_tracks_6months = fetch_top_tracks_by_timerange(request.user, 'medium_term', 10)
+    top_tracks_alltime = fetch_top_tracks_by_timerange(request.user, 'long_term', 10)
+    
+    # Other analytics
+    playlists = fetch_user_playlists(request.user)
+    recently_played = fetch_recently_played(request.user, 20)
+    top_genres = analyze_top_genres(request.user)
+    
+    context = {
+        'title': 'Analytics',
+        'spotify_connected': True,
+        'spotify_account': spotify_account,
+        
+        # Top artists by time
+        'top_artists_month': top_artists_month,
+        'top_artists_6months': top_artists_6months,
+        'top_artists_alltime': top_artists_alltime,
+        
+        # Top tracks by time
+        'top_tracks_month': top_tracks_month,
+        'top_tracks_6months': top_tracks_6months,
+        'top_tracks_alltime': top_tracks_alltime,
+        
+        # Other data
+        'playlists': playlists,
+        'recently_played': recently_played,
+        'top_genres': top_genres,
+    }
+    
+    return render(request, 'user/analytics.html', context)
 
 def AI_Recommendation(request):
     return render(request, 'user/AI_Recommendation.html', {'title': 'AI_Recommendation'})
 
-def user_artist(request):
-    return render(request, 'user/user_artist.html', {'title': 'user_artist'})
 
-# Add this function to your views.py
 @login_required
 def password_change(request):
     if request.method == 'POST':
@@ -362,40 +447,6 @@ def spotify_refresh_data(request):
             messages.error(request, 'Please connect your Spotify account first.')
     
     return redirect('dashboard')
-#########################SoundCloud Form################################################
-
-@login_required
-def user_artist(request):
-    user = request.user
-    artists_list = SoundCloudArtist.objects.filter(user=user).order_by('-added_on')
-
-    paginator = Paginator(artists_list, 5)
-    page_number = request.GET.get('page')
-    artists = paginator.get_page(page_number)
-
-    if request.method == 'POST':
-        if 'delete_artist_id' in request.POST:
-            artist_id = request.POST.get('delete_artist_id')
-            artist = get_object_or_404(SoundCloudArtist, id=artist_id, user=user)
-            artist.delete()
-            return redirect('user_artist')
-
-
-        form = SoundCloudArtistForm(request.POST)
-        if form.is_valid():
-            artist = form.save(commit=False)
-            artist.user = user
-            artist.save()
-            return redirect('user_artist')
-    else:
-        form = SoundCloudArtistForm()
-
-    context = {
-        'form': form,
-        'artists': artists,
-    }
-
-    return render(request, 'user/user_artist.html', context)
 
 
 @login_required
@@ -699,11 +750,12 @@ def add_friend_by_code(request):
     return redirect('friends_dashboard')
 
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db.models import Q
-from .models import Artist, FriendRequest
+from .models import Artist, Album, FriendRequest, UserProfile  # Add these imports
 
-
-@login_required
 @login_required
 def user_profile(request, username):
     """View another user's public profile."""
@@ -711,9 +763,11 @@ def user_profile(request, username):
     # Get the user or 404
     profile_user = get_object_or_404(User, username=username)
     user_profile = profile_user.profile
+    
     # Check if they're friends
     are_friends = FriendRequest.objects.are_friends(request.user, profile_user)
     can_view = user_profile.can_view_profile(request.user)
+    
     # Check for existing friend request
     existing_request = None
     if request.user != profile_user:
@@ -726,15 +780,28 @@ def user_profile(request, username):
     is_own_profile = request.user == profile_user
     can_view_artists = can_view
     
-    # Get user's artists based on privacy settings
+    # Get user's artists and songs based on privacy settings
     user_artists = []
+    user_songs = []
     show_artists = False
     
     if can_view_artists:
-        user_artists = SoundCloudArtist.objects.filter(
+        # Get artists
+        user_artists = Artist.objects.filter(
             user=profile_user
-        ).order_by('-rating', 'name')[:6]
+        ).select_related().prefetch_related('albums').order_by('-rating', '-created_at')[:6]
+        
+        # Get songs
+        user_songs = Song.objects.filter(
+            user=profile_user
+        ).order_by('-rating', '-created_at')[:10]
+        
         show_artists = True
+        
+        print(f"DEBUG: User {profile_user.username} has {user_artists.count()} artists")
+        print(f"DEBUG: User {profile_user.username} has {user_songs.count()} songs")
+        print(f"DEBUG: show_artists = {show_artists}")
+        print(f"DEBUG: can_view = {can_view}")
     
     context = {
         'profile_user': profile_user,
@@ -742,10 +809,12 @@ def user_profile(request, username):
         'existing_request': existing_request,
         'is_own_profile': is_own_profile,
         'user_artists': user_artists,
+        'user_songs': user_songs,
         'show_artists': show_artists,
     }
     
     return render(request, 'user/user_profile.html', context)
+
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -792,15 +861,24 @@ def artist_wallet(request):
         form = ArtistForm()
     
     # Get user's artists with their albums
-    artists_list = Artist.objects.filter(user=request.user).prefetch_related('albums').order_by('-created_at')
+    artists_list = Artist.objects.filter(user=request.user).prefetch_related('albums').order_by('-rating', '-created_at')
+    artists_paginator = Paginator(artists_list, 6)
+    artists_page_number = request.GET.get('page', 1)
+    artists = artists_paginator.get_page(artists_page_number)
     
-    paginator = Paginator(artists_list, 10)
-    page_number = request.GET.get('page', 1)
-    artists = paginator.get_page(page_number)
+    # Get user's songs with pagination - ADD THIS SECTION
+    songs_list = Song.objects.filter(user=request.user).order_by('-rating', '-created_at')
+    songs_paginator = Paginator(songs_list, 10)
+    songs_page_number = request.GET.get('songs_page', 1)
+    songs = songs_paginator.get_page(songs_page_number)
+    
+    # Debug - check if songs exist
+    print(f"DEBUG: Found {songs_list.count()} songs for user {request.user.username}")
     
     context = {
         'form': form,
         'artists': artists,
+        'songs': songs,  # ADD THIS LINE
     }
     return render(request, 'user/user_artist.html', context)
 
@@ -881,7 +959,7 @@ def add_artist_from_api(request):
                     profile_url = relation.get('url', {}).get('resource', '')
                     break
         
-# Create artist first
+        # Create artist first
         artist = Artist.objects.create(
             user=request.user,
             name=artist_name,
@@ -891,7 +969,7 @@ def add_artist_from_api(request):
             country=country,
             disambiguation=disambiguation,
             artist_image=image_url,
-            rating=5
+            rating=None  # Don't set default rating
         )
         
         logger.info(f"Created artist {artist_name} (ID: {artist.id})")
@@ -905,23 +983,31 @@ def add_artist_from_api(request):
             
             for album_data in albums_data:
                 try:
+                    # Double check we got required data
+                    if not album_data.get('title'):
+                        logger.warning(f"Skipping album with no title: {album_data}")
+                        continue
+                    
                     album = Album.objects.create(
                         artist=artist,
-                        title=album_data.get('title', 'Unknown Title'),
+                        title=album_data.get('title'),
                         release_date=album_data.get('release_date', ''),
                         album_type=album_data.get('type', 'Album'),
                         musicbrainz_id=album_data.get('id', ''),
-                        cover_art_url=album_data.get('cover_art', '')
+                        cover_art_url=album_data.get('cover_art', ''),
+                        rating=None  # Don't set default rating
                     )
                     albums_created += 1
                     logger.info(f"Created album: {album.title}")
                 except Exception as album_error:
-                    logger.error(f"Error creating album: {album_error}")
+                    logger.error(f"Error creating album: {album_error}", exc_info=True)
                     continue
             
             logger.info(f"Successfully created {albums_created} albums for {artist_name}")
         except Exception as albums_error:
             logger.error(f"Error fetching albums: {albums_error}", exc_info=True)
+            # Don't fail the whole operation if albums fail
+            pass
         
         return JsonResponse({
             'success': True,
@@ -936,3 +1022,364 @@ def add_artist_from_api(request):
             'error': f'Failed to add artist: {str(e)}',
             'success': False
         }, status=500)
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def rate_artist(request):
+    """AJAX endpoint to rate an artist"""
+    try:
+        artist_id = request.POST.get('artist_id')
+        rating = request.POST.get('rating')
+        
+        if not artist_id or not rating:
+            return JsonResponse({'error': 'Missing required fields', 'success': False}, status=400)
+        
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            return JsonResponse({'error': 'Rating must be between 1 and 5', 'success': False}, status=400)
+        
+        artist = Artist.objects.get(id=artist_id, user=request.user)
+        artist.rating = rating
+        artist.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Rated {artist.name} {rating} stars',
+            'rating': rating
+        })
+        
+    except Artist.DoesNotExist:
+        return JsonResponse({'error': 'Artist not found', 'success': False}, status=404)
+    except Exception as e:
+        logger.error(f"Error rating artist: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e), 'success': False}, status=500)
+
+
+@login_required
+@require_POST
+def rate_album(request):
+    """AJAX endpoint to rate an album"""
+    try:
+        album_id = request.POST.get('album_id')
+        rating = request.POST.get('rating')
+        
+        if not album_id or not rating:
+            return JsonResponse({'error': 'Missing required fields', 'success': False}, status=400)
+        
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            return JsonResponse({'error': 'Rating must be between 1 and 5', 'success': False}, status=400)
+        
+        # Make sure the album belongs to the user's artist
+        album = Album.objects.get(id=album_id, artist__user=request.user)
+        album.rating = rating
+        album.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Rated {album.title} {rating} stars',
+            'rating': rating
+        })
+        
+    except Album.DoesNotExist:
+        return JsonResponse({'error': 'Album not found', 'success': False}, status=404)
+    except Exception as e:
+        logger.error(f"Error rating album: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e), 'success': False}, status=500)
+
+
+@login_required
+@require_POST
+def update_listening_time(request):
+    """AJAX endpoint to update average listening time for an artist"""
+    try:
+        artist_id = request.POST.get('artist_id')
+        listening_time = request.POST.get('listening_time')
+        
+        if not artist_id or not listening_time:
+            return JsonResponse({'error': 'Missing required fields', 'success': False}, status=400)
+        
+        listening_time = int(listening_time)
+        if listening_time < 0:
+            return JsonResponse({'error': 'Listening time must be positive', 'success': False}, status=400)
+        
+        artist = Artist.objects.get(id=artist_id, user=request.user)
+        artist.average_time_listened = listening_time
+        artist.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Updated listening time for {artist.name}',
+            'listening_time': listening_time
+        })
+        
+    except Artist.DoesNotExist:
+        return JsonResponse({'error': 'Artist not found', 'success': False}, status=404)
+    except ValueError:
+        return JsonResponse({'error': 'Invalid listening time value', 'success': False}, status=400)
+    except Exception as e:
+        logger.error(f"Error updating listening time: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e), 'success': False}, status=500)
+
+
+
+@login_required
+def music_profile_view(request):
+    """
+    Display the user's AI-generated music profile.
+    Only generates when user clicks the "Generate Profile" button.
+    """
+    
+    context = {
+        'profile_generated': False,
+    }
+    
+    # Only generate profile if user submitted the form
+    if request.method == 'POST':
+        result = get_music_profile(request.user)
+        
+        if result['success']:
+            context['profile_generated'] = True
+            context['profile'] = result['profile']
+            # Save to session so it shows on dashboard
+            request.session['music_profile'] = result['profile']
+        else:
+            messages.error(request, result['message'])
+    
+    return render(request, 'user/music_profile.html', context)
+
+@login_required
+def ratings_view(request):
+    """
+    Display the user's song and album ratings.
+    """
+    
+    context = {
+        # You can add ratings data here when you implement the rating system
+        # For now, we'll show a placeholder
+    }
+    
+    return render(request, 'user/ratings.html', context)
+
+import requests
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
+from django.shortcuts import redirect
+import time
+
+@login_required
+@require_http_methods(["GET"])
+def search_songs(request):
+    """Search for songs using MusicBrainz API"""
+    query = request.GET.get('query', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'error': 'Query too short'}, status=400)
+    
+    try:
+        url = 'https://musicbrainz.org/ws/2/recording/'
+        params = {
+            'query': query,
+            'fmt': 'json',
+            'limit': 10
+        }
+        headers = {
+            'User-Agent': 'HarmoNet/1.0 (harmonetdeveloper@gmail.com)',  
+            'Accept': 'application/json'
+        }
+        
+        time.sleep(1.5)  
+        
+        response = requests.get(
+            url, 
+            params=params, 
+            headers=headers, 
+            timeout=10,
+            verify=True
+        )
+        
+        if response.status_code == 503:
+            return JsonResponse({
+                'error': 'MusicBrainz is rate limiting. Please wait 60 seconds and try again.'
+            }, status=503)
+        
+        if response.status_code == 429:  # Too Many Requests
+            return JsonResponse({
+                'error': 'Too many searches. Please wait a minute before searching again.'
+            }, status=429)
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        songs = []
+        for recording in data.get('recordings', []):
+            artist_name = 'Unknown Artist'
+            if recording.get('artist-credit'):
+                artist_name = recording['artist-credit'][0]['name']
+            
+            album_name = None
+            release_date = None
+            if recording.get('releases') and len(recording['releases']) > 0:
+                first_release = recording['releases'][0]
+                album_name = first_release.get('title')
+                release_date = first_release.get('date')
+            
+            song_data = {
+                'id': recording['id'],
+                'title': recording.get('title', 'Unknown'),
+                'artist_name': artist_name,
+                'album_name': album_name,
+                'release_date': release_date,
+                'duration': recording.get('length'),
+            }
+            songs.append(song_data)
+        
+        return JsonResponse({'songs': songs})
+        
+    except requests.exceptions.Timeout:
+        return JsonResponse({'error': 'Search timed out. Please try again.'}, status=408)
+    except requests.exceptions.SSLError:
+        return JsonResponse({'error': 'Connection error. Please try again later.'}, status=503)
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({'error': 'Search failed. Please try again in a moment.'}, status=500)
+    except Exception as e:
+        print(f"Unexpected error in search_songs: {str(e)}")
+        return JsonResponse({'error': 'Unexpected error occurred. Please try again.'}, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def add_song(request):
+    """Add a song from search results to user's collection"""
+    try:
+        song_id = request.POST.get('song_id')
+        title = request.POST.get('title')
+        artist_name = request.POST.get('artist_name')
+        album_name = request.POST.get('album_name', '')
+        release_date = request.POST.get('release_date', '')
+        duration = request.POST.get('duration')
+        
+        print(f"DEBUG: Adding song - {title} by {artist_name}")  # Debug line
+        
+        if not song_id or not title or not artist_name:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        
+        # Check if song already exists for this user
+        if Song.objects.filter(user=request.user, musicbrainz_id=song_id).exists():
+            return JsonResponse({'error': 'Song already in your collection'}, status=400)
+        
+        # Create the song
+        song = Song.objects.create(
+            user=request.user,
+            title=title,
+            artist_name=artist_name,
+            album_name=album_name if album_name else None,
+            release_date=release_date if release_date else None,
+            duration=int(duration) if duration else None,
+            musicbrainz_id=song_id
+        )
+        
+        print(f"DEBUG: Song created successfully - ID: {song.id}")  # Debug line
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Added "{title}" to your collection!'
+        })
+        
+    except Exception as e:
+        print(f"ERROR in add_song: {str(e)}")  # Debug line
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_song_manual(request):
+    """Add a song manually without MusicBrainz"""
+    try:
+        title = request.POST.get('song_title', '').strip()
+        artist_name = request.POST.get('song_artist', '').strip()
+        album_name = request.POST.get('song_album', '').strip()
+        year = request.POST.get('song_year', '').strip()
+        
+        print(f"DEBUG: Manual add - {title} by {artist_name}")  # Debug line
+        
+        if not title or not artist_name:
+            messages.error(request, 'Song title and artist name are required.')
+            return redirect('user_artist')
+        
+        # Create the song
+        song = Song.objects.create(
+            user=request.user,
+            title=title,
+            artist_name=artist_name,
+            album_name=album_name if album_name else None,
+            release_date=f"{year}-01-01" if year else None
+        )
+        
+        print(f"DEBUG: Manual song created - ID: {song.id}")  # Debug line
+        
+        messages.success(request, f'Added "{title}" by {artist_name} to your collection!')
+        return redirect('user_artist')
+        
+    except Exception as e:
+        print(f"ERROR in add_song_manual: {str(e)}")  # Debug line
+        messages.error(request, f'Error adding song: {str(e)}')
+        return redirect('user_artist')
+
+
+@login_required
+@require_http_methods(["POST"])
+def rate_song(request):
+    """Rate a song"""
+    try:
+        song_id = request.POST.get('song_id')
+        rating = request.POST.get('rating')
+        
+        if not song_id or not rating:
+            return JsonResponse({'error': 'Missing song_id or rating'}, status=400)
+        
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            return JsonResponse({'error': 'Rating must be between 1 and 5'}, status=400)
+        
+        song = Song.objects.get(id=song_id, user=request.user)
+        song.rating = rating
+        song.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Rated "{song.title}" {rating} stars'
+        })
+        
+    except Song.DoesNotExist:
+        return JsonResponse({'error': 'Song not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_song(request):
+    """Delete a song from user's collection"""
+    try:
+        song_id = request.POST.get('song_id')
+        
+        if not song_id:
+            return JsonResponse({'error': 'Missing song_id'}, status=400)
+        
+        song = Song.objects.get(id=song_id, user=request.user)
+        song_title = song.title
+        song.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Removed "{song_title}" from your collection'
+        })
+        
+    except Song.DoesNotExist:
+        return JsonResponse({'error': 'Song not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

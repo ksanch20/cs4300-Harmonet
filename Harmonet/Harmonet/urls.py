@@ -17,8 +17,6 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from home.views import index
-from user import views as user_view
-from django.contrib.auth import views as auth_views
 
 
 urlpatterns = [
@@ -26,8 +24,6 @@ urlpatterns = [
     path('', index, name='index'),
 
     # include all user-related URLs under /user/
-    path('user/', include('user.urls')), 
-
-
+    path('user/', include('user.urls')),
 
 ]

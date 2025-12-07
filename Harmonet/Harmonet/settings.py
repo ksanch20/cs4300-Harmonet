@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import os, sys
+import os
+import sys
 import dj_database_url
 from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,7 +30,10 @@ DEBUG = False
 # Spotify variables and client ID
 SPOTIPY_CLIENT_ID = config('SPOTIPY_CLIENT_ID', default='')
 SPOTIPY_CLIENT_SECRET = config('SPOTIPY_CLIENT_SECRET', default='')
-#for testing use: https://cs4300-harmonet-accj.onrender.com  || https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/ || https://harmonets.org/user/spotify/callback/ || https://cs4300-harmonet-accj.onrender.com
+#for testing use: https://cs4300-harmonet-accj.onrender.com
+#|| https://cs4300-harmonet-accj.onrender.com/user/spotify/callback/
+#|| https://harmonets.org/user/spotify/callback/
+#|| https://cs4300-harmonet-accj.onrender.com
 SPOTIPY_REDIRECT_URI = "https://harmonets.org/user/spotify/callback/"
 
 ALLOWED_HOSTS = [
@@ -88,7 +92,7 @@ WSGI_APPLICATION = 'Harmonet.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {'default': dj_database_url.parse('postgresql://harmonet_database_user:qel7JegasDb20m2GztJp09ySNVIDmkEz@dpg-d4aigq1e2q1c73b0l70g-a.oregon-postgres.render.com/harmonet_database')}
+DATABASES = {'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))}
 
 # Override for tests - use SQLite in-memory
 if 'test' in sys.argv:
