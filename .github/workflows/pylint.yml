@@ -30,7 +30,11 @@ jobs:
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=${GITHUB_WORKSPACE}/Harmonet/Harmonet" >> $GITHUB_ENV
 
+      # Set DJANGO_SETTINGS_MODULE so pylint-django knows where to find settings
+      - name: Set Django settings module
+        run: echo "DJANGO_SETTINGS_MODULE=Harmonet.settings" >> $GITHUB_ENV
+
       # Run pylint with Django plugin
       - name: Run Pylint
         working-directory: ${{ github.workspace }}/Harmonet
-        run: pylint Harmonet --load-plugins=pylint_django --django-settings-module=Harmonet.settings --output-format=text
+        run: pylint Harmonet --load-plugins=pylint_django --output-format=text
