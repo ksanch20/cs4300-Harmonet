@@ -29,7 +29,7 @@ jobs:
       - name: Run Pylint
         run: |
           # Set PYTHONPATH to the folder containing the inner Harmonet package
-          export PYTHONPATH="${GITHUB_WORKSPACE}/Harmonet"
+          export PYTHONPATH="/Harmonet"
           
           # Run pylint with Django plugin and settings
           python -m pylint Harmonet \
