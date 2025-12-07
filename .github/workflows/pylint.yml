@@ -26,4 +26,5 @@ jobs:
         run: echo "PYTHONPATH=$GITHUB_WORKSPACE/Harmonet" >> $GITHUB_ENV
 
       - name: Run Pylint
+        working-directory: ${{ github.workspace }}/Harmonet
         run: pylint Harmonet --load-plugins=pylint_django --output-format=text
