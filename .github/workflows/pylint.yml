@@ -10,27 +10,29 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the repository
+      # 1. Checkout the repository
       - uses: actions/checkout@v3
 
-      # Set up Python
+      # 2. Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
-      # Install dependencies
+      # 3. Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pylint pylint-django django python-decouple
 
-      # Set PYTHONPATH so pylint can find your package
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=${{ github.workspace }}/Harmonet/Harmonet" >> $GITHUB_ENV
-
-      # Run pylint with Django plugin
+      # 4. Run Pylint with proper PYTHONPATH
       - name: Run Pylint
         run: |
-          export PYTHONPATH="${{ github.workspace }}/Harmonet/Harmonet"
-          python -m pylint Harmonet --load-plugins=pylint_django --django-settings-module=Harmonet.settings --output-format=text
+          # Set PYTHONPATH to the folder containing the inner Harmonet package
+          export PYTHONPATH="${GITHUB_WORKSPACE}/Harmonet"
+          
+          # Run pylint with Django plugin and settings
+          python -m pylint Harmonet \
+            --load-plugins=pylint_django \
+            --django-settings-module=Harmonet.settings \
+            --output-format=text
