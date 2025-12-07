@@ -10,31 +10,27 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     env:
-      # Expose your GitHub secret so decouple can read it
       SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
 
     steps:
-      # 1️⃣ Checkout the repository
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
-      # 2️⃣ Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
-      # 3️⃣ Install dependencies from requirements.txt and Pylint packages
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r Harmonet/requirements.txt
           pip install pylint pylint-django
 
-      # 4️⃣ Set PYTHONPATH so Pylint can find your Django package
+
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=${GITHUB_WORKSPACE}/Harmonet/Harmonet" >> $GITHUB_ENV
 
-      # 5️⃣ Run Pylint with the Django plugin
       - name: Run Pylint
         working-directory: ${{ github.workspace }}/Harmonet
         run: pylint Harmonet --load-plugins=pylint_django --django-settings-module=Harmonet.settings --output-format=text
