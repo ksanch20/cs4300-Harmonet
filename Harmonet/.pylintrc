@@ -221,14 +221,13 @@ method-naming-style=snake_case
 #method-rgx=
 
 # Naming style matching correct module names.
-module-naming-style=snake_case
+#module-naming-style=snake_case
 
-# Allow Harmonet as a valid module name
-module-rgx=Harmonet|[a-z_]+
 
 # Regular expression matching correct module names. Overrides module-naming-
 # style. If left empty, module names will be checked with the set naming style.
-#module-rgx=
+# Allow Harmonet as a valid module name
+module-rgx=Harmonet|[a-z_]+
 
 # Colon-delimited sets of names that determine each other's naming style when
 # the name regexes allow several styles.
