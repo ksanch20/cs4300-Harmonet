@@ -202,8 +202,72 @@ def privacy_settings(request):
     return render(request, 'user/privacy_settings.html', context)
 
 
+@login_required
 def analytics(request):
-    return render(request, 'user/analytics.html', {'title': 'analytics'})
+    """Display comprehensive Spotify analytics"""
+    
+    # Check if Spotify is connected
+    spotify_connected = is_spotify_connected(request.user)
+    
+    if not spotify_connected:
+        return render(request, 'user/analytics.html', {
+            'title': 'Analytics',
+            'spotify_connected': False
+        })
+    
+    # Import the new analytics functions
+    from .spotify_service import (
+        fetch_user_playlists,
+        fetch_top_artists_by_timerange,
+        fetch_top_tracks_by_timerange,
+        fetch_recently_played,
+        analyze_top_genres
+    )
+    
+    # Get Spotify account info
+    try:
+        spotify_account = request.user.spotify_account
+    except:
+        spotify_account = None
+    
+    # Fetch all analytics data
+    # Top artists by time range
+    top_artists_month = fetch_top_artists_by_timerange(request.user, 'short_term', 10)
+    top_artists_6months = fetch_top_artists_by_timerange(request.user, 'medium_term', 10)
+    top_artists_alltime = fetch_top_artists_by_timerange(request.user, 'long_term', 10)
+    
+    # Top tracks by time range
+    top_tracks_month = fetch_top_tracks_by_timerange(request.user, 'short_term', 10)
+    top_tracks_6months = fetch_top_tracks_by_timerange(request.user, 'medium_term', 10)
+    top_tracks_alltime = fetch_top_tracks_by_timerange(request.user, 'long_term', 10)
+    
+    # Other analytics
+    playlists = fetch_user_playlists(request.user)
+    recently_played = fetch_recently_played(request.user, 20)
+    top_genres = analyze_top_genres(request.user)
+    
+    context = {
+        'title': 'Analytics',
+        'spotify_connected': True,
+        'spotify_account': spotify_account,
+        
+        # Top artists by time
+        'top_artists_month': top_artists_month,
+        'top_artists_6months': top_artists_6months,
+        'top_artists_alltime': top_artists_alltime,
+        
+        # Top tracks by time
+        'top_tracks_month': top_tracks_month,
+        'top_tracks_6months': top_tracks_6months,
+        'top_tracks_alltime': top_tracks_alltime,
+        
+        # Other data
+        'playlists': playlists,
+        'recently_played': recently_played,
+        'top_genres': top_genres,
+    }
+    
+    return render(request, 'user/analytics.html', context)
 
 def AI_Recommendation(request):
     return render(request, 'user/AI_Recommendation.html', {'title': 'AI_Recommendation'})
