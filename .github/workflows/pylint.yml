@@ -23,7 +23,7 @@ jobs:
           pip install pylint pylint-django django python-decouple
 
       - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$GITHUB_WORKSPACE/Harmonet" >> $GITHUB_ENV
+        run: echo "PYTHONPATH=$GITHUB_WORKSPACE/Harmonet/Harmonet" >> $GITHUB_ENV
 
       - name: Run Pylint
         working-directory: ${{ github.workspace }}/Harmonet
