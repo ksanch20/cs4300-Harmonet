@@ -313,32 +313,6 @@ class Artist(models.Model):
         return f"{self.name} - {self.user.username}"
 
 
-# Album model MUST come AFTER Artist model
-class Album(models.Model):
-    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='albums')
-    title = models.CharField(max_length=200)
-    release_date = models.CharField(max_length=100, blank=True, null=True)
-    album_type = models.CharField(max_length=50, blank=True, null=True)  # Album, EP, Single
-    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
-    cover_art_url = models.URLField(blank=True, null=True)
-    
-    # Rating field for album ratings (1-5 stars)
-    rating = models.IntegerField(
-        choices=[(i, i) for i in range(1, 6)],
-        null=True,
-        blank=True,
-        help_text="Rate this album from 1 to 5 stars"
-    )
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-release_date']
-
-    def __str__(self):
-        return f"{self.title} - {self.artist.name}"
-
-
 
 class Song(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='songs')
