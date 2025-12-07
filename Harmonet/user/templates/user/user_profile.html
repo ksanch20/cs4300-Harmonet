@@ -179,6 +179,7 @@
   .artist-mini-card:hover {
     border-color: #5ca1d3;
     box-shadow: 0 2px 8px rgba(92, 161, 211, 0.1);
+    transform: translateY(-2px);
   }
 
   .artist-mini-header {
@@ -200,6 +201,22 @@
     font-weight: 700;
     font-size: 1.5rem;
     flex-shrink: 0;
+    object-fit: cover;
+  }
+
+  /* Artist image styling */
+  .artist-mini-avatar-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .artist-mini-info {
+    flex: 1;
+    min-width: 0;
   }
 
   .artist-mini-name {
@@ -208,10 +225,18 @@
     font-size: 1.1rem;
     text-decoration: none;
     transition: color 0.2s;
+    display: block;
   }
 
   .artist-mini-name:hover {
     color: #5ca1d3;
+  }
+
+  .artist-disambiguation {
+    color: #9ca3af;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-top: 0.15rem;
   }
 
   .artist-mini-details {
@@ -228,6 +253,81 @@
     gap: 0.5rem;
   }
 
+  .artist-country {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f3f4f6;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+
+  /* ==================== SONGS SECTION ==================== */
+  .songs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1rem;
+  }
+
+  .song-mini-card {
+    background: #f9fafb;
+    padding: 1.25rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .song-mini-card:hover {
+    border-color: #5ca1d3;
+    box-shadow: 0 2px 8px rgba(92, 161, 211, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .song-mini-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .song-mini-title {
+    font-weight: 700;
+    color: #1e2a38;
+    font-size: 1.1rem;
+  }
+
+  .song-mini-artist {
+    color: #6b7280;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .song-mini-album {
+    color: #9ca3af;
+    font-size: 0.875rem;
+    font-style: italic;
+  }
+
+  .song-mini-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .song-mini-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .no-artists-message {
     text-align: center;
     padding: 2rem;
@@ -236,16 +336,21 @@
 
   .view-all-link {
     text-align: center;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
   }
 
   .view-all-link a {
     color: #5ca1d3;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: color 0.2s;
   }
 
   .view-all-link a:hover {
+    color: #4a8bb8;
     text-decoration: underline;
   }
 
@@ -258,6 +363,7 @@
   .locked-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
+    opacity: 0.5;
   }
 
   @media (max-width: 768px) {
@@ -266,6 +372,10 @@
     }
     
     .artists-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .songs-grid {
       grid-template-columns: 1fr;
     }
   }
@@ -409,8 +519,14 @@
               {% for artist in user_artists %}
                 <div class="artist-mini-card">
                   <div class="artist-mini-header">
-                    <div class="artist-mini-avatar">{{ artist.name|slice:":1"|upper }}</div>
-                    <div>
+                    <!-- Show artist image if available, otherwise show letter avatar -->
+                    {% if artist.artist_image %}
+                      <img src="{{ artist.artist_image }}" alt="{{ artist.name }}" class="artist-mini-avatar-img">
+                    {% else %}
+                      <div class="artist-mini-avatar">{{ artist.name|slice:":1"|upper }}</div>
+                    {% endif %}
+                    
+                    <div class="artist-mini-info">
                       {% if artist.profile_url %}
                         <a href="{{ artist.profile_url }}" target="_blank" class="artist-mini-name">
                           {{ artist.name }}
@@ -418,24 +534,42 @@
                       {% else %}
                         <div class="artist-mini-name">{{ artist.name }}</div>
                       {% endif %}
+                      
+                      <!-- Show disambiguation if available -->
+                      {% if artist.disambiguation %}
+                        <div class="artist-disambiguation">{{ artist.disambiguation }}</div>
+                      {% endif %}
                     </div>
                   </div>
                   
                   <div class="artist-mini-details">
+                    <!-- Country -->
+                    {% if artist.country %}
+                      <div class="artist-mini-detail">
+                        <span>🌍</span>
+                        <span>{{ artist.country }}</span>
+                      </div>
+                    {% endif %}
+                    
+                    <!-- Genre -->
                     <div class="artist-mini-detail">
                       <span>🎵</span>
                       <span>{{ artist.genre|default:"Genre not specified" }}</span>
                     </div>
+                    
+                    <!-- Rating -->
                     {% if artist.rating %}
                       <div class="artist-mini-detail">
                         <span>⭐</span>
                         <span>Rating: {{ artist.rating }}/5</span>
                       </div>
                     {% endif %}
+                    
+                    <!-- Average listening time -->
                     {% if artist.average_time_listened %}
                       <div class="artist-mini-detail">
                         <span>⏱️</span>
-                        <span>{{ artist.average_time_listened }} min avg</span>
+                        <span>{{ artist.average_time_listened }} min/week</span>
                       </div>
                     {% endif %}
                   </div>
@@ -468,6 +602,83 @@
             <div class="locked-icon">🔒</div>
             <p><strong>Artist collection is private</strong></p>
             <p>Become friends with {{ profile_user.username }} to see their favorite artists</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Songs Section -->
+      <div class="artists-section">
+        <h3>🎵 Favorite Songs</h3>
+        
+        {% if show_artists %}
+          {% if user_songs %}
+            <p class="subtitle">{{ profile_user.username }}'s top songs</p>
+            
+            <div class="songs-grid">
+              {% for song in user_songs %}
+                <div class="song-mini-card">
+                  <div class="song-mini-info">
+                    <div class="song-mini-title">🎵 {{ song.title }}</div>
+                    <div class="song-mini-artist">by {{ song.artist_name }}</div>
+                    {% if song.album_name %}
+                      <div class="song-mini-album">💿 {{ song.album_name }}</div>
+                    {% endif %}
+                  </div>
+                  
+                  <div class="song-mini-details">
+                    <!-- Release Date -->
+                    {% if song.release_date %}
+                      <div class="song-mini-detail">
+                        <span>📅</span>
+                        <span>{{ song.release_date|slice:":4" }}</span>
+                      </div>
+                    {% endif %}
+                    
+                    <!-- Duration -->
+                    {% if song.duration %}
+                      <div class="song-mini-detail">
+                        <span>⏱️</span>
+                        <span>{{ song.get_duration_display }}</span>
+                      </div>
+                    {% endif %}
+                    
+                    <!-- Rating -->
+                    {% if song.rating %}
+                      <div class="song-mini-detail">
+                        <span>⭐</span>
+                        <span>Rating: {{ song.rating }}/5</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            {% if is_own_profile %}
+              <div class="view-all-link">
+                <a href="{% url 'user_artist' %}">View & Manage All Songs →</a>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="no-artists-message">
+              {% if is_own_profile %}
+                <p>You haven't added any songs yet.</p>
+                <a href="{% url 'user_artist' %}" class="btn-primary" style="display: inline-block; margin-top: 1rem; text-decoration: none; padding: 0.75rem 1.5rem;">
+                  Add Your First Song
+                </a>
+              {% else %}
+                <p>{{ profile_user.username }} hasn't added any songs yet.</p>
+              {% endif %}
+            </div>
+          {% endif %}
+
+        {% else %}
+          <!-- Not friends - locked -->
+          <div class="locked-message">
+            <div class="locked-icon">🔒</div>
+            <p><strong>Song collection is private</strong></p>
+            <p>Become friends with {{ profile_user.username }} to see their favorite songs</p>
           </div>
         {% endif %}
       </div>

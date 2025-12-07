@@ -1,8 +1,26 @@
 import requests
 import time
 import logging
+import ssl
+import certifi
 
 logger = logging.getLogger(__name__)
+
+class SSLAdapter(requests.adapters.HTTPAdapter):
+    """Custom SSL adapter to handle SSL connection issues"""
+    def init_poolmanager(self, *args, **kwargs):
+        from urllib3.util.ssl_ import create_urllib3_context
+        context = create_urllib3_context()
+        context.load_verify_locations(certifi.where())
+        # Enable legacy renegotiation (fixes OpenSSL 3.0 issues)
+        context.options |= 0x4  # SSL_OP_LEGACY_SERVER_CONNECT
+        # Set reasonable security level
+        try:
+            context.set_ciphers('DEFAULT@SECLEVEL=1')
+        except:
+            pass
+        kwargs['ssl_context'] = context
+        return super().init_poolmanager(*args, **kwargs)
 
 class MusicBrainzAPI:
     BASE_URL = "https://musicbrainz.org/ws/2"
@@ -10,12 +28,17 @@ class MusicBrainzAPI:
     
     def __init__(self):
         self.session = requests.Session()
+        
+        # Mount custom SSL adapter
+        self.session.mount('https://', SSLAdapter())
+        
         self.session.headers.update({
-            'User-Agent': 'HarmoNet/1.0 (your-email@example.com)',  # IMPORTANT: Change this!
-            'Accept': 'application/json'
+            'User-Agent': 'HarmoNet/1.0 ( ksanch20@gmail.com )',
+            'Accept': 'application/json',
+            'Connection': 'close'
         })
         self.last_request_time = 0
-        self.rate_limit = 1.0
+        self.rate_limit = 1.5
     
     def _rate_limit_wait(self):
         """Enforce rate limiting"""
@@ -39,7 +62,7 @@ class MusicBrainzAPI:
                     'limit': limit,
                     'fmt': 'json'
                 },
-                timeout=10
+                timeout=15
             )
             
             logger.info(f"Search response status: {response.status_code}")
@@ -77,7 +100,7 @@ class MusicBrainzAPI:
                     'inc': 'url-rels+genres+tags',
                     'fmt': 'json'
                 },
-                timeout=10
+                timeout=15
             )
             response.raise_for_status()
             return response.json()
@@ -88,9 +111,9 @@ class MusicBrainzAPI:
     def get_artist_image(self, artist_id):
         """Try to get artist image from Cover Art Archive"""
         try:
-            response = requests.get(
+            response = self.session.get(
                 f"{self.COVERART_URL}/release-group/{artist_id}",
-                timeout=5
+                timeout=10
             )
             if response.status_code == 200:
                 data = response.json()
@@ -113,10 +136,10 @@ class MusicBrainzAPI:
                 params={
                     'artist': artist_id,
                     'type': 'album|ep',
-                    'limit': 50,  # Get more to sort and filter
+                    'limit': 50,
                     'fmt': 'json'
                 },
-                timeout=10
+                timeout=15
             )
             
             logger.info(f"Album API response status: {response.status_code}")
@@ -151,26 +174,31 @@ class MusicBrainzAPI:
             # Sort by release date (most recent first)
             albums_with_dates.sort(key=lambda x: x['release_date'], reverse=True)
             
-            # Get top 5 most recent
+            # Get top N most recent
             recent_albums = albums_with_dates[:limit]
             
-            # Log the selected albums
-            album_list = ', '.join([f"{a['title']} ({a['release_date'][:4]})" for a in recent_albums])
-            logger.info(f"Top 5 recent albums: {album_list}")
+            if recent_albums:
+                album_list = ', '.join([f"{a['title']} ({a['release_date'][:4]})" for a in recent_albums])
+                logger.info(f"Top {len(recent_albums)} recent albums: {album_list}")
             
             # Fetch cover art for the most recent albums
             final_albums = []
             for album_data in recent_albums:
                 logger.info(f"Fetching cover art for: {album_data['title']} ({album_data['release_date']})")
-                self._rate_limit_wait()
-                album_data['cover_art'] = self.get_album_cover_art(album_data['id'])
+                # Don't let cover art failure stop the whole process
+                try:
+                    self._rate_limit_wait()
+                    album_data['cover_art'] = self.get_album_cover_art(album_data['id']) or ''
+                except Exception as e:
+                    logger.warning(f"Failed to get cover art for {album_data['title']}: {e}")
+                    album_data['cover_art'] = ''
                 final_albums.append(album_data)
             
             logger.info(f"Returning {len(final_albums)} most recent albums")
             return final_albums
             
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error getting albums: {e.response.status_code}")
+            logger.error(f"HTTP error getting albums: {e.response.status_code if hasattr(e, 'response') else e}")
             return []
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error getting albums: {e}")
@@ -184,7 +212,7 @@ class MusicBrainzAPI:
         try:
             response = requests.get(
                 f"{self.COVERART_URL}/release-group/{release_group_id}",
-                timeout=5
+                timeout=10
             )
             if response.status_code == 200:
                 data = response.json()
@@ -193,7 +221,7 @@ class MusicBrainzAPI:
                     thumbnails = images[0].get('thumbnails', {})
                     return thumbnails.get('small') or thumbnails.get('250') or images[0].get('image')
         except Exception as e:
-            logger.debug(f"No cover art found: {e}")
+            logger.debug(f"No cover art found for {release_group_id}: {e}")
         return None
     
     def _extract_genres(self, artist_data):

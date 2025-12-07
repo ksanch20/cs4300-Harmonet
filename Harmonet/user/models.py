@@ -277,22 +277,30 @@ def save_user_profile(sender, instance, **kwargs):
 from django.db import models
 from django.contrib.auth.models import User
 
-from django.db import models
-from django.contrib.auth.models import User
+# ... other models ...
 
 class Artist(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='artists')
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=255)
+    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
     profile_url = models.URLField(blank=True, null=True)
     genre = models.CharField(max_length=100, blank=True, null=True)
-    average_time_listened = models.IntegerField(blank=True, null=True, help_text="Minutes")
-    rating = models.IntegerField(blank=True, null=True, choices=[(i, i) for i in range(1, 6)])
-    
-    # MusicBrainz specific fields
-    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True, unique=False)
-    artist_image = models.URLField(blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
-    disambiguation = models.CharField(max_length=200, blank=True, null=True)
+    disambiguation = models.CharField(max_length=255, blank=True, null=True)
+    artist_image = models.URLField(blank=True, null=True)
+    
+    # User tracking fields
+    average_time_listened = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Average minutes listened per week"
+    )
+    rating = models.IntegerField(
+        choices=[(i, i) for i in range(1, 6)],
+        null=True,
+        blank=True,
+        help_text="Rate this artist from 1 to 5 stars"
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -305,7 +313,7 @@ class Artist(models.Model):
         return f"{self.name} - {self.user.username}"
 
 
-# ADD THIS NEW MODEL:
+# Album model MUST come AFTER Artist model
 class Album(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='albums')
     title = models.CharField(max_length=200)
@@ -314,6 +322,14 @@ class Album(models.Model):
     musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
     cover_art_url = models.URLField(blank=True, null=True)
     
+    # Rating field for album ratings (1-5 stars)
+    rating = models.IntegerField(
+        choices=[(i, i) for i in range(1, 6)],
+        null=True,
+        blank=True,
+        help_text="Rate this album from 1 to 5 stars"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -321,3 +337,45 @@ class Album(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.artist.name}"
+
+
+
+class Song(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='songs')
+    title = models.CharField(max_length=255)
+    artist_name = models.CharField(max_length=255)
+    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
+    album_name = models.CharField(max_length=255, blank=True, null=True)
+    release_date = models.CharField(max_length=100, blank=True, null=True)
+    duration = models.IntegerField(blank=True, null=True, help_text="Duration in milliseconds")
+    
+    # User tracking fields
+    rating = models.IntegerField(
+        choices=[(i, i) for i in range(1, 6)],
+        null=True,
+        blank=True,
+        help_text="Rate this song from 1 to 5 stars"
+    )
+    times_played = models.IntegerField(
+        default=0,
+        help_text="Number of times played"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['user', 'musicbrainz_id']
+
+    def __str__(self):
+        return f"{self.title} - {self.artist_name}"
+    
+    def get_duration_display(self):
+        """Convert milliseconds to MM:SS format"""
+        if not self.duration:
+            return "Unknown"
+        seconds = self.duration // 1000
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        return f"{minutes}:{remaining_seconds:02d}"

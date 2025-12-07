@@ -11,10 +11,19 @@ urlpatterns = [
     path('account_link/', views.account_link, name='account_link'),
     path('user_artist/', views.artist_wallet, name='user_artist'),
     
-    # API endpoints for MusicBrainz integration
     path('api/search-artists/', views.search_artists_api, name='search_artists_api'),
     path('api/add-artist/', views.add_artist_from_api, name='add_artist_from_api'),
-    
+
+    path('api/rate-artist/', views.rate_artist, name='rate_artist'),
+    path('api/rate-album/', views.rate_album, name='rate_album'),
+    path('api/update-listening-time/', views.update_listening_time, name='update_listening_time'),
+
+    path('api/search-songs/', views.search_songs, name='search_songs'),
+    path('api/add-song/', views.add_song, name='add_song'),
+    path('api/rate-song/', views.rate_song, name='rate_song'),
+    path('api/delete-song/', views.delete_song, name='delete_song'),
+    path('add-song-manual/', views.add_song_manual, name='add_song_manual'),
+
     path('profile/', views.profile, name='profile'),
     path('analytics/', views.analytics, name='analytics'),
     path('AI_Recommendation/', views.AI_Recommendation, name='AI_Recommendation'), #Change password
