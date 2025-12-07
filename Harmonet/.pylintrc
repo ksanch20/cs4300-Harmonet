@@ -115,7 +115,7 @@ unsafe-load-any-extension=no
 # In verbose mode, extra non-checker-related info will be displayed.
 #verbose=
 
-django-settings-module=Harmonet.settings
+django-settings-module=Harmonet.Harmonet.settings
 
 [BASIC]
 
