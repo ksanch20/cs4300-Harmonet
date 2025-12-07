@@ -23,7 +23,9 @@ jobs:
       # Install dependencies
       - name: Install dependencies
         run: |
+
           python -m pip install --upgrade pip
+          pip install -r Harmonet/requirements.txt
           pip install pylint pylint-django django python-decouple
 
       # Set PYTHONPATH so pylint can find your Django package
