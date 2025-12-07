@@ -210,7 +210,7 @@ class MusicBrainzAPI:
     def get_album_cover_art(self, release_group_id):
         """Get cover art for a release group"""
         try:
-            response = self.session.get(
+            response = requests.get(
                 f"{self.COVERART_URL}/release-group/{release_group_id}",
                 timeout=10
             )

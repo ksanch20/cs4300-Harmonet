@@ -310,7 +310,7 @@ class Artist(models.Model):
         unique_together = ['user', 'musicbrainz_id']
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.user.username}"
 
 
 # Album model MUST come AFTER Artist model
