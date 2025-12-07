@@ -88,6 +88,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Harmonet.wsgi.application'
 
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
@@ -101,9 +102,10 @@ DATABASES = {
     'default': dj_database_url.parse(db_url, conn_max_age=600)
 }
 
+
 # Override for tests - use SQLite in-memory
 if 'test' in sys.argv:
-    DATABASES['default'] = {
+    DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': ':memory:',
@@ -128,6 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -139,6 +142,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
@@ -149,6 +153,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'home', 'static'),
@@ -166,11 +171,14 @@ PASSWORD_RESET_TIMEOUT = 259200
 if 'test' in sys.argv:
     EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 
+
 LOGIN_URL = '/login/'                  # Where to redirect if user not logged in
 LOGIN_REDIRECT_URL = '/account_link/' # Where to redirect after login
 LOGOUT_REDIRECT_URL = '/'              # Where to redirect after logout
 
+
 OPENAI_API_KEY=config('OPENAI_API_KEY', default='')
+
 
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'
