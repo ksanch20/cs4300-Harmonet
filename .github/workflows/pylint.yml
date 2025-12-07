@@ -1,4 +1,4 @@
-name: Lint with Pylint
+name: Lint Django App
 
 on:
   push:
@@ -8,25 +8,35 @@ on:
 
 jobs:
   lint:
-    name: Run Pylint Code Quality Check
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
+      # Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: 3.12
 
+      # Install dependencies
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pylint
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pylint pylint-django
 
+      # Set dummy environment variables for Django settings
+      - name: Set environment variables
+        run: |
+          export DJANGO_SETTINGS_MODULE=Harmonet.settings
+          export SENDGRID_API_KEY=dummykey
+          export OTHER_REQUIRED_ENV_VAR=dummyvalue
+        shell: bash
+
+      # Run Pylint
       - name: Run Pylint
         run: |
-          echo "Running Pylint for HarmoNet..."
-          pylint --rcfile=Harmonet/.pylintrc Harmonet/Harmonet --output-format=colorized || true
-
+          pylint Harmonet --load-plugins=pylint_django --output-format=text
