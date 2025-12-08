@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 import json
 from django.contrib.auth import get_user_model
+from .models import Artist, Song, Album
+import json
 
 
 #Used ChatGPT to help write tests
@@ -3187,3 +3189,569 @@ class SpotifyTimeRangeTests(TestCase):
             time_range='long_term'
         )
         self.assertEqual(result['time_range'], 'long_term')
+
+
+
+
+class ArtistWalletTestCase(TestCase):
+    """Test cases for Artist Wallet functionality"""
+    
+    def setUp(self):
+        """Set up test client and user"""
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.client.login(username='testuser', password='testpass123')
+    
+    def tearDown(self):
+        """Clean up after each test"""
+        User.objects.all().delete()
+        Artist.objects.all().delete()
+        Song.objects.all().delete()
+        Album.objects.all().delete()
+
+
+class ArtistModelTestCase(ArtistWalletTestCase):
+    """Test Artist model and operations"""
+    
+    def test_create_artist(self):
+        """Test creating an artist"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='The Beatles',
+            musicbrainz_id='b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d',
+            genre='Rock',
+            country='United Kingdom',
+            rating=5
+        )
+        self.assertEqual(artist.name, 'The Beatles')
+        self.assertEqual(artist.rating, 5)
+        self.assertEqual(artist.user, self.user)
+    
+    def test_artist_string_representation(self):
+        """Test artist __str__ method"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Taylor Swift',
+            rating=4
+        )
+        self.assertEqual(str(artist), 'Taylor Swift - testuser')
+    
+    def test_artist_unique_constraint(self):
+        """Test that user cannot add same artist twice"""
+        Artist.objects.create(
+            user=self.user,
+            name='Radiohead',
+            musicbrainz_id='a74b1b7f-71a5-4011-9441-d0b5e4122711'
+        )
+        
+        # Attempting to create duplicate should raise error
+        with self.assertRaises(Exception):
+            Artist.objects.create(
+                user=self.user,
+                name='Radiohead',
+                musicbrainz_id='a74b1b7f-71a5-4011-9441-d0b5e4122711'
+            )
+    
+    def test_artist_rating_update(self):
+        """Test updating artist rating"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Pink Floyd',
+            rating=3
+        )
+        artist.rating = 5
+        artist.save()
+        
+        updated_artist = Artist.objects.get(id=artist.id)
+        self.assertEqual(updated_artist.rating, 5)
+    
+    def test_artist_listening_time(self):
+        """Test setting average listening time"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Daft Punk',
+            average_time_listened=120
+        )
+        self.assertEqual(artist.average_time_listened, 120)
+
+
+class SongModelTestCase(ArtistWalletTestCase):
+    """Test Song model and operations"""
+    
+    def test_create_song(self):
+        """Test creating a song"""
+        song = Song.objects.create(
+            user=self.user,
+            title='Bohemian Rhapsody',
+            artist_name='Queen',
+            musicbrainz_id='test-song-id',
+            album_name='A Night at the Opera',
+            duration=354000,  # milliseconds
+            rating=5
+        )
+        self.assertEqual(song.title, 'Bohemian Rhapsody')
+        self.assertEqual(song.rating, 5)
+        self.assertEqual(song.user, self.user)
+    
+    def test_song_duration_display(self):
+        """Test song duration conversion to MM:SS"""
+        song = Song.objects.create(
+            user=self.user,
+            title='Test Song',
+            artist_name='Test Artist',
+            duration=185000  # 3:05
+        )
+        self.assertEqual(song.get_duration_display(), '3:05')
+    
+    def test_song_duration_display_unknown(self):
+        """Test song duration when None"""
+        song = Song.objects.create(
+            user=self.user,
+            title='Test Song',
+            artist_name='Test Artist',
+            duration=None
+        )
+        self.assertEqual(song.get_duration_display(), 'Unknown')
+    
+    def test_song_unique_constraint(self):
+        """Test that user cannot add same song twice"""
+        Song.objects.create(
+            user=self.user,
+            title='Smells Like Teen Spirit',
+            artist_name='Nirvana',
+            musicbrainz_id='test-song-123'
+        )
+        
+        with self.assertRaises(Exception):
+            Song.objects.create(
+                user=self.user,
+                title='Smells Like Teen Spirit',
+                artist_name='Nirvana',
+                musicbrainz_id='test-song-123'
+            )
+
+
+class AlbumModelTestCase(ArtistWalletTestCase):
+    """Test Album model and operations"""
+    
+    def test_create_standalone_album(self):
+        """Test creating a standalone album (user collection)"""
+        album = Album.objects.create(
+            user=self.user,
+            title='Dark Side of the Moon',
+            artist_name='Pink Floyd',
+            album_type='Album',
+            release_date='1973',
+            rating=5
+        )
+        self.assertEqual(album.title, 'Dark Side of the Moon')
+        self.assertEqual(album.rating, 5)
+        self.assertEqual(album.user, self.user)
+    
+    def test_create_artist_linked_album(self):
+        """Test creating album linked to an artist"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Radiohead'
+        )
+        album = Album.objects.create(
+            artist=artist,
+            title='OK Computer',
+            album_type='Album',
+            release_date='1997'
+        )
+        self.assertEqual(album.artist, artist)
+        self.assertEqual(album.title, 'OK Computer')
+    
+    def test_album_string_representation_with_artist(self):
+        """Test album __str__ with linked artist"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='The Beatles'
+        )
+        album = Album.objects.create(
+            artist=artist,
+            title='Abbey Road'
+        )
+        self.assertEqual(str(album), 'Abbey Road - The Beatles')
+    
+    def test_album_string_representation_with_artist_name(self):
+        """Test album __str__ with artist_name field"""
+        album = Album.objects.create(
+            user=self.user,
+            title='Thriller',
+            artist_name='Michael Jackson'
+        )
+        self.assertEqual(str(album), 'Thriller - Michael Jackson')
+    
+    def test_album_rating_update(self):
+        """Test updating album rating"""
+        album = Album.objects.create(
+            user=self.user,
+            title='Test Album',
+            artist_name='Test Artist',
+            rating=3
+        )
+        album.rating = 5
+        album.save()
+        
+        updated_album = Album.objects.get(id=album.id)
+        self.assertEqual(updated_album.rating, 5)
+
+
+class ArtistWalletViewTestCase(ArtistWalletTestCase):
+    """Test Artist Wallet views"""
+    
+    def test_artist_wallet_page_loads(self):
+        """Test that artist wallet page loads successfully"""
+        response = self.client.get(reverse('user_artist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'HarmoNet Artist Wallet')
+    
+    def test_artist_wallet_requires_login(self):
+        """Test that artist wallet requires authentication"""
+        self.client.logout()
+        response = self.client.get(reverse('user_artist'))
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+    
+    def test_artist_wallet_displays_user_artists(self):
+        """Test that artist wallet shows user's artists"""
+        Artist.objects.create(
+            user=self.user,
+            name='Test Artist',
+            genre='Rock'
+        )
+        response = self.client.get(reverse('user_artist'))
+        self.assertContains(response, 'Test Artist')
+        self.assertContains(response, 'Rock')
+    
+    def test_artist_wallet_displays_user_songs(self):
+        """Test that artist wallet shows user's songs"""
+        Song.objects.create(
+            user=self.user,
+            title='Test Song',
+            artist_name='Test Artist'
+        )
+        response = self.client.get(reverse('user_artist'))
+        self.assertContains(response, 'Test Song')
+    
+    def test_artist_wallet_displays_user_albums(self):
+        """Test that artist wallet shows user's albums"""
+        Album.objects.create(
+            user=self.user,
+            title='Test Album',
+            artist_name='Test Artist'
+        )
+        response = self.client.get(reverse('user_artist'))
+        self.assertContains(response, 'Test Album')
+
+
+class ArtistAPITestCase(ArtistWalletTestCase):
+    """Test Artist API endpoints"""
+    
+    def test_rate_artist_api(self):
+        """Test rating an artist via API"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Test Artist'
+        )
+        
+        response = self.client.post(
+            reverse('rate_artist'),
+            {
+                'artist_id': artist.id,
+                'rating': 5
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        artist.refresh_from_db()
+        self.assertEqual(artist.rating, 5)
+    
+    def test_update_listening_time_api(self):
+        """Test updating listening time via API"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Test Artist'
+        )
+        
+        response = self.client.post(
+            reverse('update_listening_time'),
+            {
+                'artist_id': artist.id,
+                'listening_time': 120
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        artist.refresh_from_db()
+        self.assertEqual(artist.average_time_listened, 120)
+    
+    def test_delete_artist(self):
+        """Test deleting an artist"""
+        artist = Artist.objects.create(
+            user=self.user,
+            name='Test Artist'
+        )
+        artist_id = artist.id
+        
+        response = self.client.post(
+            reverse('user_artist'),
+            {
+                'delete_artist_id': artist_id
+            }
+        )
+        
+        self.assertEqual(response.status_code, 302)  # Redirect after delete
+        self.assertFalse(Artist.objects.filter(id=artist_id).exists())
+
+
+class SongAPITestCase(ArtistWalletTestCase):
+    """Test Song API endpoints"""
+    
+    def test_add_song_api(self):
+        """Test adding a song via API"""
+        response = self.client.post(
+            reverse('add_song'),
+            {
+                'song_id': 'test-mb-id',
+                'title': 'New Song',
+                'artist_name': 'New Artist',
+                'album_name': 'New Album',
+                'release_date': '2024',
+                'duration': 180000
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        song = Song.objects.get(musicbrainz_id='test-mb-id')
+        self.assertEqual(song.title, 'New Song')
+        self.assertEqual(song.user, self.user)
+    
+    def test_rate_song_api(self):
+        """Test rating a song via API"""
+        song = Song.objects.create(
+            user=self.user,
+            title='Test Song',
+            artist_name='Test Artist'
+        )
+        
+        response = self.client.post(
+            reverse('rate_song'),
+            {
+                'song_id': song.id,
+                'rating': 4
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        song.refresh_from_db()
+        self.assertEqual(song.rating, 4)
+    
+    def test_delete_song_api(self):
+        """Test deleting a song via API"""
+        song = Song.objects.create(
+            user=self.user,
+            title='Test Song',
+            artist_name='Test Artist'
+        )
+        song_id = song.id
+        
+        response = self.client.post(
+            reverse('delete_song'),
+            {
+                'song_id': song_id
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        self.assertFalse(Song.objects.filter(id=song_id).exists())
+
+
+class AlbumAPITestCase(ArtistWalletTestCase):
+    """Test Album API endpoints"""
+    
+    def test_add_album_api(self):
+        """Test adding an album via API"""
+        response = self.client.post(
+            reverse('add_album_standalone'),
+            {
+                'album_id': 'test-album-mb-id',
+                'title': 'New Album',
+                'artist_name': 'New Artist',
+                'release_date': '2024',
+                'album_type': 'Album',
+                'cover_art_url': 'https://example.com/cover.jpg'
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        album = Album.objects.get(musicbrainz_id='test-album-mb-id')
+        self.assertEqual(album.title, 'New Album')
+        self.assertEqual(album.user, self.user)
+    
+    def test_rate_album_api(self):
+        """Test rating an album via API"""
+        album = Album.objects.create(
+            user=self.user,
+            title='Test Album',
+            artist_name='Test Artist'
+        )
+        
+        response = self.client.post(
+            reverse('rate_album_standalone'),
+            {
+                'album_id': album.id,
+                'rating': 5
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        album.refresh_from_db()
+        self.assertEqual(album.rating, 5)
+    
+    def test_delete_album_api(self):
+        """Test deleting an album via API"""
+        album = Album.objects.create(
+            user=self.user,
+            title='Test Album',
+            artist_name='Test Artist'
+        )
+        album_id = album.id
+        
+        response = self.client.post(
+            reverse('delete_album'),
+            {
+                'album_id': album_id
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        self.assertFalse(Album.objects.filter(id=album_id).exists())
+
+
+class PaginationTestCase(ArtistWalletTestCase):
+    """Test pagination for artists, songs, and albums"""
+    
+    def test_artist_pagination(self):
+        """Test that artists are paginated (6 per page)"""
+        # Create 10 artists
+        for i in range(10):
+            Artist.objects.create(
+                user=self.user,
+                name=f'Artist {i}',
+                musicbrainz_id=f'artist-{i}'
+            )
+        
+        response = self.client.get(reverse('user_artist'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Should show 6 artists on first page
+        self.assertEqual(len(response.context['artists']), 6)
+        
+        # Check pagination exists
+        self.assertContains(response, 'Page 1 of 2')
+    
+    def test_song_pagination(self):
+        """Test that songs are paginated (10 per page)"""
+        # Create 15 songs
+        for i in range(15):
+            Song.objects.create(
+                user=self.user,
+                title=f'Song {i}',
+                artist_name=f'Artist {i}',
+                musicbrainz_id=f'song-{i}'
+            )
+        
+        response = self.client.get(reverse('user_artist'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Should show 10 songs on first page
+        self.assertEqual(len(response.context['songs']), 10)
+    
+    def test_album_pagination(self):
+        """Test that albums are paginated (10 per page)"""
+        # Create 15 albums
+        for i in range(15):
+            Album.objects.create(
+                user=self.user,
+                title=f'Album {i}',
+                artist_name=f'Artist {i}'
+            )
+        
+        response = self.client.get(reverse('user_artist'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Should show 10 albums on first page
+        self.assertEqual(len(response.context['albums']), 10)
+
+
+class UserIsolationTestCase(TestCase):
+    """Test that users can only see/modify their own content"""
+    
+    def setUp(self):
+        """Create two users"""
+        self.client = Client()
+        self.user1 = User.objects.create_user(
+            username='user1',
+            password='pass1'
+        )
+        self.user2 = User.objects.create_user(
+            username='user2',
+            password='pass2'
+        )
+    
+    def test_users_see_only_own_artists(self):
+        """Test that users only see their own artists"""
+        Artist.objects.create(user=self.user1, name='User1 Artist')
+        Artist.objects.create(user=self.user2, name='User2 Artist')
+        
+        self.client.login(username='user1', password='pass1')
+        response = self.client.get(reverse('user_artist'))
+        
+        self.assertContains(response, 'User1 Artist')
+        self.assertNotContains(response, 'User2 Artist')
+    
+    def test_user_cannot_rate_other_users_artist(self):
+        """Test that users cannot rate another user's artist"""
+        artist = Artist.objects.create(user=self.user2, name='User2 Artist')
+        
+        self.client.login(username='user1', password='pass1')
+        response = self.client.post(
+            reverse('rate_artist'),
+            {
+                'artist_id': artist.id,
+                'rating': 5
+            }
+        )
+        
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
