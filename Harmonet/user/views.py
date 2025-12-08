@@ -7,7 +7,7 @@ from django.contrib import messages
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Avg
 from django.utils import timezone
 from django.contrib.auth.models import User
 from .ai_service import get_music_recommendations, get_music_profile
