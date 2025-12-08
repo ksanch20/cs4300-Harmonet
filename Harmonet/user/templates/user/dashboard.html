@@ -31,7 +31,7 @@
           <div class="card">
             <h3>🤖 AI-Recommendation</h3>
             <p>Check your recommendation via AI</p>
-            <a href="{% url 'ai_recommendations' %}">Open Messages →</a>
+            <a href="{% url 'ai_recommendations' %}">Recommendations →</a>
           </div>
 
           <div class="card">
@@ -47,9 +47,9 @@
           </div>
 
           <div class="card">
-            <h3>📅 Music Year-In-Review (TEST)</h3>
-            <p>Summary of Top Artists, Albums, and Genres</p>
-            <a href="{% url 'account_link' %}">TEST →</a>
+            <h3>🎵  Music Preferences</h3>
+            <p>Add Your Favorite Artists, Genres, and Tracks</p>
+            <a href="{% url 'music_preferences' %}">View Preferences →</a>
           </div>
 
         </div>
@@ -95,7 +95,7 @@
       <hr class="section-divider" />
 
       <section class="music-profile-section">
-        <h2>🎵 Your Music Profile</h2>
+        <h2>Your Music Profile</h2>
         
         {% if user_profile %}
           <!-- Show Generated Profile -->
