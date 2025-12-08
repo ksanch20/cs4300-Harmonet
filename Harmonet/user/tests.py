@@ -1633,14 +1633,16 @@ class ArtistModelTests(TestCase):
         self.assertEqual(artists[0], artist2) 
     
     def test_cannot_add_duplicate_musicbrainz_artist(self):
-        Artist.objects.create(
-            user=self.user,
-            name='Test Artist',
-            musicbrainz_id='same-id'
-        )
-        
-        from django.db import IntegrityError
-        with self.assertRaises(IntegrityError):
+    from django.db import IntegrityError, transaction
+    
+    Artist.objects.create(
+        user=self.user,
+        name='Test Artist',
+        musicbrainz_id='same-id'
+    )
+    
+    with self.assertRaises(IntegrityError):
+        with transaction.atomic():  # Add this wrapper
             Artist.objects.create(
                 user=self.user,
                 name='Test Artist',
@@ -3318,15 +3320,18 @@ class SongModelTestCase(ArtistWalletTestCase):
         self.assertEqual(song.get_duration_display(), 'Unknown')
     
     def test_song_unique_constraint(self):
-        """Test that user cannot add same song twice"""
-        Song.objects.create(
-            user=self.user,
-            title='Smells Like Teen Spirit',
-            artist_name='Nirvana',
-            musicbrainz_id='test-song-123'
-        )
-        
-        with self.assertRaises(Exception):
+    """Test that user cannot add same song twice"""
+    from django.db import IntegrityError, transaction
+    
+    Song.objects.create(
+        user=self.user,
+        title='Smells Like Teen Spirit',
+        artist_name='Nirvana',
+        musicbrainz_id='test-song-123'
+    )
+    
+    with self.assertRaises(IntegrityError):
+        with transaction.atomic():  # Add this wrapper
             Song.objects.create(
                 user=self.user,
                 title='Smells Like Teen Spirit',
