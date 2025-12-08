@@ -829,7 +829,7 @@ def user_profile(request, username):
     show_spotify_comparison = False
     
     # Only show comparison if not viewing own profile and are friends
-    if not is_own_profile and are_friends:
+    if not is_own_profile and can_view:
         # Check Artist Wallet comparison
         viewer_has_artists = Artist.objects.filter(user=request.user).exists()
         profile_has_artists = Artist.objects.filter(user=profile_user).exists()
