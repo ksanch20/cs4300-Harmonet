@@ -24,7 +24,7 @@ urlpatterns = [
     path('add-song-manual/', views.add_song_manual, name='add_song_manual'),
     
     path('api/search-albums/', views.search_albums, name='search_albums'),
-    path('api/add-album/', views.add_album_standalone, name='add_album'),
+    path('api/add-album/', views.add_album_standalone, name='add_album_standalone'),
     path('api/rate-album-standalone/', views.rate_album_standalone, name='rate_album_standalone'),
     path('api/delete-album/', views.delete_album_standalone, name='delete_album'),
     path('add-album-manual/', views.add_album_manual, name='add_album_manual'),

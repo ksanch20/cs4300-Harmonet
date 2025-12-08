@@ -356,18 +356,32 @@ class Song(models.Model):
 
 
 class Album(models.Model):
-    # Make artist field optional (null=True, blank=True)
-    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='albums', null=True, blank=True)
+    # Make artist field optional (for standalone albums)
+    artist = models.ForeignKey(
+        Artist, 
+        on_delete=models.CASCADE, 
+        related_name='albums', 
+        null=True, 
+        blank=True
+    )
     
-    # Add user field for standalone albums
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_albums', null=True, blank=True)
+    # User field for standalone albums
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='user_albums', 
+        null=True, 
+        blank=True
+    )
     
     title = models.CharField(max_length=255)
-    artist_name = models.CharField(max_length=255, blank=True, null=True)  
+    artist_name = models.CharField(max_length=255, blank=True, null=True)
     release_date = models.CharField(max_length=100, blank=True, null=True)
     album_type = models.CharField(max_length=100, default='Album')
     musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
     cover_art_url = models.URLField(max_length=500, blank=True, null=True)
+    
+    # User tracking fields (same as Artist and Song)
     rating = models.IntegerField(
         choices=[(i, i) for i in range(1, 6)],
         null=True,
