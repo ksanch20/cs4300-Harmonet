@@ -14,8 +14,7 @@
 {% block content %}
 <div class="container">
   <div class="sidebar">
-    <a href="#">General</a>
-    <a href="#">Featured Showcase</a>
+    <a href="{% url 'user_profile' request.user.username %}">Your Profile</a>
     <a href="{% url 'privacy_settings' %}">Privacy Settings</a>
     <a href="{% url 'account_link' %}">Linked Accounts</a>
     <a href="{% url 'music_preferences' %}">Music Preferences</a>
@@ -25,9 +24,6 @@
   <div class="content">
     <h2>Welcome to your Profile: {{ request.user.username }}</h2>
 
-    <p>
-      Your profile name and avatar represent you throughout the platform and must be appropriate for all audiences.
-    </p>
 
     <div class="profile-info">
       <div class="profile-item">

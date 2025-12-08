@@ -313,32 +313,6 @@ class Artist(models.Model):
         return f"{self.name} - {self.user.username}"
 
 
-# Album model MUST come AFTER Artist model
-class Album(models.Model):
-    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='albums')
-    title = models.CharField(max_length=200)
-    release_date = models.CharField(max_length=100, blank=True, null=True)
-    album_type = models.CharField(max_length=50, blank=True, null=True)  # Album, EP, Single
-    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
-    cover_art_url = models.URLField(blank=True, null=True)
-    
-    # Rating field for album ratings (1-5 stars)
-    rating = models.IntegerField(
-        choices=[(i, i) for i in range(1, 6)],
-        null=True,
-        blank=True,
-        help_text="Rate this album from 1 to 5 stars"
-    )
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-release_date']
-
-    def __str__(self):
-        return f"{self.title} - {self.artist.name}"
-
-
 
 class Song(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='songs')
@@ -379,3 +353,51 @@ class Song(models.Model):
         minutes = seconds // 60
         remaining_seconds = seconds % 60
         return f"{minutes}:{remaining_seconds:02d}"
+
+
+class Album(models.Model):
+    # Make artist field optional (for standalone albums)
+    artist = models.ForeignKey(
+        Artist, 
+        on_delete=models.CASCADE, 
+        related_name='albums', 
+        null=True, 
+        blank=True
+    )
+    
+    # User field for standalone albums
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='user_albums', 
+        null=True, 
+        blank=True
+    )
+    
+    title = models.CharField(max_length=255)
+    artist_name = models.CharField(max_length=255, blank=True, null=True)
+    release_date = models.CharField(max_length=100, blank=True, null=True)
+    album_type = models.CharField(max_length=100, default='Album')
+    musicbrainz_id = models.CharField(max_length=100, blank=True, null=True)
+    cover_art_url = models.URLField(max_length=500, blank=True, null=True)
+    
+    # User tracking fields (same as Artist and Song)
+    rating = models.IntegerField(
+        choices=[(i, i) for i in range(1, 6)],
+        null=True,
+        blank=True,
+        help_text="Rate this album from 1 to 5 stars"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        if self.artist:
+            return f"{self.title} - {self.artist.name}"
+        elif self.artist_name:
+            return f"{self.title} - {self.artist_name}"
+        return self.title

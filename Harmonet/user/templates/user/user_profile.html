@@ -3,7 +3,6 @@
 {% block title %}{{ profile_user.username }} - HarmoNet{% endblock %}
 
 {% block nav_extra %}
-  <!-- Remove "Welcome" text for this page -->
 {% endblock %}
 
 {% block extra_css %}
@@ -264,7 +263,6 @@
     margin-top: 0.25rem;
   }
 
-  /* ==================== SONGS SECTION ==================== */
   .songs-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -328,6 +326,83 @@
     gap: 0.5rem;
   }
 
+  /* ==================== ALBUMS SECTION ==================== */
+  .albums-grid-profile {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .album-mini-card {
+    background: #f9fafb;
+    padding: 1.25rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .album-mini-card:hover {
+    border-color: #5ca1d3;
+    box-shadow: 0 2px 8px rgba(92, 161, 211, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .album-mini-cover {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .album-mini-cover-placeholder {
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .album-mini-title {
+    font-weight: 700;
+    color: #1e2a38;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .album-mini-artist-name {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+  }
+
+  .album-mini-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    width: 100%;
+  }
+
+  .album-mini-detail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
   .no-artists-message {
     text-align: center;
     padding: 2rem;
@@ -378,6 +453,291 @@
     .songs-grid {
       grid-template-columns: 1fr;
     }
+
+    .albums-grid-profile {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .album-mini-cover,
+    .album-mini-cover-placeholder {
+      width: 120px;
+      height: 120px;
+    }
+  }
+/* ==================== MUSIC COMPATABILITY ==================== */
+  .compatibility-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .compatibility-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .compatibility-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 1rem auto;
+    position: relative;
+  }
+
+  .score-excellent {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .score-good {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .score-moderate {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+
+  .score-low {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  .compatibility-label {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6b7280;
+  }
+
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .comparison-category {
+    background: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .category-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #1e2a38;
+    flex: 1;
+  }
+
+  .category-count {
+    background: #5ca1d3;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .common-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+  }
+
+  .common-item:hover {
+    border-color: #5ca1d3;
+    box-shadow: 0 2px 8px rgba(92, 161, 211, 0.1);
+  }
+
+  .item-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .item-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .item-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-name {
+    font-weight: 600;
+    color: #1e2a38;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-meta {
+    font-size: 0.85rem;
+    color: #6b7280;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .rating-display {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    align-items: center;
+  }
+
+  .rating-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .rank-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .rank-badge {
+    background: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+  }
+
+  .genre-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .genre-name {
+    font-weight: 600;
+    color: #1e2a38;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .genre-counts {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e5e7eb;
+  }
+
+  .stat-box {
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e2a38;
+  }
+
+  .stat-details {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    line-height: 1.6;
+  }
+
+  .no-common {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+  }
+
+  @media (max-width: 768px) {
+    .comparison-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 {% endblock %}
@@ -386,14 +746,12 @@
 <main class="dashboard-container">
   <div class="dashboard-box">
     
-    <!-- Header -->
     <div class="dashboard-header">
       <h1>👤 User Profile</h1>
     </div>
 
     <div class="dashboard-wrapper">
       
-      <!-- Messages -->
       {% if messages %}
         <div style="margin-bottom: 1.5rem;">
           {% for message in messages %}
@@ -405,7 +763,6 @@
         </div>
       {% endif %}
 
-      <!-- Profile Header -->
       <div class="profile-header">
         <div class="profile-avatar-large">
           {{ profile_user.username|slice:":1"|upper }}
@@ -415,12 +772,10 @@
         <div class="profile-code">{{ profile_user.profile.friend_code }}</div>
       </div>
 
-      <!-- Friendship Status -->
       {% if not is_own_profile %}
         <div class="friendship-status-card">
           
           {% if are_friends %}
-            <!-- Already Friends -->
             <div class="status-badge status-friends">✓ Friends</div>
             <p style="color: #6b7280; margin-bottom: 1.5rem;">
               You are friends with {{ profile_user.username }}
@@ -435,14 +790,12 @@
           {% elif existing_request %}
             {% if existing_request.status == 'pending' %}
               {% if existing_request.from_user == request.user %}
-                <!-- Request Sent -->
                 <div class="status-badge status-pending">📤 Request Sent</div>
                 <p style="color: #6b7280;">
                   Waiting for {{ profile_user.username }} to respond
                 </p>
               
               {% else %}
-                <!-- Request Received -->
                 <div class="status-badge status-pending">📬 Request Received</div>
                 <p style="color: #6b7280; margin-bottom: 1.5rem;">
                   {{ profile_user.username }} wants to be friends
@@ -464,7 +817,6 @@
               {% endif %}
             
             {% elif existing_request.status == 'declined' %}
-              <!-- Previously Declined -->
               <div class="status-badge status-none">Not Friends</div>
               <p style="color: #6b7280; margin-bottom: 1.5rem;">
                 You can send a new friend request
@@ -478,7 +830,6 @@
             {% endif %}
           
           {% else %}
-            <!-- No Relationship -->
             <div class="status-badge status-none">Not Friends</div>
             <p style="color: #6b7280; margin-bottom: 1.5rem;">
               Connect with {{ profile_user.username }}
@@ -493,7 +844,6 @@
         </div>
       
       {% else %}
-        <!-- Own Profile -->
         <div class="friendship-status-card">
           <div class="status-badge" style="background: #f3f4f6; color: #1e2a38; border: 2px solid #e5e7eb;">
             👤 This is Your Profile
@@ -507,9 +857,8 @@
         </div>
       {% endif %}
 
-      <!-- Artist Wallet Section -->
       <div class="artists-section">
-        <h3>🎵 Favorite Artists</h3>
+        <h3>🎵 Featured Artist </h3>
         
         {% if show_artists %}
           {% if user_artists %}
@@ -519,7 +868,6 @@
               {% for artist in user_artists %}
                 <div class="artist-mini-card">
                   <div class="artist-mini-header">
-                    <!-- Show artist image if available, otherwise show letter avatar -->
                     {% if artist.artist_image %}
                       <img src="{{ artist.artist_image }}" alt="{{ artist.name }}" class="artist-mini-avatar-img">
                     {% else %}
@@ -535,7 +883,6 @@
                         <div class="artist-mini-name">{{ artist.name }}</div>
                       {% endif %}
                       
-                      <!-- Show disambiguation if available -->
                       {% if artist.disambiguation %}
                         <div class="artist-disambiguation">{{ artist.disambiguation }}</div>
                       {% endif %}
@@ -543,7 +890,6 @@
                   </div>
                   
                   <div class="artist-mini-details">
-                    <!-- Country -->
                     {% if artist.country %}
                       <div class="artist-mini-detail">
                         <span>🌍</span>
@@ -551,13 +897,11 @@
                       </div>
                     {% endif %}
                     
-                    <!-- Genre -->
                     <div class="artist-mini-detail">
                       <span>🎵</span>
                       <span>{{ artist.genre|default:"Genre not specified" }}</span>
                     </div>
                     
-                    <!-- Rating -->
                     {% if artist.rating %}
                       <div class="artist-mini-detail">
                         <span>⭐</span>
@@ -565,7 +909,6 @@
                       </div>
                     {% endif %}
                     
-                    <!-- Average listening time -->
                     {% if artist.average_time_listened %}
                       <div class="artist-mini-detail">
                         <span>⏱️</span>
@@ -597,7 +940,6 @@
           {% endif %}
 
         {% else %}
-          <!-- Not friends - locked -->
           <div class="locked-message">
             <div class="locked-icon">🔒</div>
             <p><strong>Artist collection is private</strong></p>
@@ -606,9 +948,8 @@
         {% endif %}
       </div>
 
-      <!-- Songs Section -->
       <div class="artists-section">
-        <h3>🎵 Favorite Songs</h3>
+        <h3>🎵 Featured Songs </h3>
         
         {% if show_artists %}
           {% if user_songs %}
@@ -674,7 +1015,6 @@
           {% endif %}
 
         {% else %}
-          <!-- Not friends - locked -->
           <div class="locked-message">
             <div class="locked-icon">🔒</div>
             <p><strong>Song collection is private</strong></p>
@@ -683,6 +1023,394 @@
         {% endif %}
       </div>
 
+      <div class="artists-section">
+        <h3>💿 Featured Albums </h3>
+        
+        {% if show_artists %}
+          {% if user_albums %}
+            <p class="subtitle">{{ profile_user.username }}'s top albums</p>
+            
+            <div class="albums-grid-profile">
+              {% for album in user_albums %}
+                <div class="album-mini-card">
+                  {% if album.cover_art_url %}
+                    <img src="{{ album.cover_art_url }}" alt="{{ album.title }}" class="album-mini-cover">
+                  {% else %}
+                    <div class="album-mini-cover-placeholder">💿</div>
+                  {% endif %}
+                  
+                  <div class="album-mini-title">{{ album.title }}</div>
+                  <div class="album-mini-artist-name">by {{ album.artist_name }}</div>
+                  
+                  <div class="album-mini-details">
+                    <div class="album-mini-detail">
+                      <span>📀</span>
+                      <span>{{ album.album_type }}</span>
+                    </div>
+                    
+                    {% if album.release_date %}
+                      <div class="album-mini-detail">
+                        <span>📅</span>
+                        <span>{{ album.release_date|slice:":4" }}</span>
+                      </div>
+                    {% endif %}
+                    
+                    {% if album.rating %}
+                      <div class="album-mini-detail">
+                        <span>⭐</span>
+                        <span>Rating: {{ album.rating }}/5</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            {% if is_own_profile %}
+              <div class="view-all-link">
+                <a href="{% url 'user_artist' %}">View & Manage All Albums →</a>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="no-artists-message">
+              {% if is_own_profile %}
+                <p>You haven't added any albums yet.</p>
+                <a href="{% url 'user_artist' %}" class="btn-primary" style="display: inline-block; margin-top: 1rem; text-decoration: none; padding: 0.75rem 1.5rem;">
+                  Add Your First Album
+                </a>
+              {% else %}
+                <p>{{ profile_user.username }} hasn't added any albums yet.</p>
+              {% endif %}
+            </div>
+          {% endif %}
+
+        {% else %}
+          <div class="locked-message">
+            <div class="locked-icon">🔒</div>
+            <p><strong>Album collection is private</strong></p>
+            <p>Become friends with {{ profile_user.username }} to see their favorite albums</p>
+          </div>
+        {% endif %}
+      </div>
+  <!-- ============ ARTIST WALLET COMPATIBILITY ============ -->
+      {% if show_wallet_comparison and wallet_compatibility %}
+        <div class="compatibility-section">
+          <div class="compatibility-header">
+            <h3 style="margin: 0 0 1rem 0; color: #1e2a38; font-size: 1.6rem;">
+              🎧 Music Library Compatibility
+            </h3>
+            <p style="color: #6b7280; margin-bottom: 1.5rem;">
+              Comparing your complete music collection with {{ profile_user.username }}
+            </p>
+            
+            <!-- Compatibility Score Circle -->
+            <div class="compatibility-score {% if wallet_compatibility.compatibility_score >= 75 %}score-excellent{% elif wallet_compatibility.compatibility_score >= 50 %}score-good{% elif wallet_compatibility.compatibility_score >= 25 %}score-moderate{% else %}score-low{% endif %}">
+              {{ wallet_compatibility.compatibility_score }}%
+            </div>
+            <span class="compatibility-label">
+              {% if wallet_compatibility.compatibility_score >= 75 %}
+                Excellent Match! 🎉
+              {% elif wallet_compatibility.compatibility_score >= 50 %}
+                Great Compatibility! 🎵
+              {% elif wallet_compatibility.compatibility_score >= 25 %}
+                Some Common Ground 🎶
+              {% else %}
+                Diverse Tastes 🎼
+              {% endif %}
+            </span>
+          </div>
+
+          <div class="comparison-grid">
+            
+            <!-- Common Artists -->
+            <div class="comparison-category">
+              <div class="category-header">
+                <h4>🎤 Artists</h4>
+                <span class="category-count">{{ wallet_compatibility.total_common_artists }}</span>
+              </div>
+              
+              {% if wallet_compatibility.common_artists %}
+                {% for artist in wallet_compatibility.common_artists %}
+                  <div class="common-item">
+                    {% if artist.image %}
+                      <img src="{{ artist.image }}" alt="{{ artist.name }}" class="item-image">
+                    {% else %}
+                      <div class="item-avatar">
+                        {{ artist.name|slice:":1"|upper }}
+                      </div>
+                    {% endif %}
+                    
+                    <div class="item-details">
+                      {% if artist.profile_url %}
+                        <a href="{{ artist.profile_url }}" target="_blank" class="item-name" style="text-decoration: none;">
+                          {{ artist.name }}
+                        </a>
+                      {% else %}
+                        <div class="item-name">{{ artist.name }}</div>
+                      {% endif %}
+                      
+                      <div class="item-meta">
+                        {% if artist.genre %}
+                          <span class="meta-item">🎵 {{ artist.genre }}</span>
+                        {% endif %}
+                        <span class="meta-item">💿 {{ artist.user1_albums }}/{{ artist.user2_albums }} albums</span>
+                      </div>
+                    </div>
+                    
+                    <div class="rating-display">
+                      {% if artist.user1_rating %}
+                        <span class="rating-badge" title="Your rating">⭐ {{ artist.user1_rating }}</span>
+                      {% endif %}
+                      {% if artist.user2_rating %}
+                        <span class="rating-badge" title="{{ profile_user.username }}'s rating">⭐ {{ artist.user2_rating }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="no-common">
+                  <p>No common artists</p>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Common Albums -->
+            <div class="comparison-category">
+              <div class="category-header">
+                <h4>💿 Albums</h4>
+                <span class="category-count">{{ wallet_compatibility.total_common_albums }}</span>
+              </div>
+              
+              {% if wallet_compatibility.common_albums %}
+                {% for album in wallet_compatibility.common_albums %}
+                  <div class="common-item">
+                    {% if album.cover_art %}
+                      <img src="{{ album.cover_art }}" alt="{{ album.title }}" class="item-image">
+                    {% else %}
+                      <div class="item-avatar">
+                        💿
+                      </div>
+                    {% endif %}
+                    
+                    <div class="item-details">
+                      <div class="item-name">{{ album.title }}</div>
+                      <div class="item-meta">
+                        <span class="meta-item">{{ album.artist_name }}</span>
+                        {% if album.release_date %}
+                          <span class="meta-item">{{ album.release_date|slice:":4" }}</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                    
+                    <div class="rating-display">
+                      {% if album.user1_rating %}
+                        <span class="rating-badge" title="Your rating">⭐ {{ album.user1_rating }}</span>
+                      {% endif %}
+                      {% if album.user2_rating %}
+                        <span class="rating-badge" title="{{ profile_user.username }}'s rating">⭐ {{ album.user2_rating }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="no-common">
+                  <p>No common albums</p>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Common Songs -->
+            <div class="comparison-category">
+              <div class="category-header">
+                <h4>🎵 Songs</h4>
+                <span class="category-count">{{ wallet_compatibility.total_common_songs }}</span>
+              </div>
+              
+              {% if wallet_compatibility.common_songs %}
+                {% for song in wallet_compatibility.common_songs %}
+                  <div class="common-item">
+                    <div class="item-avatar">
+                      🎵
+                    </div>
+                    
+                    <div class="item-details">
+                      <div class="item-name">{{ song.title }}</div>
+                      <div class="item-meta">
+                        <span class="meta-item">{{ song.artist_name }}</span>
+                        {% if song.duration %}
+                          <span class="meta-item">⏱️ {{ song.duration|floatformat:0 }}s</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                    
+                    <div class="rating-display">
+                      {% if song.user1_rating %}
+                        <span class="rating-badge" title="Your rating">⭐ {{ song.user1_rating }}</span>
+                      {% endif %}
+                      {% if song.user2_rating %}
+                        <span class="rating-badge" title="{{ profile_user.username }}'s rating">⭐ {{ song.user2_rating }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="no-common">
+                  <p>No common songs</p>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Common Genres -->
+            <div class="comparison-category">
+              <div class="category-header">
+                <h4>🎶 Genres</h4>
+                <span class="category-count">{{ wallet_compatibility.total_common_genres }}</span>
+              </div>
+              
+              {% if wallet_compatibility.common_genres %}
+                {% for genre, counts in wallet_compatibility.common_genres %}
+                  <div class="genre-item">
+                    <div class="genre-name">
+                      <span>🎶</span>
+                      <span>{{ genre }}</span>
+                    </div>
+                    <div class="genre-counts">
+                      <span title="Your artists">{{ counts.user1_count }}</span>
+                      <span>|</span>
+                      <span title="{{ profile_user.username }}'s artists">{{ counts.user2_count }}</span>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="no-common">
+                  <p>No common genres</p>
+                </div>
+              {% endif %}
+            </div>
+
+          </div>
+
+          
+
+        </div>
+      {% endif %}
+
+      <!-- ============ SPOTIFY COMPATIBILITY ============ -->
+      {% if show_spotify_comparison and spotify_compatibility %}
+        <div class="compatibility-section">
+          <div class="compatibility-header">
+            <h3 style="margin: 0 0 1rem 0; color: #1e2a38; font-size: 1.6rem;">
+              🎧 Spotify Compatibility
+            </h3>
+            <p style="color: #6b7280; margin-bottom: 1.5rem;">
+              Comparing your Spotify listening data with {{ profile_user.username }}
+            </p>
+            
+            <!-- Compatibility Score Circle -->
+            <div class="compatibility-score {% if spotify_compatibility.compatibility_score >= 75 %}score-excellent{% elif spotify_compatibility.compatibility_score >= 50 %}score-good{% elif spotify_compatibility.compatibility_score >= 25 %}score-moderate{% else %}score-low{% endif %}">
+              {{ spotify_compatibility.compatibility_score }}%
+            </div>
+            <span class="compatibility-label">
+              {% if spotify_compatibility.compatibility_score >= 75 %}
+                Music Soulmates! 🎉
+              {% elif spotify_compatibility.compatibility_score >= 50 %}
+                Great Spotify Match! 🎵
+              {% elif spotify_compatibility.compatibility_score >= 25 %}
+                Some Overlap 🎶
+              {% else %}
+                Different Playlists 🎼
+              {% endif %}
+            </span>
+          </div>
+
+          <div class="comparison-grid">
+            
+            <!-- Common Artists -->
+            <div class="comparison-category">
+              <div class="category-header">
+                <h4>🎤 Top Artists</h4>
+                <span class="category-count">{{ spotify_compatibility.total_common_artists }}</span>
+              </div>
+              
+              {% if spotify_compatibility.common_artists %}
+                {% for artist in spotify_compatibility.common_artists %}
+                  <div class="common-item">
+                    {% if artist.image %}
+                      <img src="{{ artist.image }}" alt="{{ artist.name }}" class="item-image">
+                    {% else %}
+                      <div class="item-avatar">
+                        {{ artist.name|slice:":1"|upper }}
+                      </div>
+                    {% endif %}
+                    
+                    <div class="item-details">
+                      <div class="item-name">{{ artist.name }}</div>
+                      {% if artist.genres %}
+                        <div class="item-meta">
+                          <span class="meta-item">🎵 {{ artist.genres|slice:":30" }}{% if artist.genres|length > 30 %}...{% endif %}</span>
+                        </div>
+                      {% endif %}
+                    </div>
+                    
+                    <div class="rank-badges">
+                      <span class="rank-badge" title="Your rank">#{{ artist.user1_rank }}</span>
+                      <span class="rank-badge" title="{{ profile_user.username }}'s rank">#{{ artist.user2_rank }}</span>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="no-common">
+                  <p>No common artists</p>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Common Tracks -->
+            <div class="comparison-category">
+              <div class="category-header">
+                <h4>🎵 Top Tracks</h4>
+                <span class="category-count">{{ spotify_compatibility.total_common_tracks }}</span>
+              </div>
+              
+              {% if spotify_compatibility.common_tracks %}
+                {% for track in spotify_compatibility.common_tracks %}
+                  <div class="common-item">
+                    {% if track.image %}
+                      <img src="{{ track.image }}" alt="{{ track.name }}" class="item-image">
+                    {% else %}
+                      <div class="item-avatar">
+                        🎵
+                      </div>
+                    {% endif %}
+                    
+                    <div class="item-details">
+                      <div class="item-name">{{ track.name }}</div>
+                      <div class="item-meta">
+                        <span class="meta-item">{{ track.artist }}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="rank-badges">
+                      <span class="rank-badge" title="Your rank">#{{ track.user1_rank }}</span>
+                      <span class="rank-badge" title="{{ profile_user.username }}'s rank">#{{ track.user2_rank }}</span>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="no-common">
+                  <p>No common tracks</p>
+                </div>
+              {% endif %}
+            </div>
+
+          </div>
+
+          
+          </div>
+
+        </div>
+      {% endif %}
     </div>
   </div>
 </main>

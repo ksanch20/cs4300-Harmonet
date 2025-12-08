@@ -7,7 +7,7 @@ from django.contrib import messages
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Avg
 from django.utils import timezone
 from django.contrib.auth.models import User
 from .ai_service import get_music_recommendations, get_music_profile
@@ -21,6 +21,8 @@ from .models import SoundCloudArtist
 from .forms import SoundCloudArtistForm
 import re
 from django.utils.safestring import mark_safe
+from django.views.decorators.http import require_http_methods
+
 
 
 
@@ -35,9 +37,19 @@ from .spotify_service import (
 
 
 from django.http import JsonResponse
-from .models import Artist, Album 
+from .models import Artist, Album, Song, FriendRequest, UserProfile
 from .forms import ArtistForm
 import logging
+import time
+import requests
+
+
+
+
+
+
+
+
 
 #################### index ####################################### 
 def index(request):
@@ -780,9 +792,10 @@ def user_profile(request, username):
     is_own_profile = request.user == profile_user
     can_view_artists = can_view
     
-    # Get user's artists and songs based on privacy settings
+    # Get user's artists, songs, and albums based on privacy settings
     user_artists = []
     user_songs = []
+    user_albums = []  # ADD THIS
     show_artists = False
     
     if can_view_artists:
@@ -796,12 +809,42 @@ def user_profile(request, username):
             user=profile_user
         ).order_by('-rating', '-created_at')[:10]
         
+        # Get albums - ADD THIS SECTION
+        user_albums = Album.objects.filter(
+            user=profile_user
+        ).order_by('-rating', '-created_at')[:10]
+        
         show_artists = True
         
+        # Debug output
         print(f"DEBUG: User {profile_user.username} has {user_artists.count()} artists")
         print(f"DEBUG: User {profile_user.username} has {user_songs.count()} songs")
+        print(f"DEBUG: User {profile_user.username} has {user_albums.count()} albums")  # ADD THIS
         print(f"DEBUG: show_artists = {show_artists}")
         print(f"DEBUG: can_view = {can_view}")
+        # ============ Music Compatibility Comparison ============
+    wallet_compatibility = None
+    spotify_compatibility = None
+    show_wallet_comparison = False
+    show_spotify_comparison = False
+    
+    # Only show comparison if not viewing own profile and are friends
+    if not is_own_profile and are_friends:
+        # Check Artist Wallet comparison
+        viewer_has_artists = Artist.objects.filter(user=request.user).exists()
+        profile_has_artists = Artist.objects.filter(user=profile_user).exists()
+        
+        if viewer_has_artists and profile_has_artists:
+            wallet_compatibility = calculate_wallet_compatibility(request.user, profile_user)
+            show_wallet_comparison = True
+        
+        # Check Spotify comparison
+        viewer_spotify_connected = is_spotify_connected(request.user)
+        profile_spotify_connected = is_spotify_connected(profile_user)
+        
+        if viewer_spotify_connected and profile_spotify_connected:
+            spotify_compatibility = calculate_spotify_compatibility(request.user, profile_user)
+            show_spotify_comparison = True
     
     context = {
         'profile_user': profile_user,
@@ -810,20 +853,308 @@ def user_profile(request, username):
         'is_own_profile': is_own_profile,
         'user_artists': user_artists,
         'user_songs': user_songs,
+        'user_albums': user_albums, 
         'show_artists': show_artists,
+        'wallet_compatibility': wallet_compatibility,
+        'spotify_compatibility': spotify_compatibility,
+        'show_wallet_comparison': show_wallet_comparison,
+        'show_spotify_comparison': show_spotify_comparison,
     }
     
     return render(request, 'user/user_profile.html', context)
+def calculate_wallet_compatibility(user1, user2):
+    """
+    Calculate music compatibility between two users based on their Artist Wallet.
+    Includes artists, albums, and songs comparison.
+    """
+    
+    # Get all artists from both users' wallets
+    user1_artists = Artist.objects.filter(user=user1).prefetch_related('albums')
+    user2_artists = Artist.objects.filter(user=user2).prefetch_related('albums')
+    
+    # Get all songs from both users
+    user1_songs = Song.objects.filter(user=user1)
+    user2_songs = Song.objects.filter(user=user2)
+    
+    # Get all albums from both users
+    user1_albums = Album.objects.filter(artist__user=user1)
+    user2_albums = Album.objects.filter(artist__user=user2)
+    
+    # ============ ARTISTS COMPARISON ============
+    user1_artist_dict = {}
+    for artist in user1_artists:
+        key = artist.musicbrainz_id if artist.musicbrainz_id else artist.name.lower()
+        user1_artist_dict[key] = {
+            'name': artist.name,
+            'profile_url': artist.profile_url,
+            'genre': artist.genre,
+            'rating': artist.rating,
+            'image': artist.artist_image,
+            'album_count': artist.albums.count()
+        }
+    
+    user2_artist_dict = {}
+    for artist in user2_artists:
+        key = artist.musicbrainz_id if artist.musicbrainz_id else artist.name.lower()
+        user2_artist_dict[key] = {
+            'name': artist.name,
+            'profile_url': artist.profile_url,
+            'genre': artist.genre,
+            'rating': artist.rating,
+            'image': artist.artist_image,
+            'album_count': artist.albums.count()
+        }
+    
+    # Find common artists
+    common_artist_keys = set(user1_artist_dict.keys()) & set(user2_artist_dict.keys())
+    common_artists = []
+    
+    for key in common_artist_keys:
+        artist_data = user1_artist_dict[key].copy()
+        artist_data['user1_rating'] = user1_artist_dict[key]['rating']
+        artist_data['user2_rating'] = user2_artist_dict[key]['rating']
+        artist_data['user1_albums'] = user1_artist_dict[key]['album_count']
+        artist_data['user2_albums'] = user2_artist_dict[key]['album_count']
+        
+        # Calculate average rating for sorting
+        ratings = [r for r in [artist_data['user1_rating'], artist_data['user2_rating']] if r]
+        artist_data['avg_rating'] = sum(ratings) / len(ratings) if ratings else 0
+        
+        common_artists.append(artist_data)
+    
+    # Sort by average rating
+    common_artists.sort(key=lambda x: x['avg_rating'], reverse=True)
+    
+    # ============ ALBUMS COMPARISON ============
+    user1_album_dict = {}
+    for album in user1_albums:
+        key = album.musicbrainz_id if album.musicbrainz_id else f"{album.title.lower()}_{album.artist.name.lower()}"
+        user1_album_dict[key] = {
+            'title': album.title,
+            'artist_name': album.artist.name,
+            'rating': album.rating,
+            'cover_art': album.cover_art_url,
+            'release_date': album.release_date,
+            'type': album.album_type
+        }
+    
+    user2_album_dict = {}
+    for album in user2_albums:
+        key = album.musicbrainz_id if album.musicbrainz_id else f"{album.title.lower()}_{album.artist.name.lower()}"
+        user2_album_dict[key] = {
+            'title': album.title,
+            'artist_name': album.artist.name,
+            'rating': album.rating,
+            'cover_art': album.cover_art_url,
+            'release_date': album.release_date,
+            'type': album.album_type
+        }
+    
+    # Find common albums
+    common_album_keys = set(user1_album_dict.keys()) & set(user2_album_dict.keys())
+    common_albums = []
+    
+    for key in common_album_keys:
+        album_data = user1_album_dict[key].copy()
+        album_data['user1_rating'] = user1_album_dict[key]['rating']
+        album_data['user2_rating'] = user2_album_dict[key]['rating']
+        
+        ratings = [r for r in [album_data['user1_rating'], album_data['user2_rating']] if r]
+        album_data['avg_rating'] = sum(ratings) / len(ratings) if ratings else 0
+        
+        common_albums.append(album_data)
+    
+    common_albums.sort(key=lambda x: x['avg_rating'], reverse=True)
+    
+    # ============ SONGS COMPARISON ============
+    user1_song_dict = {}
+    for song in user1_songs:
+        key = f"{song.title.lower()}_{song.artist_name.lower()}"
+        user1_song_dict[key] = {
+            'title': song.title,
+            'artist_name': song.artist_name,
+            'album_name': song.album_name,
+            'rating': song.rating,
+        }
+    
+    user2_song_dict = {}
+    for song in user2_songs:
+        key = f"{song.title.lower()}_{song.artist_name.lower()}"
+        user2_song_dict[key] = {
+            'title': song.title,
+            'artist_name': song.artist_name,
+            'album_name': song.album_name,
+            'rating': song.rating,
+        }
+    
+    # Find common songs
+    common_song_keys = set(user1_song_dict.keys()) & set(user2_song_dict.keys())
+    common_songs = []
+    
+    for key in common_song_keys:
+        song_data = user1_song_dict[key].copy()
+        song_data['user1_rating'] = user1_song_dict[key]['rating']
+        song_data['user2_rating'] = user2_song_dict[key]['rating']
+        
+        ratings = [r for r in [song_data['user1_rating'], song_data['user2_rating']] if r]
+        song_data['avg_rating'] = sum(ratings) / len(ratings) if ratings else 0
+        
+        common_songs.append(song_data)
+    
+    common_songs.sort(key=lambda x: x['avg_rating'], reverse=True)
+    
+    # ============ GENRE COMPARISON ============
+    user1_genres = [artist.genre for artist in user1_artists if artist.genre]
+    user2_genres = [artist.genre for artist in user2_artists if artist.genre]
+    
+    common_genres = list(set(user1_genres) & set(user2_genres))
+    
+    genre_compatibility = {}
+    for genre in common_genres:
+        count1 = user1_genres.count(genre)
+        count2 = user2_genres.count(genre)
+        genre_compatibility[genre] = {
+            'user1_count': count1,
+            'user2_count': count2,
+            'total': count1 + count2
+        }
+    
+    sorted_genres = sorted(genre_compatibility.items(), key=lambda x: x[1]['total'], reverse=True)
+    
+    # ============ COMPATIBILITY SCORE ============
+    total_artists = len(user1_artist_dict) + len(user2_artist_dict)
+    total_albums = len(user1_album_dict) + len(user2_album_dict)
+    total_songs = len(user1_song_dict) + len(user2_song_dict)
+    
+    # Calculate individual scores
+    artist_score = (len(common_artists) * 2 / total_artists * 100) if total_artists > 0 else 0
+    album_score = (len(common_albums) * 2 / total_albums * 100) if total_albums > 0 else 0
+    song_score = (len(common_songs) * 2 / total_songs * 100) if total_songs > 0 else 0
+    
+    total_genres = len(set(user1_genres + user2_genres))
+    genre_score = (len(common_genres) / total_genres * 100) if total_genres > 0 else 0
+    
+    # Weighted: 40% artists, 25% albums, 25% songs, 10% genres
+    compatibility_score = int(
+        (artist_score * 0.4) + 
+        (album_score * 0.25) + 
+        (song_score * 0.25) + 
+        (genre_score * 0.1)
+    )
+    compatibility_score = min(100, compatibility_score)
+    
+    # ============ USER STATS ============
+    user1_avg_artist_rating = user1_artists.aggregate(Avg('rating'))['rating__avg']
+    user2_avg_artist_rating = user2_artists.aggregate(Avg('rating'))['rating__avg']
+    
+    user1_avg_album_rating = user1_albums.aggregate(Avg('rating'))['rating__avg']
+    user2_avg_album_rating = user2_albums.aggregate(Avg('rating'))['rating__avg']
+    
+    user1_avg_song_rating = user1_songs.aggregate(Avg('rating'))['rating__avg']
+    user2_avg_song_rating = user2_songs.aggregate(Avg('rating'))['rating__avg']
+    
+    user1_stats = {
+        'total_artists': len(user1_artists),
+        'total_albums': len(user1_albums),
+        'total_songs': len(user1_songs),
+        'avg_artist_rating': round(user1_avg_artist_rating, 1) if user1_avg_artist_rating else 0,
+        'avg_album_rating': round(user1_avg_album_rating, 1) if user1_avg_album_rating else 0,
+        'avg_song_rating': round(user1_avg_song_rating, 1) if user1_avg_song_rating else 0,
+        'top_genre': max(set(user1_genres), key=user1_genres.count) if user1_genres else None
+    }
+    
+    user2_stats = {
+        'total_artists': len(user2_artists),
+        'total_albums': len(user2_albums),
+        'total_songs': len(user2_songs),
+        'avg_artist_rating': round(user2_avg_artist_rating, 1) if user2_avg_artist_rating else 0,
+        'avg_album_rating': round(user2_avg_album_rating, 1) if user2_avg_album_rating else 0,
+        'avg_song_rating': round(user2_avg_song_rating, 1) if user2_avg_song_rating else 0,
+        'top_genre': max(set(user2_genres), key=user2_genres.count) if user2_genres else None
+    }
+    
+    return {
+        'common_artists': common_artists[:10],
+        'common_albums': common_albums[:10],
+        'common_songs': common_songs[:10],
+        'common_genres': sorted_genres[:5],
+        'compatibility_score': compatibility_score,
+        'total_common_artists': len(common_artists),
+        'total_common_albums': len(common_albums),
+        'total_common_songs': len(common_songs),
+        'total_common_genres': len(common_genres),
+        'user1_stats': user1_stats,
+        'user2_stats': user2_stats,
+    }
 
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.core.paginator import Paginator
-from django.http import JsonResponse
-from .models import Artist, Album  # Update this in views.py
-from .forms import ArtistForm
-import logging
+def calculate_spotify_compatibility(user1, user2):
+    """
+    Calculate music compatibility between two users based on Spotify data.
+    Returns a dictionary with common artists, tracks, and compatibility score.
+    """
+    
+    # Get top artists for both users
+    user1_artists = SpotifyTopArtist.objects.filter(user=user1).values_list('spotify_artist_id', 'name', 'image_url', 'rank', 'genres')
+    user2_artists = SpotifyTopArtist.objects.filter(user=user2).values_list('spotify_artist_id', 'name', 'image_url', 'rank', 'genres')
+    
+    # Get top tracks for both users
+    user1_tracks = SpotifyTopTrack.objects.filter(user=user1).values_list('spotify_track_id', 'name', 'artist_name', 'album_image_url', 'rank')
+    user2_tracks = SpotifyTopTrack.objects.filter(user=user2).values_list('spotify_track_id', 'name', 'artist_name', 'album_image_url', 'rank')
+    
+    # Convert to dictionaries for easier lookup
+    user1_artist_dict = {artist_id: {'name': name, 'image': img, 'rank': rank, 'genres': genres} for artist_id, name, img, rank, genres in user1_artists}
+    user2_artist_dict = {artist_id: {'name': name, 'image': img, 'rank': rank, 'genres': genres} for artist_id, name, img, rank, genres in user2_artists}
+    
+    user1_track_dict = {track_id: {'name': name, 'artist': artist, 'image': img, 'rank': rank} for track_id, name, artist, img, rank in user1_tracks}
+    user2_track_dict = {track_id: {'name': name, 'artist': artist, 'image': img, 'rank': rank} for track_id, name, artist, img, rank in user2_tracks}
+    
+    # Find common artists
+    common_artist_ids = set(user1_artist_dict.keys()) & set(user2_artist_dict.keys())
+    common_artists = []
+    for artist_id in common_artist_ids:
+        artist_data = user1_artist_dict[artist_id].copy()
+        artist_data['user1_rank'] = user1_artist_dict[artist_id]['rank']
+        artist_data['user2_rank'] = user2_artist_dict[artist_id]['rank']
+        common_artists.append(artist_data)
+    
+    # Sort by average rank (lower is better)
+    common_artists.sort(key=lambda x: (x['user1_rank'] + x['user2_rank']) / 2)
+    
+    # Find common tracks
+    common_track_ids = set(user1_track_dict.keys()) & set(user2_track_dict.keys())
+    common_tracks = []
+    for track_id in common_track_ids:
+        track_data = user1_track_dict[track_id].copy()
+        track_data['user1_rank'] = user1_track_dict[track_id]['rank']
+        track_data['user2_rank'] = user2_track_dict[track_id]['rank']
+        common_tracks.append(track_data)
+    
+    # Sort by average rank
+    common_tracks.sort(key=lambda x: (x['user1_rank'] + x['user2_rank']) / 2)
+    
+    # Calculate compatibility score (0-100)
+    max_artists = max(len(user1_artist_dict), len(user2_artist_dict))
+    max_tracks = max(len(user1_track_dict), len(user2_track_dict))
+    
+    artist_score = (len(common_artists) / max_artists * 100) if max_artists > 0 else 0
+    track_score = (len(common_tracks) / max_tracks * 100) if max_tracks > 0 else 0
+    
+    # Weighted average: 60% artists, 40% tracks
+    compatibility_score = int((artist_score * 0.6) + (track_score * 0.4))
+    
+    return {
+        'common_artists': common_artists[:8],
+        'common_tracks': common_tracks[:8],
+        'compatibility_score': compatibility_score,
+        'total_common_artists': len(common_artists),
+        'total_common_tracks': len(common_tracks),
+        'user1_total_artists': len(user1_artist_dict),
+        'user2_total_artists': len(user2_artist_dict),
+        'user1_total_tracks': len(user1_track_dict),
+        'user2_total_tracks': len(user2_track_dict),
+    }
+
 
 logger = logging.getLogger(__name__)
 
@@ -858,7 +1189,7 @@ def artist_wallet(request):
             messages.success(request, f'Artist "{artist.name}" added successfully!')
             return redirect('user_artist')
     else:
-        form = ArtistForm()
+        form = ArtistForm()  # ADD THIS LINE - Create empty form for GET requests
     
     # Get user's artists with their albums
     artists_list = Artist.objects.filter(user=request.user).prefetch_related('albums').order_by('-rating', '-created_at')
@@ -866,22 +1197,29 @@ def artist_wallet(request):
     artists_page_number = request.GET.get('page', 1)
     artists = artists_paginator.get_page(artists_page_number)
     
-    # Get user's songs with pagination - ADD THIS SECTION
+    # Get user's songs with pagination
     songs_list = Song.objects.filter(user=request.user).order_by('-rating', '-created_at')
     songs_paginator = Paginator(songs_list, 10)
     songs_page_number = request.GET.get('songs_page', 1)
     songs = songs_paginator.get_page(songs_page_number)
     
-    # Debug - check if songs exist
+    # Get user's standalone albums with pagination
+    albums_list = Album.objects.filter(user=request.user).order_by('-rating', '-created_at')
+    albums_paginator = Paginator(albums_list, 10)
+    albums_page_number = request.GET.get('albums_page', 1)
+    albums = albums_paginator.get_page(albums_page_number)
+    
+    # Debug
     print(f"DEBUG: Found {songs_list.count()} songs for user {request.user.username}")
+    print(f"DEBUG: Found {albums_list.count()} albums for user {request.user.username}")
     
     context = {
-        'form': form,
+        'form': form, 
         'artists': artists,
-        'songs': songs,  # ADD THIS LINE
+        'songs': songs,
+        'albums': albums,
     }
     return render(request, 'user/user_artist.html', context)
-
 
 @login_required
 def search_artists_api(request):
@@ -1381,5 +1719,211 @@ def delete_song(request):
         
     except Song.DoesNotExist:
         return JsonResponse({'error': 'Song not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def search_albums(request):
+    """Search for albums using MusicBrainz API"""
+    query = request.GET.get('query', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'error': 'Query too short'}, status=400)
+    
+    try:
+        url = 'https://musicbrainz.org/ws/2/release/'
+        params = {
+            'query': query,
+            'fmt': 'json',
+            'limit': 10
+        }
+        headers = {
+            'User-Agent': 'HarmoNet/1.0 (PUT_YOUR_REAL_EMAIL_HERE)',  # ← CHANGE THIS!
+            'Accept': 'application/json'
+        }
+        
+        time.sleep(1.5)  # Respect rate limits
+        
+        response = requests.get(
+            url, 
+            params=params, 
+            headers=headers, 
+            timeout=10,
+            verify=True
+        )
+        
+        if response.status_code == 503:
+            return JsonResponse({
+                'error': 'MusicBrainz is rate limiting. Please wait 60 seconds and try again.'
+            }, status=503)
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        albums = []
+        for release in data.get('releases', []):
+            artist_name = 'Unknown Artist'
+            if release.get('artist-credit'):
+                artist_name = release['artist-credit'][0]['name']
+            
+            # Note: Cover art fetching might also cause rate limiting
+            # We'll skip it for now to reduce requests
+            cover_art_url = None
+            
+            album_data = {
+                'id': release['id'],
+                'title': release.get('title', 'Unknown'),
+                'artist_name': artist_name,
+                'release_date': release.get('date'),
+                'album_type': release.get('release-group', {}).get('primary-type', 'Album'),
+                'cover_art_url': cover_art_url,
+            }
+            albums.append(album_data)
+        
+        return JsonResponse({'albums': albums})
+        
+    except requests.exceptions.Timeout:
+        return JsonResponse({'error': 'Search timed out. Please try again.'}, status=408)
+    except requests.exceptions.SSLError:
+        return JsonResponse({'error': 'Connection error. Please try again later.'}, status=503)
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({'error': 'Search failed. Please try again in a moment.'}, status=500)
+    except Exception as e:
+        print(f"Unexpected error in search_albums: {str(e)}")
+        return JsonResponse({'error': 'Unexpected error occurred. Please try again.'}, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def add_album_standalone(request):
+    """Add a standalone album to user's collection"""
+    try:
+        album_id = request.POST.get('album_id')
+        title = request.POST.get('title')
+        artist_name = request.POST.get('artist_name')
+        release_date = request.POST.get('release_date', '')
+        album_type = request.POST.get('album_type', 'Album')
+        cover_art_url = request.POST.get('cover_art_url', '')
+        
+        print(f"DEBUG: Adding album - {title} by {artist_name}")
+        
+        if not album_id or not title or not artist_name:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        
+        # Check if album already exists for this user
+        if Album.objects.filter(user=request.user, musicbrainz_id=album_id).exists():
+            return JsonResponse({'error': 'Album already in your collection'}, status=400)
+        
+        # Create the album
+        album = Album.objects.create(
+            user=request.user,
+            title=title,
+            artist_name=artist_name,
+            release_date=release_date if release_date else None,
+            album_type=album_type,
+            cover_art_url=cover_art_url if cover_art_url else None,
+            musicbrainz_id=album_id
+        )
+        
+        print(f"DEBUG: Album created successfully - ID: {album.id}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Added "{title}" to your collection!'
+        })
+        
+    except Exception as e:
+        print(f"ERROR in add_album_standalone: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_album_manual(request):
+    """Add an album manually without MusicBrainz"""
+    try:
+        title = request.POST.get('album_title', '').strip()
+        artist_name = request.POST.get('album_artist', '').strip()
+        year = request.POST.get('album_year', '').strip()
+        album_type = request.POST.get('album_type', 'Album').strip()
+        
+        print(f"DEBUG: Manual add album - {title} by {artist_name}")
+        
+        if not title or not artist_name:
+            messages.error(request, 'Album title and artist name are required.')
+            return redirect('user_artist')
+        
+        # Create the album
+        album = Album.objects.create(
+            user=request.user,
+            title=title,
+            artist_name=artist_name,
+            release_date=f"{year}-01-01" if year else None,
+            album_type=album_type
+        )
+        
+        print(f"DEBUG: Manual album created - ID: {album.id}")
+        
+        messages.success(request, f'Added "{title}" by {artist_name} to your collection!')
+        return redirect('user_artist')
+        
+    except Exception as e:
+        print(f"ERROR in add_album_manual: {str(e)}")
+        messages.error(request, f'Error adding album: {str(e)}')
+        return redirect('user_artist')
+
+
+@login_required
+@require_http_methods(["POST"])
+def rate_album_standalone(request):
+    """Rate a standalone album"""
+    try:
+        album_id = request.POST.get('album_id')
+        rating = request.POST.get('rating')
+        
+        if not album_id or not rating:
+            return JsonResponse({'error': 'Missing album_id or rating'}, status=400)
+        
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            return JsonResponse({'error': 'Rating must be between 1 and 5'}, status=400)
+        
+        album = Album.objects.get(id=album_id, user=request.user)
+        album.rating = rating
+        album.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Rated "{album.title}" {rating} stars'
+        })
+        
+    except Album.DoesNotExist:
+        return JsonResponse({'error': 'Album not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_album_standalone(request):
+    """Delete a standalone album from user's collection"""
+    try:
+        album_id = request.POST.get('album_id')
+        
+        if not album_id:
+            return JsonResponse({'error': 'Missing album_id'}, status=400)
+        
+        album = Album.objects.get(id=album_id, user=request.user)
+        album_title = album.title
+        album.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Removed "{album_title}" from your collection'
+        })
+        
+    except Album.DoesNotExist:
+        return JsonResponse({'error': 'Album not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

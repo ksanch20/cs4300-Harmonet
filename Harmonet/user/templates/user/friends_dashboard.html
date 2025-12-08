@@ -255,44 +255,6 @@
     color: #1e2a38;
   }
 
-  /* Messages */
-  .messages-container {
-    margin-bottom: 1.5rem;
-  }
-
-  .message {
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.95rem;
-  }
-
-  .message.success {
-    background-color: #d1fae5;
-    color: #065f46;
-    border: 1px solid #6ee7b7;
-  }
-
-  .message.error {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-  }
-
-  .message.info {
-    background-color: #dbeafe;
-    color: #1e40af;
-    border: 1px solid #93c5fd;
-  }
-
-  @media (max-width: 768px) {
-    .add-friends-grid {
-      grid-template-columns: 1fr;
-    }
-  }
 </style>
 {% endblock %}
 
@@ -325,18 +287,6 @@
           📋 Copy Friend Code
         </button>
       </div>
-
-      <!-- Messages -->
-      {% if messages %}
-        <div class="messages-container">
-          {% for message in messages %}
-            <div class="message {{ message.tags }}">
-              <span>{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}⚠️{% else %}ℹ️{% endif %}</span>
-              <span>{{ message }}</span>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
 
       <!-- Add Friends Section -->
       <div class="add-friends-grid">
