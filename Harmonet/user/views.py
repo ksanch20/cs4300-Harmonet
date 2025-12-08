@@ -822,6 +822,29 @@ def user_profile(request, username):
         print(f"DEBUG: User {profile_user.username} has {user_albums.count()} albums")  # ADD THIS
         print(f"DEBUG: show_artists = {show_artists}")
         print(f"DEBUG: can_view = {can_view}")
+        # ============ Music Compatibility Comparison ============
+    wallet_compatibility = None
+    spotify_compatibility = None
+    show_wallet_comparison = False
+    show_spotify_comparison = False
+    
+    # Only show comparison if not viewing own profile and are friends
+    if not is_own_profile and are_friends:
+        # Check Artist Wallet comparison
+        viewer_has_artists = Artist.objects.filter(user=request.user).exists()
+        profile_has_artists = Artist.objects.filter(user=profile_user).exists()
+        
+        if viewer_has_artists and profile_has_artists:
+            wallet_compatibility = calculate_wallet_compatibility(request.user, profile_user)
+            show_wallet_comparison = True
+        
+        # Check Spotify comparison
+        viewer_spotify_connected = is_spotify_connected(request.user)
+        profile_spotify_connected = is_spotify_connected(profile_user)
+        
+        if viewer_spotify_connected and profile_spotify_connected:
+            spotify_compatibility = calculate_spotify_compatibility(request.user, profile_user)
+            show_spotify_comparison = True
     
     context = {
         'profile_user': profile_user,
@@ -832,9 +855,305 @@ def user_profile(request, username):
         'user_songs': user_songs,
         'user_albums': user_albums, 
         'show_artists': show_artists,
+        'wallet_compatibility': wallet_compatibility,
+        'spotify_compatibility': spotify_compatibility,
+        'show_wallet_comparison': show_wallet_comparison,
+        'show_spotify_comparison': show_spotify_comparison,
     }
     
     return render(request, 'user/user_profile.html', context)
+def calculate_wallet_compatibility(user1, user2):
+    """
+    Calculate music compatibility between two users based on their Artist Wallet.
+    Includes artists, albums, and songs comparison.
+    """
+    
+    # Get all artists from both users' wallets
+    user1_artists = Artist.objects.filter(user=user1).prefetch_related('albums')
+    user2_artists = Artist.objects.filter(user=user2).prefetch_related('albums')
+    
+    # Get all songs from both users
+    user1_songs = Song.objects.filter(user=user1)
+    user2_songs = Song.objects.filter(user=user2)
+    
+    # Get all albums from both users
+    user1_albums = Album.objects.filter(artist__user=user1)
+    user2_albums = Album.objects.filter(artist__user=user2)
+    
+    # ============ ARTISTS COMPARISON ============
+    user1_artist_dict = {}
+    for artist in user1_artists:
+        key = artist.musicbrainz_id if artist.musicbrainz_id else artist.name.lower()
+        user1_artist_dict[key] = {
+            'name': artist.name,
+            'profile_url': artist.profile_url,
+            'genre': artist.genre,
+            'rating': artist.rating,
+            'image': artist.artist_image,
+            'album_count': artist.albums.count()
+        }
+    
+    user2_artist_dict = {}
+    for artist in user2_artists:
+        key = artist.musicbrainz_id if artist.musicbrainz_id else artist.name.lower()
+        user2_artist_dict[key] = {
+            'name': artist.name,
+            'profile_url': artist.profile_url,
+            'genre': artist.genre,
+            'rating': artist.rating,
+            'image': artist.artist_image,
+            'album_count': artist.albums.count()
+        }
+    
+    # Find common artists
+    common_artist_keys = set(user1_artist_dict.keys()) & set(user2_artist_dict.keys())
+    common_artists = []
+    
+    for key in common_artist_keys:
+        artist_data = user1_artist_dict[key].copy()
+        artist_data['user1_rating'] = user1_artist_dict[key]['rating']
+        artist_data['user2_rating'] = user2_artist_dict[key]['rating']
+        artist_data['user1_albums'] = user1_artist_dict[key]['album_count']
+        artist_data['user2_albums'] = user2_artist_dict[key]['album_count']
+        
+        # Calculate average rating for sorting
+        ratings = [r for r in [artist_data['user1_rating'], artist_data['user2_rating']] if r]
+        artist_data['avg_rating'] = sum(ratings) / len(ratings) if ratings else 0
+        
+        common_artists.append(artist_data)
+    
+    # Sort by average rating
+    common_artists.sort(key=lambda x: x['avg_rating'], reverse=True)
+    
+    # ============ ALBUMS COMPARISON ============
+    user1_album_dict = {}
+    for album in user1_albums:
+        key = album.musicbrainz_id if album.musicbrainz_id else f"{album.title.lower()}_{album.artist.name.lower()}"
+        user1_album_dict[key] = {
+            'title': album.title,
+            'artist_name': album.artist.name,
+            'rating': album.rating,
+            'cover_art': album.cover_art_url,
+            'release_date': album.release_date,
+            'type': album.album_type
+        }
+    
+    user2_album_dict = {}
+    for album in user2_albums:
+        key = album.musicbrainz_id if album.musicbrainz_id else f"{album.title.lower()}_{album.artist.name.lower()}"
+        user2_album_dict[key] = {
+            'title': album.title,
+            'artist_name': album.artist.name,
+            'rating': album.rating,
+            'cover_art': album.cover_art_url,
+            'release_date': album.release_date,
+            'type': album.album_type
+        }
+    
+    # Find common albums
+    common_album_keys = set(user1_album_dict.keys()) & set(user2_album_dict.keys())
+    common_albums = []
+    
+    for key in common_album_keys:
+        album_data = user1_album_dict[key].copy()
+        album_data['user1_rating'] = user1_album_dict[key]['rating']
+        album_data['user2_rating'] = user2_album_dict[key]['rating']
+        
+        ratings = [r for r in [album_data['user1_rating'], album_data['user2_rating']] if r]
+        album_data['avg_rating'] = sum(ratings) / len(ratings) if ratings else 0
+        
+        common_albums.append(album_data)
+    
+    common_albums.sort(key=lambda x: x['avg_rating'], reverse=True)
+    
+    # ============ SONGS COMPARISON ============
+    user1_song_dict = {}
+    for song in user1_songs:
+        key = f"{song.title.lower()}_{song.artist_name.lower()}"
+        user1_song_dict[key] = {
+            'title': song.title,
+            'artist_name': song.artist_name,
+            'album_name': song.album_name,
+            'rating': song.rating,
+        }
+    
+    user2_song_dict = {}
+    for song in user2_songs:
+        key = f"{song.title.lower()}_{song.artist_name.lower()}"
+        user2_song_dict[key] = {
+            'title': song.title,
+            'artist_name': song.artist_name,
+            'album_name': song.album_name,
+            'rating': song.rating,
+        }
+    
+    # Find common songs
+    common_song_keys = set(user1_song_dict.keys()) & set(user2_song_dict.keys())
+    common_songs = []
+    
+    for key in common_song_keys:
+        song_data = user1_song_dict[key].copy()
+        song_data['user1_rating'] = user1_song_dict[key]['rating']
+        song_data['user2_rating'] = user2_song_dict[key]['rating']
+        
+        ratings = [r for r in [song_data['user1_rating'], song_data['user2_rating']] if r]
+        song_data['avg_rating'] = sum(ratings) / len(ratings) if ratings else 0
+        
+        common_songs.append(song_data)
+    
+    common_songs.sort(key=lambda x: x['avg_rating'], reverse=True)
+    
+    # ============ GENRE COMPARISON ============
+    user1_genres = [artist.genre for artist in user1_artists if artist.genre]
+    user2_genres = [artist.genre for artist in user2_artists if artist.genre]
+    
+    common_genres = list(set(user1_genres) & set(user2_genres))
+    
+    genre_compatibility = {}
+    for genre in common_genres:
+        count1 = user1_genres.count(genre)
+        count2 = user2_genres.count(genre)
+        genre_compatibility[genre] = {
+            'user1_count': count1,
+            'user2_count': count2,
+            'total': count1 + count2
+        }
+    
+    sorted_genres = sorted(genre_compatibility.items(), key=lambda x: x[1]['total'], reverse=True)
+    
+    # ============ COMPATIBILITY SCORE ============
+    total_artists = len(user1_artist_dict) + len(user2_artist_dict)
+    total_albums = len(user1_album_dict) + len(user2_album_dict)
+    total_songs = len(user1_song_dict) + len(user2_song_dict)
+    
+    # Calculate individual scores
+    artist_score = (len(common_artists) * 2 / total_artists * 100) if total_artists > 0 else 0
+    album_score = (len(common_albums) * 2 / total_albums * 100) if total_albums > 0 else 0
+    song_score = (len(common_songs) * 2 / total_songs * 100) if total_songs > 0 else 0
+    
+    total_genres = len(set(user1_genres + user2_genres))
+    genre_score = (len(common_genres) / total_genres * 100) if total_genres > 0 else 0
+    
+    # Weighted: 40% artists, 25% albums, 25% songs, 10% genres
+    compatibility_score = int(
+        (artist_score * 0.4) + 
+        (album_score * 0.25) + 
+        (song_score * 0.25) + 
+        (genre_score * 0.1)
+    )
+    compatibility_score = min(100, compatibility_score)
+    
+    # ============ USER STATS ============
+    user1_avg_artist_rating = user1_artists.aggregate(Avg('rating'))['rating__avg']
+    user2_avg_artist_rating = user2_artists.aggregate(Avg('rating'))['rating__avg']
+    
+    user1_avg_album_rating = user1_albums.aggregate(Avg('rating'))['rating__avg']
+    user2_avg_album_rating = user2_albums.aggregate(Avg('rating'))['rating__avg']
+    
+    user1_avg_song_rating = user1_songs.aggregate(Avg('rating'))['rating__avg']
+    user2_avg_song_rating = user2_songs.aggregate(Avg('rating'))['rating__avg']
+    
+    user1_stats = {
+        'total_artists': len(user1_artists),
+        'total_albums': len(user1_albums),
+        'total_songs': len(user1_songs),
+        'avg_artist_rating': round(user1_avg_artist_rating, 1) if user1_avg_artist_rating else 0,
+        'avg_album_rating': round(user1_avg_album_rating, 1) if user1_avg_album_rating else 0,
+        'avg_song_rating': round(user1_avg_song_rating, 1) if user1_avg_song_rating else 0,
+        'top_genre': max(set(user1_genres), key=user1_genres.count) if user1_genres else None
+    }
+    
+    user2_stats = {
+        'total_artists': len(user2_artists),
+        'total_albums': len(user2_albums),
+        'total_songs': len(user2_songs),
+        'avg_artist_rating': round(user2_avg_artist_rating, 1) if user2_avg_artist_rating else 0,
+        'avg_album_rating': round(user2_avg_album_rating, 1) if user2_avg_album_rating else 0,
+        'avg_song_rating': round(user2_avg_song_rating, 1) if user2_avg_song_rating else 0,
+        'top_genre': max(set(user2_genres), key=user2_genres.count) if user2_genres else None
+    }
+    
+    return {
+        'common_artists': common_artists[:10],
+        'common_albums': common_albums[:10],
+        'common_songs': common_songs[:10],
+        'common_genres': sorted_genres[:5],
+        'compatibility_score': compatibility_score,
+        'total_common_artists': len(common_artists),
+        'total_common_albums': len(common_albums),
+        'total_common_songs': len(common_songs),
+        'total_common_genres': len(common_genres),
+        'user1_stats': user1_stats,
+        'user2_stats': user2_stats,
+    }
+
+
+def calculate_spotify_compatibility(user1, user2):
+    """
+    Calculate music compatibility between two users based on Spotify data.
+    Returns a dictionary with common artists, tracks, and compatibility score.
+    """
+    
+    # Get top artists for both users
+    user1_artists = SpotifyTopArtist.objects.filter(user=user1).values_list('spotify_artist_id', 'name', 'image_url', 'rank', 'genres')
+    user2_artists = SpotifyTopArtist.objects.filter(user=user2).values_list('spotify_artist_id', 'name', 'image_url', 'rank', 'genres')
+    
+    # Get top tracks for both users
+    user1_tracks = SpotifyTopTrack.objects.filter(user=user1).values_list('spotify_track_id', 'name', 'artist_name', 'album_image_url', 'rank')
+    user2_tracks = SpotifyTopTrack.objects.filter(user=user2).values_list('spotify_track_id', 'name', 'artist_name', 'album_image_url', 'rank')
+    
+    # Convert to dictionaries for easier lookup
+    user1_artist_dict = {artist_id: {'name': name, 'image': img, 'rank': rank, 'genres': genres} for artist_id, name, img, rank, genres in user1_artists}
+    user2_artist_dict = {artist_id: {'name': name, 'image': img, 'rank': rank, 'genres': genres} for artist_id, name, img, rank, genres in user2_artists}
+    
+    user1_track_dict = {track_id: {'name': name, 'artist': artist, 'image': img, 'rank': rank} for track_id, name, artist, img, rank in user1_tracks}
+    user2_track_dict = {track_id: {'name': name, 'artist': artist, 'image': img, 'rank': rank} for track_id, name, artist, img, rank in user2_tracks}
+    
+    # Find common artists
+    common_artist_ids = set(user1_artist_dict.keys()) & set(user2_artist_dict.keys())
+    common_artists = []
+    for artist_id in common_artist_ids:
+        artist_data = user1_artist_dict[artist_id].copy()
+        artist_data['user1_rank'] = user1_artist_dict[artist_id]['rank']
+        artist_data['user2_rank'] = user2_artist_dict[artist_id]['rank']
+        common_artists.append(artist_data)
+    
+    # Sort by average rank (lower is better)
+    common_artists.sort(key=lambda x: (x['user1_rank'] + x['user2_rank']) / 2)
+    
+    # Find common tracks
+    common_track_ids = set(user1_track_dict.keys()) & set(user2_track_dict.keys())
+    common_tracks = []
+    for track_id in common_track_ids:
+        track_data = user1_track_dict[track_id].copy()
+        track_data['user1_rank'] = user1_track_dict[track_id]['rank']
+        track_data['user2_rank'] = user2_track_dict[track_id]['rank']
+        common_tracks.append(track_data)
+    
+    # Sort by average rank
+    common_tracks.sort(key=lambda x: (x['user1_rank'] + x['user2_rank']) / 2)
+    
+    # Calculate compatibility score (0-100)
+    max_artists = max(len(user1_artist_dict), len(user2_artist_dict))
+    max_tracks = max(len(user1_track_dict), len(user2_track_dict))
+    
+    artist_score = (len(common_artists) / max_artists * 100) if max_artists > 0 else 0
+    track_score = (len(common_tracks) / max_tracks * 100) if max_tracks > 0 else 0
+    
+    # Weighted average: 60% artists, 40% tracks
+    compatibility_score = int((artist_score * 0.6) + (track_score * 0.4))
+    
+    return {
+        'common_artists': common_artists[:8],
+        'common_tracks': common_tracks[:8],
+        'compatibility_score': compatibility_score,
+        'total_common_artists': len(common_artists),
+        'total_common_tracks': len(common_tracks),
+        'user1_total_artists': len(user1_artist_dict),
+        'user2_total_artists': len(user2_artist_dict),
+        'user1_total_tracks': len(user1_track_dict),
+        'user2_total_tracks': len(user2_track_dict),
+    }
 
 
 logger = logging.getLogger(__name__)
