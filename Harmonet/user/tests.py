@@ -1633,21 +1633,21 @@ class ArtistModelTests(TestCase):
         self.assertEqual(artists[0], artist2) 
     
     def test_cannot_add_duplicate_musicbrainz_artist(self):
-    from django.db import IntegrityError, transaction
+        from django.db import IntegrityError, transaction
     
-    Artist.objects.create(
-        user=self.user,
-        name='Test Artist',
-        musicbrainz_id='same-id'
-    )
+        Artist.objects.create(
+            user=self.user,
+            name='Test Artist',
+            musicbrainz_id='same-id'
+        )
     
-    with self.assertRaises(IntegrityError):
-        with transaction.atomic():  # Add this wrapper
-            Artist.objects.create(
-                user=self.user,
-                name='Test Artist',
-                musicbrainz_id='same-id'
-            )
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():  # Add this wrapper
+                Artist.objects.create(
+                    user=self.user,
+                    name='Test Artist',
+                    musicbrainz_id='same-id'
+                )
 class PrivacySettingsViewTests(TestCase):
     """Test the privacy settings view"""
     
@@ -3320,24 +3320,24 @@ class SongModelTestCase(ArtistWalletTestCase):
         self.assertEqual(song.get_duration_display(), 'Unknown')
     
     def test_song_unique_constraint(self):
-    """Test that user cannot add same song twice"""
-    from django.db import IntegrityError, transaction
+        """Test that user cannot add same song twice"""
+        from django.db import IntegrityError, transaction  # This line must be indented
     
-    Song.objects.create(
-        user=self.user,
-        title='Smells Like Teen Spirit',
-        artist_name='Nirvana',
-        musicbrainz_id='test-song-123'
-    )
+        Song.objects.create(
+            user=self.user,
+            title='Smells Like Teen Spirit',
+            artist_name='Nirvana',
+            musicbrainz_id='test-song-123'
+        )
     
-    with self.assertRaises(IntegrityError):
-        with transaction.atomic():  # Add this wrapper
-            Song.objects.create(
-                user=self.user,
-                title='Smells Like Teen Spirit',
-                artist_name='Nirvana',
-                musicbrainz_id='test-song-123'
-            )
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Song.objects.create(
+                    user=self.user,
+                    title='Smells Like Teen Spirit',
+                    artist_name='Nirvana',
+                    musicbrainz_id='test-song-123'
+                )
 
 
 class AlbumModelTestCase(ArtistWalletTestCase):
