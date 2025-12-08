@@ -3244,19 +3244,22 @@ class ArtistModelTestCase(ArtistWalletTestCase):
     
     def test_artist_unique_constraint(self):
         """Test that user cannot add same artist twice"""
+        from django.db import IntegrityError, transaction
+    
         Artist.objects.create(
             user=self.user,
             name='Radiohead',
             musicbrainz_id='a74b1b7f-71a5-4011-9441-d0b5e4122711'
         )
-        
+    
         # Attempting to create duplicate should raise error
-        with self.assertRaises(Exception):
-            Artist.objects.create(
-                user=self.user,
-                name='Radiohead',
-                musicbrainz_id='a74b1b7f-71a5-4011-9441-d0b5e4122711'
-            )
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Artist.objects.create(
+                    user=self.user,
+                    name='Radiohead',
+                    musicbrainz_id='a74b1b7f-71a5-4011-9441-d0b5e4122711'
+                )
     
     def test_artist_rating_update(self):
         """Test updating artist rating"""
@@ -3321,7 +3324,7 @@ class SongModelTestCase(ArtistWalletTestCase):
     
     def test_song_unique_constraint(self):
         """Test that user cannot add same song twice"""
-        from django.db import IntegrityError, transaction  # This line must be indented
+        from django.db import IntegrityError, transaction
     
         Song.objects.create(
             user=self.user,
