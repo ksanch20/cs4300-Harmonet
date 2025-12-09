@@ -1,5 +1,5 @@
 asgiref==3.10.0
-coverage==7.11.3
+coverage==7.13.0
 Django==5.2.9
 sqlparse==0.5.3
 dj-database-url==3.0.1
